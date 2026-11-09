@@ -6,6 +6,7 @@ import co.edu.unbosque.marketplace.identidad.exception.RegistroException;
 import co.edu.unbosque.marketplace.identidad.model.EstadoUsuario;
 import co.edu.unbosque.marketplace.identidad.model.Rol;
 import co.edu.unbosque.marketplace.identidad.model.Usuario;
+import co.edu.unbosque.marketplace.identidad.repository.SesionRepository;
 import co.edu.unbosque.marketplace.identidad.repository.UsuarioRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -17,6 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+
 
 // Pruebas de la Historia de usuario para el registro de usuarios 
 // cada preuba es para un criterio de aceptación
@@ -30,8 +32,12 @@ class UsuarioServiceTest {
     @Autowired
     private UsuarioRepository usuarioRepository;
 
+    @Autowired
+    private SesionRepository sesionRepository;
+
     @BeforeEach
     void limpiarBaseDeDatos() {
+        sesionRepository.deleteAll();
         usuarioRepository.deleteAll();
     }
 
