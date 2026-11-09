@@ -7,11 +7,13 @@ import co.edu.unbosque.marketplace.identidad.service.UsuarioService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
 
 // Rutas del perfil del usuario que tiene la sesión abierta
 @RestController
@@ -39,6 +41,13 @@ public class UsuarioController {
             @Valid @RequestBody PerfilRequest datos) {
         Long idUsuario = sesionService.validarSesion(extraerToken(autorizacion)).getId();
         return ResponseEntity.ok(usuarioService.actualizarPerfil(idUsuario, datos));
+    }
+    // CA-016, CA-017 y CA-018
+    @PostMapping("/desactivar")
+    public ResponseEntity<Void> desactivarCuenta(@RequestHeader("Authorization") String autorizacion) {
+        Long idUsuario = sesionService.validarSesion(extraerToken(autorizacion)).getId();
+        usuarioService.desactivarCuenta(idUsuario);
+        return ResponseEntity.noContent().build();
     }
 
     // Quita la palabra "Bearer " para dejar solo el token

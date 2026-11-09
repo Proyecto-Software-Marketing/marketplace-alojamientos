@@ -76,4 +76,9 @@ public class AutenticacionController {
             @RequestParam(required = false) Long idDueno) {
         return ResponseEntity.ok(sesionService.autorizar(extraerToken(autorizacion), roles, idDueno));
     }
+    // CA-019 se usa correo y contraseña porque con la cuenta inactiva no hay sesión
+    @PostMapping("/reactivar")
+    public ResponseEntity<SesionResponse> reactivarCuenta(@Valid @RequestBody LoginRequest datos) {
+        return ResponseEntity.ok(sesionService.reactivarCuenta(datos));
+    }
 }

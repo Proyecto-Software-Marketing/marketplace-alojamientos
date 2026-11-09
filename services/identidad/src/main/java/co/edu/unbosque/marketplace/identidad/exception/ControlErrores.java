@@ -58,4 +58,10 @@ public class ControlErrores {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(Map.of("mensajes", List.of(e.getMessage())));
     }
+// CA-17 no se puede desactivar la cuenta
+    @ExceptionHandler(CuentaException.class)
+    public ResponseEntity<Map<String, Object>> manejarCuenta(CuentaException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(Map.of("mensajes", List.of(e.getMessage())));
+    }
 }

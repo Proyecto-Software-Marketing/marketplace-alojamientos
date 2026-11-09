@@ -5,22 +5,33 @@ import co.edu.unbosque.marketplace.identidad.dto.UsuarioResponse;
 import co.edu.unbosque.marketplace.identidad.exception.RegistroException;
 import co.edu.unbosque.marketplace.identidad.model.Rol;
 import co.edu.unbosque.marketplace.identidad.model.Usuario;
+import co.edu.unbosque.marketplace.identidad.repository.SesionRepository;
 import co.edu.unbosque.marketplace.identidad.repository.UsuarioRepository;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import co.edu.unbosque.marketplace.identidad.client.ServiciosExternos;
 import co.edu.unbosque.marketplace.identidad.dto.PerfilRequest;
 import co.edu.unbosque.marketplace.identidad.exception.AutenticacionException;
+import co.edu.unbosque.marketplace.identidad.exception.CuentaException;
+import co.edu.unbosque.marketplace.identidad.model.EstadoUsuario;
+import co.edu.unbosque.marketplace.identidad.model.Sesion;
+import java.util.List;
 
 // Reglas de negocio de los usuarios
 
 @Service
 public class UsuarioService {
 
-    private final UsuarioRepository usuarioRepository;
+       private final UsuarioRepository usuarioRepository;
+    private final SesionRepository sesionRepository;
+    private final ServiciosExternos serviciosExternos;
     private final BCryptPasswordEncoder cifrador = new BCryptPasswordEncoder();
 
-    public UsuarioService(UsuarioRepository usuarioRepository) {
+    public UsuarioService(UsuarioRepository usuarioRepository, SesionRepository sesionRepository,
+            ServiciosExternos serviciosExternos) {
         this.usuarioRepository = usuarioRepository;
+        this.sesionRepository = sesionRepository;
+        this.serviciosExternos = serviciosExternos;
     }
 
    // Registra un Huesped o un Anfitrion HU-01
@@ -66,5 +77,31 @@ public class UsuarioService {
         usuario.setCorreo(correoNuevo);
         return new UsuarioResponse(usuarioRepository.save(usuario));
    
+    }
+   // Desactiva la cuenta del usuario
+    public void desactivarCuenta(Long idUsuario) {
+        Usuario usuario = usuarioRepository.findById(idUsuario)
+                .orElseThrow(() -> new AutenticacionException("La sesión no es válida o ya fue cerrada"));
+
+        // CA-017
+        if (serviciosExternos.tieneReservasFuturas(idUsuario)) {
+            throw new CuentaException("No puede desactivar la cuenta porque tiene reservas futuras confirmadas");
+        }
+
+        // CA-016
+        usuario.setEstado(EstadoUsuario.INACTIVO);
+        usuarioRepository.save(usuario);
+
+        // CA-016 se cierran todas sus sesiones para que no pueda seguir
+        List<Sesion> sesiones = sesionRepository.findByUsuarioIdAndActivaTrue(idUsuario);
+        for (Sesion sesion : sesiones) {
+            sesion.setActiva(false);
+        }
+        sesionRepository.saveAll(sesiones);
+
+        // CA-018
+        if (usuario.getRol() == Rol.ANFITRION) {
+            serviciosExternos.pausarPublicaciones(idUsuario);
+        }
     }
 }

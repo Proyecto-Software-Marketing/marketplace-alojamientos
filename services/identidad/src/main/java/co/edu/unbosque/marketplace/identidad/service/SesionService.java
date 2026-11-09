@@ -91,4 +91,25 @@ public class SesionService {
 
         return usuario;
     }
+// CA-019 reactiva la cuenta con correo y contraseña y deja la sesión abierta
+    public SesionResponse reactivarCuenta(LoginRequest datos) {
+        String correo = datos.getCorreo().trim().toLowerCase();
+
+        Usuario usuario = usuarioRepository.findByCorreo(correo)
+                .orElseThrow(() -> new AutenticacionException(CREDENCIALES_INCORRECTAS));
+
+        if (!cifrador.matches(datos.getContrasena(), usuario.getContrasena())) {
+            throw new AutenticacionException(CREDENCIALES_INCORRECTAS);
+        }
+
+        // Si el admin la restringio, el usuario no la puede reactivar solo
+        if (usuario.getEstado() == EstadoUsuario.RESTRINGIDO) {
+            throw new AutenticacionException("La cuenta está restringida por el administrador");
+        }
+
+        usuario.setEstado(EstadoUsuario.ACTIVO);
+        usuarioRepository.save(usuario);
+
+        return iniciarSesion(datos);
+    }
 }
