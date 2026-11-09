@@ -8,6 +8,8 @@ import co.edu.unbosque.marketplace.identidad.model.Usuario;
 import co.edu.unbosque.marketplace.identidad.repository.UsuarioRepository;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import co.edu.unbosque.marketplace.identidad.dto.PerfilRequest;
+import co.edu.unbosque.marketplace.identidad.exception.AutenticacionException;
 
 // Reglas de negocio de los usuarios
 
@@ -40,5 +42,29 @@ public class UsuarioService {
         Usuario guardado = usuarioRepository.save(usuario);
 
         return new UsuarioResponse(guardado);
+    }
+    // CA-013 trae los datos del usuario
+    public UsuarioResponse consultarPerfil(Long idUsuario) {
+        Usuario usuario = usuarioRepository.findById(idUsuario)
+                .orElseThrow(() -> new AutenticacionException("La sesión no es válida o ya fue cerrada"));
+        return new UsuarioResponse(usuario);
+    }
+
+    // CA-014 guarda los cambios del perfil
+    public UsuarioResponse actualizarPerfil(Long idUsuario, PerfilRequest datos) {
+        Usuario usuario = usuarioRepository.findById(idUsuario)
+                .orElseThrow(() -> new AutenticacionException("La sesión no es válida o ya fue cerrada"));
+
+        String correoNuevo = datos.getCorreo().trim().toLowerCase();
+
+        // Cuando cmabia el correo hay que revisar que no lo tenga otra cuenta
+        if (!correoNuevo.equals(usuario.getCorreo()) && usuarioRepository.existsByCorreo(correoNuevo)) {
+            throw new RegistroException("El correo ya está en uso");
+        }
+
+        usuario.setNombre(datos.getNombre().trim());
+        usuario.setCorreo(correoNuevo);
+        return new UsuarioResponse(usuarioRepository.save(usuario));
+   
     }
 }
