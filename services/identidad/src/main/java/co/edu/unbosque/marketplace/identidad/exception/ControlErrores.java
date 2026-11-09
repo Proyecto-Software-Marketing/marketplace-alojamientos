@@ -52,4 +52,10 @@ public class ControlErrores {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(Map.of("mensajes", List.of("Debe iniciar sesión")));
     }
+// Inicio sesión, pero su rol nole permiten hacer una acción
+    @ExceptionHandler(PermisoException.class)
+    public ResponseEntity<Map<String, Object>> manejarPermiso(PermisoException e) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(Map.of("mensajes", List.of(e.getMessage())));
+    }
 }

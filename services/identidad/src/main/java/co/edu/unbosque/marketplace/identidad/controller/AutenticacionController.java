@@ -15,6 +15,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import co.edu.unbosque.marketplace.identidad.model.Rol;
+import org.springframework.web.bind.annotation.RequestParam;
+import java.util.List;
 
 
  // Rutas de registro, inicio de sesión y cierre
@@ -65,5 +68,12 @@ public class AutenticacionController {
     // El front enviara un mensaje y esto se encarga de quitar la palbra "Bearer "  
     private String extraerToken(String autorizacion) {
         return autorizacion.replace("Bearer ", "").trim();
+    }
+    // CA-007 y CA-009 los otros servicios preguntan  si el usuario puede hacer algo
+    @GetMapping("/autorizar")
+    public ResponseEntity<UsuarioResponse> autorizar(@RequestHeader("Authorization") String autorizacion,
+            @RequestParam List<Rol> roles,
+            @RequestParam(required = false) Long idDueno) {
+        return ResponseEntity.ok(sesionService.autorizar(extraerToken(autorizacion), roles, idDueno));
     }
 }
