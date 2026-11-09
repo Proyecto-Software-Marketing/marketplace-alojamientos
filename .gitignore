@@ -1,0 +1,19 @@
+# Variables de entorno locales: contienen claves y nunca se suben
+.env
+
+# Compilados de Maven
+target/
+
+# Configuración personal del editor
+.vscode/
+.idea/
+*.iml
+
+# Frontend
+node_modules/
+frontend/dist/
+frontend/.angular/
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
