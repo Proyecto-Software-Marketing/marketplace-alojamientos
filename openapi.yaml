@@ -2,8 +2,7 @@ openapi: 3.0.3
 info:
   title: API pública - Marketplace de Alojamientos (vista del API Gateway)
   version: 1.0.0
-  description: 'Contrato consolidado de las rutas públicas que consume el front a través del API Gateway (puerto 8080). Las rutas /internal/* no se exponen por el Gateway: están en el contrato de cada servicio.
-    Pagos solo con Stripe en modo prueba.'
+  description: 'Contrato consolidado de las rutas públicas que consume el front a través del API Gateway (puerto 8080). Las rutas /internal/* no se exponen por el Gateway: están en el contrato de cada servicio. Pagos solo con Stripe en modo prueba.'
 servers:
 - url: http://localhost:8080/api/v1
   description: API Gateway (local)
@@ -22,38 +21,36 @@ tags:
 - name: Auditoría y Trazabilidad
 - name: Reportes y Dashboard
 paths:
-  /auth/register:
+  /autenticacion/registro:
     post:
       tags:
       - Identidad y Usuarios
       summary: Registrar usuario Huésped o Anfitrión
-      operationId: register
-      description: 'Historias: HU-01.'
+      operationId: registrar
+      description: 'Historias: HU-01 (CA-001, CA-002, CA-003, CA-127). ADMINISTRADOR no se puede elegir: viene precargado.'
       security: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RegisterRequest'
+              $ref: '#/components/schemas/RegistroRequest'
       responses:
         '201':
-          description: Operación exitosa
+          description: Cuenta creada
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/User'
+                $ref: '#/components/schemas/Usuario'
         '400':
           $ref: '#/components/responses/E400'
-        '409':
-          $ref: '#/components/responses/E409'
-  /auth/login:
+  /autenticacion/login:
     post:
       tags:
       - Identidad y Usuarios
       summary: Iniciar sesión
-      operationId: login
-      description: 'Historias: HU-02.'
+      operationId: iniciarSesion
+      description: 'Historias: HU-02 (CA-004, CA-005). Si el correo o la contraseña no coinciden responde el mismo mensaje general.'
       security: []
       requestBody:
         required: true
@@ -67,157 +64,184 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AuthToken'
+                $ref: '#/components/schemas/Sesion'
         '400':
           $ref: '#/components/responses/E400'
         '401':
           $ref: '#/components/responses/E401'
-        '403':
-          $ref: '#/components/responses/E403'
-  /auth/logout:
+  /autenticacion/logout:
     post:
       tags:
       - Identidad y Usuarios
       summary: Cerrar sesión
-      operationId: logout
-      description: 'Historias: HU-02.'
+      operationId: cerrarSesion
+      description: 'Historias: HU-02 (CA-006). El token deja de servir. Requiere el encabezado Authorization: Bearer <token de sesión>.'
       responses:
         '204':
-          description: Operación exitosa
+          description: Sesión cerrada
         '401':
           $ref: '#/components/responses/E401'
-  /auth/password-recovery:
-    post:
-      tags:
-      - Identidad y Usuarios
-      summary: Solicitar recuperación simulada de contraseña (token en notificación interna)
-      operationId: requestRecovery
-      description: 'Historias: HU-04.'
-      security: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/RecoveryRequest'
-      responses:
-        '202':
-          description: Operación exitosa
-        '400':
-          $ref: '#/components/responses/E400'
-  /auth/password-reset:
-    post:
-      tags:
-      - Identidad y Usuarios
-      summary: Definir nueva contraseña con token válido
-      operationId: resetPassword
-      description: 'Historias: HU-04.'
-      security: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ResetRequest'
-      responses:
-        '204':
-          description: Operación exitosa
-        '400':
-          $ref: '#/components/responses/E400'
-        '410':
-          $ref: '#/components/responses/E410'
-  /users/me:
+  /autenticacion/sesion:
     get:
       tags:
       - Identidad y Usuarios
-      summary: Consultar mi perfil
-      operationId: getMe
-      description: 'Historias: HU-05.'
+      summary: Consultar el usuario de la sesión actual
+      operationId: consultarSesion
+      description: 'Historias: HU-02 (CA-006), HU-03 (CA-008). Requiere el encabezado Authorization: Bearer <token de sesión>.'
       responses:
         '200':
           description: Operación exitosa
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/User'
+                $ref: '#/components/schemas/Usuario'
+        '401':
+          $ref: '#/components/responses/E401'
+  /autenticacion/reactivar:
+    post:
+      tags:
+      - Identidad y Usuarios
+      summary: Reactivar la cuenta
+      operationId: reactivarCuenta
+      description: 'Historias: HU-06 (CA-019). Con correo y contraseña; una cuenta RESTRINGIDA no se puede reactivar sola. Deja la sesión iniciada.'
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Operación exitosa
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Sesion'
+        '400':
+          $ref: '#/components/responses/E400'
+        '401':
+          $ref: '#/components/responses/E401'
+  /autenticacion/recuperar-contrasena:
+    post:
+      tags:
+      - Identidad y Usuarios
+      summary: Solicitar recuperación simulada de contraseña
+      operationId: recuperarContrasena
+      description: 'Historias: HU-04. Pendiente de implementar.'
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecuperacionRequest'
+      responses:
+        '204':
+          description: Solicitud registrada
+        '400':
+          $ref: '#/components/responses/E400'
+  /autenticacion/restablecer-contrasena:
+    post:
+      tags:
+      - Identidad y Usuarios
+      summary: Restablecer la contraseña con el token de recuperación
+      operationId: restablecerContrasena
+      description: 'Historias: HU-04. Pendiente de implementar.'
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RestablecerRequest'
+      responses:
+        '204':
+          description: Contraseña actualizada
+        '400':
+          $ref: '#/components/responses/E400'
+        '410':
+          $ref: '#/components/responses/E410'
+  /usuarios/perfil:
+    get:
+      tags:
+      - Identidad y Usuarios
+      summary: Consultar mi perfil
+      operationId: consultarPerfil
+      description: 'Historias: HU-05 (CA-013). Requiere el encabezado Authorization: Bearer <token de sesión>.'
+      responses:
+        '200':
+          description: Operación exitosa
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Usuario'
         '401':
           $ref: '#/components/responses/E401'
     put:
       tags:
       - Identidad y Usuarios
-      summary: Actualizar mis datos básicos
-      operationId: updateMe
-      description: 'Historias: HU-05.'
+      summary: Actualizar mi perfil
+      operationId: actualizarPerfil
+      description: 'Historias: HU-05 (CA-014, CA-015). Se pueden cambiar nombre y correo; el correo no puede ser de otra cuenta. Requiere el encabezado Authorization: Bearer <token de sesión>.'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ProfileUpdate'
+              $ref: '#/components/schemas/PerfilRequest'
       responses:
         '200':
           description: Operación exitosa
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/User'
+                $ref: '#/components/schemas/Usuario'
         '400':
           $ref: '#/components/responses/E400'
         '401':
           $ref: '#/components/responses/E401'
-  /users/me/deactivate:
+  /usuarios/desactivar:
     post:
       tags:
       - Identidad y Usuarios
-      summary: Desactivar mi cuenta (no permitido con reservas futuras confirmadas)
-      operationId: deactivate
-      description: 'Historias: HU-06.'
+      summary: Desactivar mi cuenta
+      operationId: desactivarCuenta
+      description: 'Historias: HU-06 (CA-016, CA-017, CA-018). Cierra todas las sesiones; si es anfitrión pide pausar sus publicaciones. Requiere el encabezado Authorization: Bearer <token de sesión>.'
       responses:
         '204':
-          description: Operación exitosa
+          description: Cuenta desactivada
         '401':
           $ref: '#/components/responses/E401'
         '409':
           $ref: '#/components/responses/E409'
-  /users/me/reactivate:
-    post:
-      tags:
-      - Identidad y Usuarios
-      summary: Reactivar mi cuenta
-      operationId: reactivate
-      description: 'Historias: HU-06.'
-      responses:
-        '204':
-          description: Operación exitosa
-        '401':
-          $ref: '#/components/responses/E401'
-  /admin/users/{id}/status:
+  /admin/usuarios/{id}/estado:
     patch:
       tags:
       - Identidad y Usuarios
       summary: Restringir o reactivar un usuario
-      operationId: setUserStatus
-      description: 'Historias: HU-35. Rol requerido: ADMINISTRADOR.'
+      operationId: cambiarEstadoUsuario
+      description: 'Historias: HU-35. Rol requerido: ADMINISTRADOR. Pendiente de implementar.'
       parameters:
       - name: id
         in: path
         required: true
         schema:
-          type: string
-          format: uuid
+          type: integer
+          format: int64
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UserStatusChange'
+              $ref: '#/components/schemas/CambioEstadoRequest'
       responses:
         '200':
           description: Operación exitosa
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/User'
+                $ref: '#/components/schemas/Usuario'
         '400':
           $ref: '#/components/responses/E400'
         '401':
@@ -1005,43 +1029,40 @@ paths:
           $ref: '#/components/responses/E401'
         '404':
           $ref: '#/components/responses/E404'
-  /admin/settings/service-fee:
+  /tarifas/servicio:
     get:
       tags:
       - Cotización
-      summary: Consultar % de tarifa de servicio vigente
-      operationId: getServiceFee
-      description: 'Historias: HU-38. Rol requerido: ADMINISTRADOR.'
+      summary: Consultar el % de la tarifa de servicio vigente
+      operationId: consultarTarifa
+      description: 'Historias: HU-38 (CA-105). Si el administrador no lo ha configurado es 0.'
+      security: []
       responses:
         '200':
           description: Operación exitosa
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServiceFee'
-        '401':
-          $ref: '#/components/responses/E401'
-        '403':
-          $ref: '#/components/responses/E403'
+                $ref: '#/components/schemas/Tarifa'
     put:
       tags:
       - Cotización
-      summary: Configurar % de tarifa de servicio
-      operationId: setServiceFee
-      description: 'Historias: HU-38. Rol requerido: ADMINISTRADOR.'
+      summary: Configurar el % de la tarifa de servicio
+      operationId: cambiarTarifa
+      description: 'Historias: HU-38 (CA-105, CA-106, CA-107). Rol requerido: ADMINISTRADOR (se verifica con Identidad /autenticacion/autorizar). El cambio se registra en Auditoría. Requiere el encabezado Authorization: Bearer <token de sesión>.'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ServiceFee'
+              $ref: '#/components/schemas/TarifaRequest'
       responses:
         '200':
           description: Operación exitosa
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServiceFee'
+                $ref: '#/components/schemas/Tarifa'
         '400':
           $ref: '#/components/responses/E400'
         '401':
@@ -1407,7 +1428,7 @@ components:
     bearerAuth:
       type: http
       scheme: bearer
-      bearerFormat: JWT
+      description: Token de sesión que entrega /autenticacion/login (se guarda en base de datos, no es JWT)
   schemas:
     AmenitiesInput:
       type: object
@@ -1441,16 +1462,6 @@ components:
               fecha:
                 type: string
                 format: date-time
-    AuthToken:
-      type: object
-      properties:
-        accessToken:
-          type: string
-        tokenType:
-          type: string
-          example: Bearer
-        rol:
-          $ref: '#/components/schemas/UserRole'
     Booking:
       type: object
       properties:
@@ -1566,15 +1577,14 @@ components:
                 type: integer
     Error:
       type: object
+      description: Formato de error de todos los servicios
       properties:
-        codigo:
-          type: string
-        mensaje:
-          type: string
-        detalles:
+        mensajes:
           type: array
           items:
             type: string
+          example:
+          - El correo ya está en uso
     ExportRequest:
       type: object
       properties:
@@ -1710,17 +1720,6 @@ components:
       - ACTIVA
       - PAUSADA
       - BLOQUEADA
-    LoginRequest:
-      type: object
-      properties:
-        correo:
-          type: string
-          format: email
-        password:
-          type: string
-      required:
-      - correo
-      - password
     Notification:
       type: object
       properties:
@@ -1833,15 +1832,6 @@ components:
             required:
             - nombre
             - costo
-    ProfileUpdate:
-      type: object
-      properties:
-        nombre:
-          type: string
-        telefono:
-          type: string
-      required:
-      - nombre
     Quote:
       type: object
       properties:
@@ -1903,47 +1893,6 @@ components:
           minLength: 3
       required:
       - motivo
-    RecoveryRequest:
-      type: object
-      properties:
-        correo:
-          type: string
-          format: email
-      required:
-      - correo
-    RegisterRequest:
-      type: object
-      properties:
-        nombre:
-          type: string
-        correo:
-          type: string
-          format: email
-        password:
-          type: string
-          minLength: 8
-        rol:
-          type: string
-          enum:
-          - HUESPED
-          - ANFITRION
-          description: ADMINISTRADOR no es seleccionable (RN-001)
-      required:
-      - nombre
-      - correo
-      - password
-      - rol
-    ResetRequest:
-      type: object
-      properties:
-        token:
-          type: string
-        nuevaPassword:
-          type: string
-          minLength: 8
-      required:
-      - token
-      - nuevaPassword
     Review:
       type: object
       properties:
@@ -2026,44 +1975,107 @@ components:
         mensaje:
           type: string
           description: 'Ej.: ''No hay resultados'' (CA-057)'
-    ServiceFee:
-      type: object
-      properties:
-        porcentaje:
-          type: number
-          minimum: 0
-          maximum: 100
-      required:
-      - porcentaje
-    User:
+    Rol:
+      type: string
+      enum:
+      - HUESPED
+      - ANFITRION
+      - ADMINISTRADOR
+    EstadoUsuario:
+      type: string
+      enum:
+      - ACTIVO
+      - INACTIVO
+      - RESTRINGIDO
+    Usuario:
       type: object
       properties:
         id:
-          type: string
-          format: uuid
+          type: integer
+          format: int64
         nombre:
           type: string
         correo:
           type: string
           format: email
         rol:
-          $ref: '#/components/schemas/UserRole'
+          $ref: '#/components/schemas/Rol'
         estado:
-          $ref: '#/components/schemas/UserStatus'
-    UserRole:
-      type: string
-      enum:
-      - HUESPED
-      - ANFITRION
-      - ADMINISTRADOR
-    UserStatus:
-      type: string
-      enum:
-      - ACTIVO
-      - INACTIVO
-      - RESTRINGIDO
-    UserStatusChange:
+          $ref: '#/components/schemas/EstadoUsuario'
+    RegistroRequest:
       type: object
+      required:
+      - nombre
+      - correo
+      - contrasena
+      - rol
+      properties:
+        nombre:
+          type: string
+        correo:
+          type: string
+          format: email
+        contrasena:
+          type: string
+          minLength: 8
+        rol:
+          type: string
+          enum:
+          - HUESPED
+          - ANFITRION
+          description: ADMINISTRADOR no se puede elegir (CA-003)
+    LoginRequest:
+      type: object
+      required:
+      - correo
+      - contrasena
+      properties:
+        correo:
+          type: string
+        contrasena:
+          type: string
+    Sesion:
+      type: object
+      properties:
+        token:
+          type: string
+          example: 3f2b8c1e-5d6a-4b7c-9e0f-1a2b3c4d5e6f
+        usuario:
+          $ref: '#/components/schemas/Usuario'
+    PerfilRequest:
+      type: object
+      required:
+      - nombre
+      - correo
+      properties:
+        nombre:
+          type: string
+        correo:
+          type: string
+          format: email
+    RecuperacionRequest:
+      type: object
+      required:
+      - correo
+      properties:
+        correo:
+          type: string
+          format: email
+    RestablecerRequest:
+      type: object
+      required:
+      - token
+      - nuevaContrasena
+      properties:
+        token:
+          type: string
+        nuevaContrasena:
+          type: string
+          minLength: 8
+    CambioEstadoRequest:
+      type: object
+      required:
+      - estado
       properties:
         estado:
           type: string
@@ -2072,8 +2084,22 @@ components:
           - RESTRINGIDO
         motivo:
           type: string
+    TarifaRequest:
+      type: object
       required:
-      - estado
+      - porcentaje
+      properties:
+        porcentaje:
+          type: number
+          minimum: 0
+          maximum: 100
+          example: 15
+    Tarifa:
+      type: object
+      properties:
+        porcentaje:
+          type: number
+          example: 15
   responses:
     E400:
       description: Solicitud inválida (validación)
