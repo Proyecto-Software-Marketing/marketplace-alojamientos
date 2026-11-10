@@ -66,43 +66,40 @@ paths:
           $ref: '#/components/responses/E401'
         '404':
           $ref: '#/components/responses/E404'
-  /admin/settings/service-fee:
+  /tarifas/servicio:
     get:
       tags:
       - Cotización
-      summary: Consultar % de tarifa de servicio vigente
-      operationId: getServiceFee
-      description: 'Historias: HU-38. Rol requerido: ADMINISTRADOR.'
+      summary: Consultar el % de la tarifa de servicio vigente
+      operationId: consultarTarifa
+      description: 'Historias: HU-38 (CA-105). Si el administrador no lo ha configurado es 0.'
+      security: []
       responses:
         '200':
           description: Operación exitosa
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServiceFee'
-        '401':
-          $ref: '#/components/responses/E401'
-        '403':
-          $ref: '#/components/responses/E403'
+                $ref: '#/components/schemas/Tarifa'
     put:
       tags:
       - Cotización
-      summary: Configurar % de tarifa de servicio
-      operationId: setServiceFee
-      description: 'Historias: HU-38. Rol requerido: ADMINISTRADOR.'
+      summary: Configurar el % de la tarifa de servicio
+      operationId: cambiarTarifa
+      description: 'Historias: HU-38 (CA-105, CA-106, CA-107). Rol requerido: ADMINISTRADOR (se verifica con Identidad /autenticacion/autorizar). El cambio se registra en Auditoría. Requiere el encabezado Authorization: Bearer <token de sesión>.'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ServiceFee'
+              $ref: '#/components/schemas/TarifaRequest'
       responses:
         '200':
           description: Operación exitosa
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServiceFee'
+                $ref: '#/components/schemas/Tarifa'
         '400':
           $ref: '#/components/responses/E400'
         '401':
@@ -114,19 +111,18 @@ components:
     bearerAuth:
       type: http
       scheme: bearer
-      bearerFormat: JWT
+      description: Token de sesión que entrega /autenticacion/login (se guarda en base de datos, no es JWT)
   schemas:
     Error:
       type: object
+      description: Formato de error de todos los servicios
       properties:
-        codigo:
-          type: string
-        mensaje:
-          type: string
-        detalles:
+        mensajes:
           type: array
           items:
             type: string
+          example:
+          - El correo ya está en uso
     Quote:
       type: object
       properties:
@@ -180,15 +176,22 @@ components:
       - fechaLlegada
       - fechaSalida
       - cantidadHuespedes
-    ServiceFee:
+    TarifaRequest:
       type: object
+      required:
+      - porcentaje
       properties:
         porcentaje:
           type: number
           minimum: 0
           maximum: 100
-      required:
-      - porcentaje
+          example: 15
+    Tarifa:
+      type: object
+      properties:
+        porcentaje:
+          type: number
+          example: 15
   responses:
     E400:
       description: Solicitud inválida (validación)
