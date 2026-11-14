@@ -13,8 +13,10 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
 
+
 import java.io.IOException;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
@@ -33,6 +35,7 @@ class ServiciosExternosTest {
     private static final String URL_DUENO = URL_ALOJAMIENTOS + "/internal/listings/15/owner";
     private static final String TOKEN = "Bearer token-de-prueba";
     private static final Long PUBLICACION = 15L;
+ private static final String URL_SESION = URL_IDENTIDAD + "/autenticacion/autorizar?roles=HUESPED,ANFITRION,ADMINISTRADOR";
 
     private MockRestServiceServer servidor;
     private ServiciosExternos serviciosExternos;
@@ -151,5 +154,62 @@ class ServiciosExternosTest {
 
         assertThrows(ServicioNoDisponibleException.class,
                 () -> serviciosExternos.verificarDuenoPublicacion(TOKEN, PUBLICACION));
+    }
+        // ---------- HU-17: calendario ----------
+
+    @Test
+    @DisplayName("HU-17 cualquier usuario con sesión puede consultar el calendario")
+    void sesionValida() {
+        servidor.expect(requestTo(URL_SESION))
+                .andExpect(header("Authorization", TOKEN))
+                .andRespond(withSuccess("{\"id\":3,\"rol\":\"HUESPED\"}", MediaType.APPLICATION_JSON));
+
+        assertDoesNotThrow(() -> serviciosExternos.verificarSesion(TOKEN));
+        servidor.verify();
+    }
+
+    @Test
+    @DisplayName("HU-17 sin sesión no se puede consultar el calendario (401)")
+    void calendarioSinSesion() {
+        servidor.expect(requestTo(URL_SESION))
+                .andRespond(withStatus(HttpStatus.UNAUTHORIZED));
+
+        assertThrows(AutenticacionException.class, () -> serviciosExternos.verificarSesion(TOKEN));
+    }
+
+    @Test
+    @DisplayName("HU-17 si Identidad no responde no se puede consultar el calendario (503)")
+    void calendarioIdentidadCaida() {
+        servidor.expect(requestTo(URL_SESION))
+                .andRespond(withException(new IOException("Sin conexión")));
+
+        assertThrows(ServicioNoDisponibleException.class, () -> serviciosExternos.verificarSesion(TOKEN));
+    }
+
+    @Test
+    @DisplayName("HU-17 se consulta el estado de la publicación en Alojamientos")
+    void estadoPublicacion() {
+        alojamientosResponde("{\"publicacionId\":15,\"anfitrionId\":7,\"estado\":\"BLOQUEADA\"}");
+
+        assertEquals("BLOQUEADA", serviciosExternos.consultarEstadoPublicacion(PUBLICACION));
+    }
+
+    @Test
+    @DisplayName("HU-17 si la publicación no existe el calendario responde 404")
+    void estadoPublicacionInexistente() {
+        servidor.expect(requestTo(URL_DUENO))
+                .andRespond(withStatus(HttpStatus.NOT_FOUND));
+
+        assertThrows(NoEncontradoException.class,
+                () -> serviciosExternos.consultarEstadoPublicacion(PUBLICACION));
+    }
+
+    @Test
+    @DisplayName("HU-17 si Alojamientos responde sin estado no se puede armar el calendario (503)")
+    void estadoPublicacionSinEstado() {
+        alojamientosResponde("{\"publicacionId\":15,\"anfitrionId\":7}");
+
+        assertThrows(ServicioNoDisponibleException.class,
+                () -> serviciosExternos.consultarEstadoPublicacion(PUBLICACION));
     }
 }
