@@ -5,29 +5,39 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
 import co.edu.unbosque.marketplace.busqueda.dto.PublicacionResumen;
 import co.edu.unbosque.marketplace.busqueda.dto.PublicacionesDisponibles;
-import org.springframework.http.MediaType;
 
-
+// Aqui estan las llamadas a los otros servicios
 @Component
 public class ServiciosExternos {
 
-    private final RestClient restClient = RestClient.create();
+    private final RestClient restClient;
+    private final String urlAlojamientos;
+    private final String urlDisponibilidad;
 
-    @Value("${servicios.alojamientos.url}")
-    private String urlAlojamientos;
+    @Autowired
+    public ServiciosExternos(@Value("${servicios.alojamientos.url}") String urlAlojamientos,
+            @Value("${servicios.disponibilidad.url}") String urlDisponibilidad) {
+        this(RestClient.builder(), urlAlojamientos, urlDisponibilidad);
+    }
 
-    @Value("${servicios.disponibilidad.url}")
-    private String urlDisponibilidad;
+   
+    ServiciosExternos(RestClient.Builder constructor, String urlAlojamientos, String urlDisponibilidad) {
+        this.restClient = constructor.build();
+        this.urlAlojamientos = urlAlojamientos;
+        this.urlDisponibilidad = urlDisponibilidad;
+    }
 
-    // Le pide a Alojamientos las publicaciones activas de una ciudad
+  
     public List<PublicacionResumen> buscarPublicacionesActivas(String ciudad) {
-        // si no hay direccion configurada, no hay publicaciones que mostrar
+
         if (urlAlojamientos.isBlank()) {
             return List.of();
         }
@@ -41,13 +51,13 @@ public class ServiciosExternos {
         return Arrays.asList(respuesta);
     }
 
-    // Le pregunta a Disponibilidad si la publicacion esta libre en esas fechas
+    
     public boolean estaLibre(Long idPublicacion, LocalDate llegada, LocalDate salida) {
-
+        // si Disponibilidad no esta configurado, se asume que esta libre
         if (urlDisponibilidad.isBlank()) {
             return true;
         }
-   
+
         Map<String, Object> consulta = Map.of(
                 "publicacionIds", List.of(idPublicacion),
                 "fechaLlegada", llegada.toString(),
