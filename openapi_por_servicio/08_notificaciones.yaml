@@ -39,8 +39,8 @@ paths:
         in: path
         required: true
         schema:
-          type: string
-          format: uuid
+          type: integer
+          format: int64
       responses:
         '200':
           description: Operación exitosa
@@ -58,7 +58,7 @@ paths:
       - Notificaciones
       summary: Crear una notificación (asíncrono, con reintento)
       operationId: createNotification
-      description: 'Historias: HU-30. Operación interna entre servicios (no expuesta al front).'
+      description: 'Historias: HU-30. Operación interna entre servicios (no expuesta al front), sin token. El servicio que origina el evento (Alojamientos al aprobar una publicación, Reservas al confirmar una reserva) envía una solicitud por cada usuario afectado. Es idempotente por usuarioId + tipoEvento + entidadId: un reintento devuelve 200 con la notificación existente.'
       requestBody:
         required: true
         content:
@@ -67,7 +67,13 @@ paths:
               $ref: '#/components/schemas/NotificationCreate'
       responses:
         '201':
-          description: Operación exitosa
+          description: Notificación registrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+        '200':
+          description: Reintento; la notificación ya existía y se devuelve la misma
           content:
             application/json:
               schema:
@@ -83,28 +89,46 @@ components:
   schemas:
     Error:
       type: object
+      description: Formato de error de todos los servicios
       properties:
-        codigo:
-          type: string
-        mensaje:
-          type: string
-        detalles:
+        mensajes:
           type: array
           items:
             type: string
+          example:
+          - Tipo de evento no válido
+    TipoEvento:
+      type: string
+      description: 'PUBLICACION_APROBADA y RESERVA_CONFIRMADA (HU-30); RESERVA_CANCELADA (HU-28), PUBLICACION_BLOQUEADA (HU-34) y USUARIO_RESTRINGIDO (HU-35).'
+      enum:
+      - PUBLICACION_APROBADA
+      - RESERVA_CONFIRMADA
+      - RESERVA_CANCELADA
+      - PUBLICACION_BLOQUEADA
+      - USUARIO_RESTRINGIDO
+    EntidadTipo:
+      type: string
+      description: Se deduce del tipo de evento (PUBLICACION_* -> PUBLICACION, RESERVA_* -> RESERVA, USUARIO_* -> USUARIO)
+      enum:
+      - PUBLICACION
+      - RESERVA
+      - USUARIO
     Notification:
       type: object
       properties:
         id:
-          type: string
-          format: uuid
+          type: integer
+          format: int64
+        usuarioId:
+          type: integer
+          format: int64
         tipoEvento:
-          type: string
+          $ref: '#/components/schemas/TipoEvento'
         entidadTipo:
-          type: string
+          $ref: '#/components/schemas/EntidadTipo'
         entidadId:
-          type: string
-          format: uuid
+          type: integer
+          format: int64
         mensaje:
           type: string
         leida:
@@ -112,24 +136,29 @@ components:
         creadaEn:
           type: string
           format: date-time
+          description: Fecha y hora de Bogotá en que se registró
+          example: '2026-11-14T18:05:00'
     NotificationCreate:
       type: object
       properties:
         usuarioId:
-          type: string
-          format: uuid
+          type: integer
+          format: int64
         tipoEvento:
-          type: string
+          $ref: '#/components/schemas/TipoEvento'
         entidadTipo:
-          type: string
+          $ref: '#/components/schemas/EntidadTipo'
         entidadId:
-          type: string
-          format: uuid
+          type: integer
+          format: int64
         mensaje:
           type: string
+          maxLength: 500
+          description: Opcional; si no se envía se usa el mensaje por defecto del evento
       required:
       - usuarioId
       - tipoEvento
+      - entidadId
     NotificationList:
       type: object
       properties:
