@@ -133,14 +133,14 @@ paths:
       - Disponibilidad
       summary: Consultar calendario (disponible, reservado, bloqueado)
       operationId: getCalendar
-      description: 'Historias: HU-17.'
+      description: 'Historias: HU-17. Cualquier usuario con sesión (HUESPED, ANFITRION o ADMINISTRADOR). Muestra los tramos desde hoy; si un administrador bloqueó la publicación, todos sus tramos salen BLOQUEADO.'
       parameters:
       - name: id
         in: path
         required: true
         schema:
-          type: string
-          format: uuid
+          type: integer
+          format: int64
       responses:
         '200':
           description: Operación exitosa
@@ -152,6 +152,8 @@ paths:
           $ref: '#/components/responses/E401'
         '404':
           $ref: '#/components/responses/E404'
+        '503':
+          $ref: '#/components/responses/E503'
   /internal/availability/block:
     post:
       tags:
@@ -268,13 +270,32 @@ components:
     Calendar:
       type: object
       properties:
-        publicacionId:
-          type: string
-          format: uuid
+        idPublicacion:
+          type: integer
+          format: int64
         periodos:
           type: array
           items:
-            $ref: '#/components/schemas/Period'
+            $ref: '#/components/schemas/CalendarSegment'
+    CalendarSegment:
+      type: object
+      description: Tramo del calendario. id es el periodo disponible al que pertenece
+      properties:
+        id:
+          type: integer
+          format: int64
+        fechaInicio:
+          type: string
+          format: date
+        fechaFin:
+          type: string
+          format: date
+        estado:
+          type: string
+          enum:
+          - DISPONIBLE
+          - RESERVADO
+          - BLOQUEADO
     Error:
       type: object
       description: Formato de error de todos los servicios
