@@ -11,7 +11,7 @@ import co.edu.unbosque.marketplace.busqueda.dto.BusquedaResponse;
 import co.edu.unbosque.marketplace.busqueda.dto.PublicacionResumen;
 import co.edu.unbosque.marketplace.busqueda.exception.BusquedaException;
 
-//logica de la busqueda
+// la logica de la busqueda
 @Service
 public class BusquedaService {
 
@@ -26,6 +26,11 @@ public class BusquedaService {
         if (!datos.getSalida().isAfter(datos.getLlegada())) {
             throw new BusquedaException("La fecha de salida debe ser posterior a la fecha de llegada");
         }
+       
+        if (datos.getPrecioMinimo() != null && datos.getPrecioMaximo() != null
+                && datos.getPrecioMinimo().compareTo(datos.getPrecioMaximo()) > 0) {
+            throw new BusquedaException("El precio mínimo no puede ser mayor que el precio máximo");
+        }
 
         List<PublicacionResumen> publicaciones = serviciosExternos.buscarPublicacionesActivas(datos.getCiudad());
         List<PublicacionResumen> resultados = new ArrayList<>();
@@ -39,6 +44,10 @@ public class BusquedaService {
             if (publicacion.getCapacidad() == null || publicacion.getCapacidad() < datos.getHuespedes()) {
                 continue;
             }
+            // CA-056
+            if (!cumpleFiltros(publicacion, datos)) {
+                continue;
+            }
             // CA-053
             if (!serviciosExternos.estaLibre(publicacion.getId(), datos.getLlegada(), datos.getSalida())) {
                 continue;
@@ -46,6 +55,36 @@ public class BusquedaService {
             resultados.add(publicacion);
         }
 
-        return new BusquedaResponse(resultados);
+        // CA-057
+        if (resultados.isEmpty()) {
+            return new BusquedaResponse(resultados, "No hay alojamientos que cumplan con la búsqueda");
+        }
+        return new BusquedaResponse(resultados, null);
+    }
+
+    // Revisa los filtros uno por uno y si el huesped no lleno un filtro ese no se aplica
+    private boolean cumpleFiltros(PublicacionResumen publicacion, BusquedaRequest datos) {
+       
+        if (datos.getTipo() != null && !datos.getTipo().isBlank()
+                && !datos.getTipo().equalsIgnoreCase(publicacion.getTipo())) {
+            return false;
+        }
+     
+        if (datos.getPrecioMinimo() != null
+                && publicacion.getPrecioNoche().compareTo(datos.getPrecioMinimo()) < 0) {
+            return false;
+        }
+   
+        if (datos.getPrecioMaximo() != null
+                && publicacion.getPrecioNoche().compareTo(datos.getPrecioMaximo()) > 0) {
+            return false;
+        }
+
+        if (datos.getServicios() != null && !datos.getServicios().isEmpty()) {
+            if (publicacion.getServicios() == null || !publicacion.getServicios().containsAll(datos.getServicios())) {
+                return false;
+            }
+        }
+        return true;
     }
 }
