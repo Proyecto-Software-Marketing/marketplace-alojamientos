@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 public interface BloqueoReservaRepository extends JpaRepository<BloqueoReserva, Long> {
 
@@ -20,4 +21,7 @@ public interface BloqueoReservaRepository extends JpaRepository<BloqueoReserva, 
     List<BloqueoReserva> buscarSolapados(@Param("idPublicacion") Long idPublicacion,
                                          @Param("fechaInicio") LocalDate fechaInicio,
                                          @Param("fechaFin") LocalDate fechaFin);
+
+    // HU-18: para la idempotencia (decisión 3) y para liberar (decisión 4)
+    Optional<BloqueoReserva> findByIdReserva(Long idReserva);
 }
