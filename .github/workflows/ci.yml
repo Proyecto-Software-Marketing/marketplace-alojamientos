@@ -14,7 +14,8 @@ jobs:
     strategy:
       matrix:
         # Cada servicio nuevo se debe agregar a esta lista
-        service: [ identidad, cotizacion, busqueda ]
+        service: [ identidad, cotizacion, disponibilidad, busqueda ]
+
     steps:
       - name: Descargar el código
         uses: actions/checkout@v4
