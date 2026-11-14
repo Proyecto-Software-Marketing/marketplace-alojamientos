@@ -1,7 +1,9 @@
 package co.edu.unbosque.marketplace.disponibilidad.repository;
 
 import co.edu.unbosque.marketplace.disponibilidad.model.PeriodoDisponible;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -30,4 +32,26 @@ public interface PeriodoDisponibleRepository extends JpaRepository<PeriodoDispon
                            @Param("fechaInicio") LocalDate fechaInicio,
                            @Param("fechaFin") LocalDate fechaFin,
                            @Param("idExcluido") Long idExcluido);
+
+    // HU-18: periodos de la publicación que se cruzan con un rango, ordenados por fecha
+    String PERIODOS_QUE_CRUZAN = """
+            SELECT p FROM PeriodoDisponible p
+            WHERE p.idPublicacion = :idPublicacion
+              AND p.fechaInicio < :fechaFin
+              AND :fechaInicio < p.fechaFin
+            ORDER BY p.fechaInicio
+            """;
+
+    // Para consultar disponibilidad (check), sin bloquear
+    @Query(PERIODOS_QUE_CRUZAN)
+    List<PeriodoDisponible> buscarQueCruzan(@Param("idPublicacion") Long idPublicacion,
+                                            @Param("fechaInicio") LocalDate fechaInicio,
+                                            @Param("fechaFin") LocalDate fechaFin);
+
+    // Para bloquear (block): congela los periodos hasta que termine la transacción (decisión 5)
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query(PERIODOS_QUE_CRUZAN)
+    List<PeriodoDisponible> buscarQueCruzanParaBloquear(@Param("idPublicacion") Long idPublicacion,
+                                                        @Param("fechaInicio") LocalDate fechaInicio,
+                                                        @Param("fechaFin") LocalDate fechaFin);
 }
