@@ -23,8 +23,8 @@ paths:
         in: path
         required: true
         schema:
-          type: string
-          format: uuid
+          type: integer
+          format: int64
       requestBody:
         required: true
         content:
@@ -48,6 +48,8 @@ paths:
           $ref: '#/components/responses/E404'
         '409':
           $ref: '#/components/responses/E409'
+        '503':
+          $ref: '#/components/responses/E503'
   /listings/{id}/availability/{periodId}:
     put:
       tags:
@@ -60,14 +62,14 @@ paths:
         in: path
         required: true
         schema:
-          type: string
-          format: uuid
+          type: integer
+          format: int64
       - name: periodId
         in: path
         required: true
         schema:
-          type: string
-          format: uuid
+          type: integer
+          format: int64
       requestBody:
         required: true
         content:
@@ -91,6 +93,8 @@ paths:
           $ref: '#/components/responses/E404'
         '409':
           $ref: '#/components/responses/E409'
+        '503':
+          $ref: '#/components/responses/E503'
     delete:
       tags:
       - Disponibilidad
@@ -102,14 +106,14 @@ paths:
         in: path
         required: true
         schema:
-          type: string
-          format: uuid
+          type: integer
+          format: int64
       - name: periodId
         in: path
         required: true
         schema:
-          type: string
-          format: uuid
+          type: integer
+          format: int64
       responses:
         '204':
           description: Operación exitosa
@@ -121,6 +125,8 @@ paths:
           $ref: '#/components/responses/E404'
         '409':
           $ref: '#/components/responses/E409'
+        '503':
+          $ref: '#/components/responses/E503'
   /listings/{id}/calendar:
     get:
       tags:
@@ -271,21 +277,23 @@ components:
             $ref: '#/components/schemas/Period'
     Error:
       type: object
+      description: Formato de error de todos los servicios
       properties:
-        codigo:
-          type: string
-        mensaje:
-          type: string
-        detalles:
+        mensajes:
           type: array
           items:
             type: string
+          example:
+          - La fecha de salida debe ser posterior a la fecha de llegada
     Period:
       type: object
       properties:
         id:
-          type: string
-          format: uuid
+          type: integer
+          format: int64
+        idPublicacion:
+          type: integer
+          format: int64
         fechaInicio:
           type: string
           format: date
@@ -337,6 +345,12 @@ components:
             $ref: '#/components/schemas/Error'
     E409:
       description: Conflicto (reserva superpuesta, estado no permitido, duplicado)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    E503:
+      description: Identidad o Alojamientos no respondieron; no se pudo verificar el permiso
       content:
         application/json:
           schema:
