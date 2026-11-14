@@ -13,8 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        # Cada servicio nuevo se debe agregar a esta lista
-        service: [ identidad, cotizacion ]
+                # Cada servicio nuevo se debe agregar a esta lista
+        service: [ identidad, cotizacion, disponibilidad ]
     steps:
       - name: Descargar el código
         uses: actions/checkout@v4
