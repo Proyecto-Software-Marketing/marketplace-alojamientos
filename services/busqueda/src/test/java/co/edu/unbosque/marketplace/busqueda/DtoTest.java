@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 
 import co.edu.unbosque.marketplace.busqueda.dto.BusquedaRequest;
 import co.edu.unbosque.marketplace.busqueda.dto.PublicacionResumen;
+import co.edu.unbosque.marketplace.busqueda.dto.PublicacionesDisponibles;
 
 class DtoTest {
 
@@ -47,5 +48,12 @@ class DtoTest {
         assertEquals(LocalDate.of(2026, 12, 1), datos.getLlegada());
         assertEquals(LocalDate.of(2026, 12, 3), datos.getSalida());
         assertEquals(2, datos.getHuespedes());
+    }
+      @Test
+    void publicacionesDisponiblesGuardaLosIds() {
+        PublicacionesDisponibles respuesta = new PublicacionesDisponibles();
+        respuesta.setDisponibles(List.of(1L, 3L));
+
+        assertEquals(List.of(1L, 3L), respuesta.getDisponibles());
     }
 }

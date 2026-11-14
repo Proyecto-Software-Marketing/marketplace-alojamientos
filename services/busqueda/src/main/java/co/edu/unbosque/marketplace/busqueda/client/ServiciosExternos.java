@@ -3,12 +3,15 @@ package co.edu.unbosque.marketplace.busqueda.client;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
 import co.edu.unbosque.marketplace.busqueda.dto.PublicacionResumen;
+import co.edu.unbosque.marketplace.busqueda.dto.PublicacionesDisponibles;
+import org.springframework.http.MediaType;
 
 
 @Component
@@ -40,15 +43,24 @@ public class ServiciosExternos {
 
     // Le pregunta a Disponibilidad si la publicacion esta libre en esas fechas
     public boolean estaLibre(Long idPublicacion, LocalDate llegada, LocalDate salida) {
-        // si Disponibilidad no esta configurado, se asume que esta libre
+
         if (urlDisponibilidad.isBlank()) {
             return true;
         }
-        Boolean libre = restClient.get()
-                .uri(urlDisponibilidad + "/interno/disponibilidad/esta-libre?idPublicacion={id}&llegada={llegada}&salida={salida}",
-                        idPublicacion, llegada, salida)
+   
+        Map<String, Object> consulta = Map.of(
+                "publicacionIds", List.of(idPublicacion),
+                "fechaLlegada", llegada.toString(),
+                "fechaSalida", salida.toString());
+
+        PublicacionesDisponibles respuesta = restClient.post()
+                .uri(urlDisponibilidad + "/internal/availability/check")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(consulta)
                 .retrieve()
-                .body(Boolean.class);
-        return Boolean.TRUE.equals(libre);
+                .body(PublicacionesDisponibles.class);
+
+        return respuesta != null && respuesta.getDisponibles() != null
+                && respuesta.getDisponibles().contains(idPublicacion);
     }
 }
