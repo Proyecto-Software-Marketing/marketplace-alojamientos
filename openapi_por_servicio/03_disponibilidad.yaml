@@ -158,7 +158,7 @@ paths:
       - Disponibilidad
       summary: Bloquear periodo al confirmar una reserva
       operationId: blockPeriod
-      description: 'Historias: HU-18. Operación interna entre servicios (no expuesta al front).'
+      description: 'Historias: HU-18 (CA-050, CA-052). Operación interna entre servicios (no expuesta al front, sin token). Rechaza con 409 si las fechas no están cubiertas por periodos disponibles o se cruzan con otra reserva. Idempotente: repetir el mismo bloqueo responde 204 sin duplicarlo; el mismo reservaId con otras fechas responde 409.'
       requestBody:
         required: true
         content:
@@ -168,8 +168,8 @@ paths:
       responses:
         '204':
           description: Operación exitosa
-        '404':
-          $ref: '#/components/responses/E404'
+        '400':
+          $ref: '#/components/responses/E400'
         '409':
           $ref: '#/components/responses/E409'
   /internal/availability/release:
@@ -178,7 +178,7 @@ paths:
       - Disponibilidad
       summary: Liberar periodo al cancelar si la política lo permite
       operationId: releasePeriod
-      description: 'Historias: HU-18. Operación interna entre servicios (no expuesta al front).'
+      description: 'Historias: HU-18. Operación interna entre servicios (no expuesta al front, sin token). Idempotente: responde 204 aunque la reserva ya no tenga bloqueo.'
       requestBody:
         required: true
         content:
@@ -188,15 +188,15 @@ paths:
       responses:
         '204':
           description: Operación exitosa
-        '404':
-          $ref: '#/components/responses/E404'
+        '400':
+          $ref: '#/components/responses/E400'
   /internal/availability/check:
     post:
       tags:
       - Disponibilidad
       summary: Consultar disponibilidad de un periodo para una o varias publicaciones
       operationId: checkAvailability
-      description: 'Historias: HU-19, HU-22, HU-23. Operación interna entre servicios (no expuesta al front).'
+      description: 'Historias: HU-18 (CA-052), HU-19, HU-22, HU-23. Operación interna entre servicios (no expuesta al front, sin token). Devuelve las publicaciones cuyas fechas están cubiertas por periodos disponibles y sin reservas que se crucen.'
       requestBody:
         required: true
         content:
@@ -225,8 +225,8 @@ components:
         publicacionIds:
           type: array
           items:
-            type: string
-            format: uuid
+            type: integer
+            format: int64
         fechaLlegada:
           type: string
           format: date
@@ -243,17 +243,17 @@ components:
         disponibles:
           type: array
           items:
-            type: string
-            format: uuid
+            type: integer
+            format: int64
     BlockRequest:
       type: object
       properties:
         publicacionId:
-          type: string
-          format: uuid
+          type: integer
+          format: int64
         reservaId:
-          type: string
-          format: uuid
+          type: integer
+          format: int64
         fechaLlegada:
           type: string
           format: date
