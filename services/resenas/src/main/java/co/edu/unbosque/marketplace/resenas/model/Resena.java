@@ -64,6 +64,11 @@ public class Resena {
         this.fecha = fecha;
     }
 
+    // CA-093 y HU-36: una reseña oculta no aparece en la publicación ni cuenta en el promedio
+    public void ocultar() {
+        this.visible = false;
+    }
+
     public Long getId() {
         return id;
     }
