@@ -1,5 +1,6 @@
 package co.edu.unbosque.marketplace.notificaciones.service;
 
+import co.edu.unbosque.marketplace.notificaciones.exception.NoEncontradoException;
 import co.edu.unbosque.marketplace.notificaciones.exception.SolicitudInvalidaException;
 import co.edu.unbosque.marketplace.notificaciones.model.Notificacion;
 import co.edu.unbosque.marketplace.notificaciones.model.TipoEvento;
@@ -10,9 +11,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
 // HU-30: registra la notificación de un evento para un usuario afectado
+// HU-31: el usuario consulta sus notificaciones y las marca como leídas
 @Service
 public class NotificacionService {
 
@@ -51,5 +54,20 @@ public class NotificacionService {
 
         Notificacion nueva = new Notificacion(idUsuario, tipoEvento, idEntidad, texto, LocalDateTime.now(reloj));
         return new RegistroNotificacion(notificacionRepository.save(nueva), true);
+    }
+
+    // CA-085 y CA-087: solo las del usuario, de la más reciente a la más antigua
+    @Transactional(readOnly = true)
+    public List<Notificacion> listar(Long idUsuario) {
+        return notificacionRepository.findByIdUsuarioOrderByFechaCreacionDescIdDesc(idUsuario);
+    }
+
+    // CA-086 y CA-087. Decisión 2: la de otro usuario responde igual que una que no existe
+    @Transactional
+    public Notificacion marcarLeida(Long idUsuario, Long idNotificacion) {
+        Notificacion notificacion = notificacionRepository.findByIdAndIdUsuario(idNotificacion, idUsuario)
+                .orElseThrow(() -> new NoEncontradoException("La notificación no existe"));
+        notificacion.marcarLeida();
+        return notificacion;
     }
 }
