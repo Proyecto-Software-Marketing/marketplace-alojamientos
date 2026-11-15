@@ -12,6 +12,7 @@ jobs:
     name: build-test-services (${{ matrix.service }})
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         # Cada servicio nuevo se debe agregar a esta lista
         service: [ identidad, cotizacion, disponibilidad, busqueda, reservas, notificaciones, reportes ]
