@@ -1,0 +1,11 @@
+{
+  "/api/identidad": { "target": "http://localhost:8081", "secure": false, "pathRewrite": { "^/api/identidad": "" } },
+  "/api/alojamientos": { "target": "http://localhost:8082", "secure": false, "pathRewrite": { "^/api/alojamientos": "" } },
+  "/api/disponibilidad": { "target": "http://localhost:8083", "secure": false, "pathRewrite": { "^/api/disponibilidad": "" } },
+  "/api/busqueda": { "target": "http://localhost:8084", "secure": false, "pathRewrite": { "^/api/busqueda": "" } },
+  "/api/cotizacion": { "target": "http://localhost:8085", "secure": false, "pathRewrite": { "^/api/cotizacion": "" } },
+  "/api/reservas": { "target": "http://localhost:8086", "secure": false, "pathRewrite": { "^/api/reservas": "" } },
+  "/api/notificaciones": { "target": "http://localhost:8088", "secure": false, "pathRewrite": { "^/api/notificaciones": "" } },
+  "/api/resenas": { "target": "http://localhost:8089", "secure": false, "pathRewrite": { "^/api/resenas": "" } },
+  "/api/reportes": { "target": "http://localhost:8091", "secure": false, "pathRewrite": { "^/api/reportes": "" } }
+}
