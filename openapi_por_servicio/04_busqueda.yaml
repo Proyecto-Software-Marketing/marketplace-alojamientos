@@ -2,142 +2,183 @@ openapi: 3.0.3
 info:
   title: Servicio Búsqueda - Marketplace de Alojamientos
   version: 1.0.0
-  description: 'Contrato del servicio Búsqueda: rutas públicas (las enruta el API Gateway) y rutas internas /internal/* (solo dentro de la red de Docker Compose). Swagger UI: http://localhost:8084/swagger-ui.html'
+  description: 'Contrato del servicio Búsqueda (HU-19, HU-20, HU-21). No tiene base de datos: compone la respuesta con Alojamientos y Disponibilidad. Rutas públicas, no necesitan sesión.'
 servers:
 - url: http://localhost:8084
   description: Servicio Búsqueda (local)
-security:
-- bearerAuth: []
 tags:
 - name: Búsqueda
 paths:
-  /search/listings:
+  /busqueda/publicaciones:
     get:
       tags:
       - Búsqueda
-      summary: Buscar publicaciones ACTIVAS disponibles con filtros
-      operationId: searchListings
-      description: 'Historias: HU-19, HU-20.'
+      summary: Buscar publicaciones ACTIVAS disponibles, con filtros opcionales
+      operationId: buscarPublicaciones
+      description: 'Historias: HU-19 (CA-053, CA-054, CA-055) y HU-20 (CA-056, CA-057). Ruta pública, no necesita sesión. Le pide a Alojamientos las publicaciones activas de la ciudad (GET /interno/publicaciones/activas) y a Disponibilidad cuáles están libres (POST /internal/availability/check).'
       security: []
       parameters:
       - name: ciudad
         in: query
+        required: true
         schema:
           type: string
         description: Ciudad
       - name: llegada
         in: query
+        required: true
         schema:
           type: string
-        description: Fecha de llegada (YYYY-MM-DD)
+          format: date
+        description: Fecha de llegada (AAAA-MM-DD)
       - name: salida
         in: query
+        required: true
         schema:
           type: string
-        description: Fecha de salida, posterior a la llegada
+          format: date
+        description: Fecha de salida, posterior a la llegada (CA-054)
       - name: huespedes
         in: query
+        required: true
         schema:
           type: integer
+          minimum: 1
         description: Número de huéspedes
       - name: tipo
         in: query
         schema:
           type: string
-        description: Tipo de alojamiento
-      - name: precioMin
+        description: Filtro opcional por tipo de alojamiento (no distingue mayúsculas)
+      - name: precioMinimo
         in: query
         schema:
           type: number
-        description: Precio mínimo por noche
-      - name: precioMax
+        description: Filtro opcional, precio mínimo por noche
+      - name: precioMaximo
         in: query
         schema:
           type: number
-        description: Precio máximo por noche
+        description: Filtro opcional, precio máximo por noche (no puede ser menor que el mínimo)
       - name: servicios
         in: query
         schema:
-          type: string
-        description: Amenities separados por coma
+          type: array
+          items:
+            type: string
+        style: form
+        explode: true
+        description: Filtro opcional, la publicación debe tener todos estos servicios
       responses:
         '200':
-          description: Operación exitosa
+          description: Resultados de la búsqueda. Si no hay ninguno, la lista va vacía y trae un mensaje (CA-057)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SearchResults'
+                $ref: '#/components/schemas/BusquedaResponse'
         '400':
           $ref: '#/components/responses/E400'
-  /search/listings/{id}:
+  /busqueda/publicaciones/{id}:
     get:
       tags:
       - Búsqueda
-      summary: Detalle de un alojamiento para comparar antes de cotizar
-      operationId: listingDetail
-      description: 'Historias: HU-21.'
+      summary: Detalle de una publicación ACTIVA para compararla antes de cotizar
+      operationId: detallePublicacion
+      description: 'Historia: HU-21 (CA-058, CA-059). Ruta pública. Le pide el detalle a Alojamientos (GET /interno/publicaciones/{id}). Las fechas y los huéspedes son opcionales y se devuelven tal cual para pasar a cotizar.'
       security: []
       parameters:
       - name: id
         in: path
         required: true
         schema:
+          type: integer
+          format: int64
+      - name: llegada
+        in: query
+        schema:
           type: string
-          format: uuid
+          format: date
+      - name: salida
+        in: query
+        schema:
+          type: string
+          format: date
+      - name: huespedes
+        in: query
+        schema:
+          type: integer
       responses:
         '200':
-          description: Operación exitosa
+          description: Detalle de la publicación con los datos de la búsqueda
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ListingDetail'
+                $ref: '#/components/schemas/DetalleResponse'
         '404':
           $ref: '#/components/responses/E404'
 components:
-  securitySchemes:
-    bearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
   schemas:
     Error:
       type: object
+      description: Formato de error de todos los servicios
       properties:
-        codigo:
-          type: string
-        mensaje:
-          type: string
-        detalles:
+        mensajes:
           type: array
           items:
             type: string
-    Listing:
+    PublicacionResumen:
       type: object
       properties:
         id:
+          type: integer
+          format: int64
+        titulo:
           type: string
-          format: uuid
-        anfitrionId:
+        ciudad:
           type: string
-          format: uuid
+        tipo:
+          type: string
+        capacidad:
+          type: integer
+        precioNoche:
+          type: number
+        estado:
+          type: string
+        servicios:
+          type: array
+          items:
+            type: string
+    BusquedaResponse:
+      type: object
+      properties:
+        resultados:
+          type: array
+          items:
+            $ref: '#/components/schemas/PublicacionResumen'
+        mensaje:
+          type: string
+          nullable: true
+          description: 'Solo cuando no hay resultados: No hay alojamientos que cumplan con la búsqueda (CA-057)'
+    PublicacionDetalle:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
         titulo:
           type: string
         descripcion:
           type: string
         ciudad:
           type: string
-        ubicacionTextual:
-          type: string
-        tipoAlojamiento:
+        tipo:
           type: string
         capacidad:
           type: integer
-        precioPorNoche:
+        precioNoche:
           type: number
-        tarifaLimpieza:
-          type: number
-        porcentajeDescuentoEstanciaLarga:
-          type: number
+        estado:
+          type: string
         servicios:
           type: array
           items:
@@ -150,85 +191,33 @@ components:
           type: array
           items:
             type: string
-        politicaCancelacionId:
-          type: string
-          format: uuid
-        estado:
-          $ref: '#/components/schemas/ListingStatus'
-        motivoRechazo:
-          type: string
-        motivoBloqueo:
-          type: string
-    ListingDetail:
-      type: object
-      properties:
-        listing:
-          $ref: '#/components/schemas/Listing'
         politicaCancelacion:
-          $ref: '#/components/schemas/Policy'
-        calificacionPromedio:
-          type: number
-        totalReseñas:
+          type: string
+    DetalleResponse:
+      type: object
+      properties:
+        publicacion:
+          $ref: '#/components/schemas/PublicacionDetalle'
+        llegada:
+          type: string
+          format: date
+          nullable: true
+        salida:
+          type: string
+          format: date
+          nullable: true
+        huespedes:
           type: integer
-    ListingStatus:
-      type: string
-      enum:
-      - BORRADOR
-      - PENDIENTE_REVISION
-      - ACTIVA
-      - PAUSADA
-      - BLOQUEADA
-    Policy:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        nombre:
-          type: string
-        descripcion:
-          type: string
-        porcentajeDevolucion:
-          type: number
-        permiteLiberacionPeriodo:
-          type: boolean
-    SearchResults:
-      type: object
-      properties:
-        items:
-          type: array
-          items:
-            type: object
-            properties:
-              id:
-                type: string
-                format: uuid
-              titulo:
-                type: string
-              ciudad:
-                type: string
-              tipoAlojamiento:
-                type: string
-              capacidad:
-                type: integer
-              precioPorNoche:
-                type: number
-              calificacionPromedio:
-                type: number
-              imagenPrincipal:
-                type: string
-        mensaje:
-          type: string
-          description: 'Ej.: ''No hay resultados'' (CA-057)'
+          nullable: true
   responses:
     E400:
-      description: Solicitud inválida (validación)
+      description: 'Solicitud inválida: campos obligatorios, fechas (CA-054) o rango de precio'
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
     E404:
-      description: No encontrado
+      description: La publicación no existe o no está ACTIVA
       content:
         application/json:
           schema:

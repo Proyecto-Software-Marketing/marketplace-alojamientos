@@ -1,6 +1,7 @@
 package co.edu.unbosque.marketplace.busqueda;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.LocalDate;
@@ -18,11 +19,12 @@ import co.edu.unbosque.marketplace.busqueda.client.ServiciosExternos;
 import co.edu.unbosque.marketplace.busqueda.dto.BusquedaRequest;
 import co.edu.unbosque.marketplace.busqueda.exception.BusquedaException;
 import co.edu.unbosque.marketplace.busqueda.exception.ControlErrores;
+import co.edu.unbosque.marketplace.busqueda.exception.PublicacionNoEncontradaException;
 
 @SpringBootTest
 class ErroresTest {
 
- 
+    // aqui NO se simula: en las pruebas las direcciones de los otros servicios estan vacias
     @Autowired
     private ServiciosExternos serviciosExternos;
 
@@ -31,6 +33,11 @@ class ErroresTest {
     @Test
     void sinAlojamientosConfiguradoNoHayPublicaciones() {
         assertTrue(serviciosExternos.buscarPublicacionesActivas("Bogota").isEmpty());
+    }
+
+    @Test
+    void sinAlojamientosConfiguradoNoHayDetalle() {
+        assertNull(serviciosExternos.obtenerDetalle(5L));
     }
 
     @Test
@@ -44,6 +51,15 @@ class ErroresTest {
 
         assertEquals(400, respuesta.getStatusCode().value());
         assertEquals(List.of("Mensaje de prueba"), respuesta.getBody().get("mensajes"));
+    }
+
+    @Test
+    void publicacionNoEncontradaResponde404() {
+        ResponseEntity<Map<String, List<String>>> respuesta = controlErrores.errorNoEncontrada(
+                new PublicacionNoEncontradaException("La publicación no existe o no está disponible"));
+
+        assertEquals(404, respuesta.getStatusCode().value());
+        assertEquals(List.of("La publicación no existe o no está disponible"), respuesta.getBody().get("mensajes"));
     }
 
     @Test

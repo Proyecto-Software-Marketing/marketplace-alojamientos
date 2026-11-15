@@ -11,16 +11,23 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+
 @RestControllerAdvice
 public class ControlErrores {
 
-    //fechas que no tienen sentido
+    // fechas que no tienen sentido
     @ExceptionHandler(BusquedaException.class)
     public ResponseEntity<Map<String, List<String>>> errorBusqueda(BusquedaException e) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("mensajes", List.of(e.getMessage())));
     }
 
-    // Campos vacios o con formato malo
+    // La publicacion no existe o no esta activa
+    @ExceptionHandler(PublicacionNoEncontradaException.class)
+    public ResponseEntity<Map<String, List<String>>> errorNoEncontrada(PublicacionNoEncontradaException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("mensajes", List.of(e.getMessage())));
+    }
+
+    // Campos vacios o con mal formato 
     @ExceptionHandler(BindException.class)
     public ResponseEntity<Map<String, List<String>>> errorCampos(BindException e) {
         List<String> mensajes = new ArrayList<>();

@@ -9,8 +9,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 
+import co.edu.unbosque.marketplace.busqueda.dto.PublicacionDetalle;
 import co.edu.unbosque.marketplace.busqueda.dto.PublicacionResumen;
 import co.edu.unbosque.marketplace.busqueda.dto.PublicacionesDisponibles;
 
@@ -28,16 +30,15 @@ public class ServiciosExternos {
         this(RestClient.builder(), urlAlojamientos, urlDisponibilidad);
     }
 
-   
     ServiciosExternos(RestClient.Builder constructor, String urlAlojamientos, String urlDisponibilidad) {
         this.restClient = constructor.build();
         this.urlAlojamientos = urlAlojamientos;
         this.urlDisponibilidad = urlDisponibilidad;
     }
 
-  
+    // Le pide a Alojamientos las publicaciones activas de una ciudad
     public List<PublicacionResumen> buscarPublicacionesActivas(String ciudad) {
-
+       
         if (urlAlojamientos.isBlank()) {
             return List.of();
         }
@@ -51,13 +52,30 @@ public class ServiciosExternos {
         return Arrays.asList(respuesta);
     }
 
-    
+    // Le pide a Alojamientos el detalle completo de una publicacion 
+    public PublicacionDetalle obtenerDetalle(Long idPublicacion) {
+        
+        if (urlAlojamientos.isBlank()) {
+            return null;
+        }
+        try {
+            return restClient.get()
+                    .uri(urlAlojamientos + "/interno/publicaciones/{id}", idPublicacion)
+                    .retrieve()
+                    .body(PublicacionDetalle.class);
+        } catch (HttpClientErrorException.NotFound e) {
+            
+            return null;
+        }
+    }
+
+    // Le pregunta a Disponibilidad si la publicacion esta libre en esas fechas
     public boolean estaLibre(Long idPublicacion, LocalDate llegada, LocalDate salida) {
-        // si Disponibilidad no esta configurado, se asume que esta libre
+        
         if (urlDisponibilidad.isBlank()) {
             return true;
         }
-
+        
         Map<String, Object> consulta = Map.of(
                 "publicacionIds", List.of(idPublicacion),
                 "fechaLlegada", llegada.toString(),
