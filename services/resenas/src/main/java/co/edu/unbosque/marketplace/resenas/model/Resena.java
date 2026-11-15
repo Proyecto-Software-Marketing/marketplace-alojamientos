@@ -22,6 +22,8 @@ public class Resena {
     public static final int CALIFICACION_MINIMA = 1;
     public static final int CALIFICACION_MAXIMA = 5;
     public static final int LONGITUD_MAXIMA_CONTENIDO = 1000;
+    public static final int LONGITUD_MINIMA_MOTIVO = 3;
+    public static final int LONGITUD_MAXIMA_MOTIVO = 500;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -50,6 +52,16 @@ public class Resena {
     @Column(name = "fecha", nullable = false)
     private LocalDateTime fecha;
 
+    // HU-36 (CA-101): quién ocultó la reseña, cuándo y por qué. Vacíos mientras sea visible
+    @Column(name = "id_ocultada_por")
+    private Long ocultadaPor;
+
+    @Column(name = "ocultada_en")
+    private LocalDateTime ocultadaEn;
+
+    @Column(name = "motivo_ocultamiento", length = LONGITUD_MAXIMA_MOTIVO)
+    private String motivoOcultamiento;
+
     public Resena() {
     }
 
@@ -64,9 +76,13 @@ public class Resena {
         this.fecha = fecha;
     }
 
-    // CA-093 y HU-36: una reseña oculta no aparece en la publicación ni cuenta en el promedio
-    public void ocultar() {
+    // CA-093 y CA-100: una reseña oculta no aparece en la publicación ni cuenta en el promedio.
+    // CA-101: guarda quién la ocultó, cuándo y por qué
+    public void ocultar(Long administradorId, String motivo, LocalDateTime fechaOcultamiento) {
         this.visible = false;
+        this.ocultadaPor = administradorId;
+        this.motivoOcultamiento = motivo;
+        this.ocultadaEn = fechaOcultamiento;
     }
 
     public Long getId() {
@@ -99,5 +115,17 @@ public class Resena {
 
     public LocalDateTime getFecha() {
         return fecha;
+    }
+
+    public Long getOcultadaPor() {
+        return ocultadaPor;
+    }
+
+    public LocalDateTime getOcultadaEn() {
+        return ocultadaEn;
+    }
+
+    public String getMotivoOcultamiento() {
+        return motivoOcultamiento;
     }
 }
