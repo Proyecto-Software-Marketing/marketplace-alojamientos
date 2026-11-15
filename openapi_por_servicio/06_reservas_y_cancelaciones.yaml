@@ -141,12 +141,17 @@ paths:
       - Reservas y Cancelaciones
       summary: Cierre automático de estancias (CONFIRMADA a COMPLETADA)
       operationId: closeStays
-      description: 'Historias: HU-27. Operación interna entre servicios (no expuesta al front).'
+      description: 'Historias: HU-27. Operación interna entre servicios (no expuesta al front), sin token.
+        Pasa a COMPLETADA las reservas CONFIRMADA cuya fecha de salida es anterior a hoy (America/Bogota);
+        CANCELADA, EN_REVISION_MANUAL y COMPLETADA no cambian. Es idempotente. La misma operación la ejecuta
+        una tarea programada todos los días a las 00:05.'
       responses:
         '200':
-          description: Operación exitosa
-        '401':
-          $ref: '#/components/responses/E401'
+          description: Cierre ejecutado; indica cuántas reservas pasaron a COMPLETADA
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StayClosureResult'
   /internal/bookings/{id}:
     get:
       tags:
@@ -233,6 +238,16 @@ components:
       scheme: bearer
       bearerFormat: JWT
   schemas:
+    StayClosureResult:
+      type: object
+      required:
+      - reservasCompletadas
+      properties:
+        reservasCompletadas:
+          type: integer
+          format: int32
+          description: Reservas que pasaron de CONFIRMADA a COMPLETADA en esta ejecución
+          example: 3
     Booking:
       type: object
       properties:
