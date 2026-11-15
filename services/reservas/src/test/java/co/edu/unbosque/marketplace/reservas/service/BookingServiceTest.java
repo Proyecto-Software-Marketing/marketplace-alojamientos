@@ -2,6 +2,7 @@ package co.edu.unbosque.marketplace.reservas.service;
 
 import co.edu.unbosque.marketplace.reservas.client.CotizacionDTO;
 import co.edu.unbosque.marketplace.reservas.client.ServiciosExternos;
+import co.edu.unbosque.marketplace.reservas.dto.BookingListDTO;
 import co.edu.unbosque.marketplace.reservas.dto.BookingRequestDTO;
 import co.edu.unbosque.marketplace.reservas.dto.BookingResponseDTO;
 import co.edu.unbosque.marketplace.reservas.exception.ConflictoReservaException;
@@ -34,6 +35,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 // Pruebas de la HU-23 Reserva inmediata (CA-064, CA-065, CA-066)
+// y de la HU-24 Evitar reservas duplicadas por reintento (CA-067, CA-068)
 @SpringBootTest
 class BookingServiceTest {
 
@@ -158,11 +160,11 @@ class BookingServiceTest {
                 eq(88L), eq(resultado.id()), eq(resultado.codigoReserva()), anyString());
     }
 
-    // ---------- Idempotencia ----------
+    // ---------- CA-067 ----------
 
     @Test
-    @DisplayName("RF-026: reintentar con la misma clave devuelve la misma reserva sin duplicar")
-    void reintentoConMismaClaveDevuelveMismaReserva() {
+    @DisplayName("CA-067 reintentar la misma solicitud devuelve la misma reserva y no crea otra")
+    void ca067ReintentoConMismaClaveDevuelveMismaReserva() {
         when(serviciosExternos.verificarRolHuesped(TOKEN)).thenReturn(HUESPED_ID);
         when(serviciosExternos.verificarDisponibilidad(PUBLICACION_ID, LLEGADA, SALIDA)).thenReturn(true);
 
@@ -173,6 +175,65 @@ class BookingServiceTest {
         assertEquals(primera.codigoReserva(), segunda.codigoReserva());
         assertEquals(1, bookingRepository.count());
         verify(serviciosExternos, times(1)).bloquearPeriodo(any(), any(), any(), any());
+        verify(serviciosExternos, times(1))
+                .notificarReservaConfirmada(eq(HUESPED_ID), any(), anyString(), anyString());
+    }
+
+    // ---------- CA-068 ----------
+
+    @Test
+    @DisplayName("CA-068 tras un reintento, mis reservas muestra una sola reserva con un solo pago")
+    void ca068MisReservasMuestraUnaSolaReservaTrasReintento() {
+        when(serviciosExternos.verificarRolHuesped(TOKEN)).thenReturn(HUESPED_ID);
+        when(serviciosExternos.verificarDisponibilidad(PUBLICACION_ID, LLEGADA, SALIDA)).thenReturn(true);
+
+        bookingService.crearReserva(TOKEN, "idemp-pago", solicitudCompleta());
+        bookingService.crearReserva(TOKEN, "idemp-pago", solicitudCompleta());
+
+        BookingListDTO lista = bookingService.listarReservas(TOKEN, null);
+
+        assertEquals(1, lista.items().size());
+        assertEquals(1, bookingRepository.count());
+        assertEquals("pm_card_visa", bookingRepository.findAll().get(0).getMetodoPago());
+        verify(serviciosExternos, times(1)).bloquearPeriodo(any(), any(), any(), any());
+        verify(serviciosExternos, times(1))
+                .notificarReservaConfirmada(eq(HUESPED_ID), any(), anyString(), anyString());
+    }
+
+    @Test
+    @DisplayName("HU-24 mis reservas solo incluye las reservas del huésped autenticado")
+    void listadoSoloMuestraReservasPropias() {
+        when(serviciosExternos.verificarRolHuesped(TOKEN)).thenReturn(HUESPED_ID);
+        when(serviciosExternos.verificarRolHuesped("Bearer otro")).thenReturn(99L);
+        when(serviciosExternos.verificarDisponibilidad(PUBLICACION_ID, LLEGADA, SALIDA)).thenReturn(true);
+
+        bookingService.crearReserva(TOKEN, "idemp-propia", solicitudCompleta());
+        bookingService.crearReserva("Bearer otro", "idemp-otro", solicitudCompleta());
+
+        BookingListDTO lista = bookingService.listarReservas(TOKEN, null);
+
+        assertEquals(1, lista.items().size());
+        assertEquals(HUESPED_ID, lista.items().get(0).huespedId());
+    }
+
+    @Test
+    @DisplayName("HU-24 mis reservas se puede filtrar por estado")
+    void listadoFiltraPorEstado() {
+        when(serviciosExternos.verificarRolHuesped(TOKEN)).thenReturn(HUESPED_ID);
+        when(serviciosExternos.verificarDisponibilidad(PUBLICACION_ID, LLEGADA, SALIDA)).thenReturn(true);
+        bookingService.crearReserva(TOKEN, "idemp-estado", solicitudCompleta());
+
+        assertEquals(1, bookingService.listarReservas(TOKEN, BookingStatus.CONFIRMADA).items().size());
+        assertTrue(bookingService.listarReservas(TOKEN, BookingStatus.CANCELADA).items().isEmpty());
+    }
+
+    @Test
+    @DisplayName("HU-24 mis reservas exige rol de huésped")
+    void listadoExigeRolHuesped() {
+        when(serviciosExternos.verificarRolHuesped(TOKEN))
+                .thenThrow(new PermisoException("Solo un huésped puede realizar una reserva"));
+
+        assertThrows(PermisoException.class, () -> bookingService.listarReservas(TOKEN, null));
     }
 
     @Test
