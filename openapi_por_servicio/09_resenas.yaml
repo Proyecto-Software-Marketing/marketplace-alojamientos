@@ -56,7 +56,7 @@ paths:
       - Reseñas
       summary: Reseñas visibles y calificación promedio de una publicación
       operationId: listReviews
-      description: 'Historias: HU-33.'
+      description: 'Historias: HU-33. Pública (no pide token). Solo las reseñas visibles, de la más reciente a la más antigua (con la misma fecha, primero la registrada después); las ocultas no aparecen ni cuentan en el promedio (CA-093). Reseñas no consulta a Alojamientos: una publicación sin reseñas responde 200 con items vacío y calificacionPromedio null. 400: el id no es un número.'
       security: []
       parameters:
       - name: id
@@ -72,15 +72,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ReviewList'
-        '404':
-          $ref: '#/components/responses/E404'
+        '400':
+          $ref: '#/components/responses/E400'
   /admin/reviews/{id}/hide:
     post:
       tags:
       - Reseñas
       summary: Ocultar reseña que incumple las políticas
       operationId: hideReview
-      description: 'Historias: HU-36. Rol requerido: ADMINISTRADOR.'
+      description: 'Historias: HU-36. Rol requerido: ADMINISTRADOR. La reseña deja de mostrarse y de contar en el promedio (CA-100). Se guarda en la reseña quién la ocultó (id del token), cuándo y el motivo, y se envía el evento OCULTAR_RESENA a Auditoría (POST /internal/audit-events); si Auditoría no responde, la reseña igual queda oculta (CA-101). Ocultar una reseña ya oculta responde 200 sin cambios ni nuevo evento. 400: motivo ausente o fuera de 3 a 500 caracteres, o id no numérico. 404: la reseña no existe. 503: Identidad no responde.'
       parameters:
       - name: id
         in: path
@@ -109,19 +109,24 @@ paths:
           $ref: '#/components/responses/E403'
         '404':
           $ref: '#/components/responses/E404'
+        '503':
+          $ref: '#/components/responses/E503'
   /internal/reviews/averages:
     get:
       tags:
       - Reseñas
       summary: Calificación promedio de varias publicaciones, sin reseñas ocultas (la consume Búsqueda)
       operationId: reviewAverages
-      description: 'Historias: HU-21, HU-33. Operación interna entre servicios (no expuesta al front).'
+      description: 'Historias: HU-21, HU-33. Operación interna entre servicios (no expuesta al front, sin token). Las publicaciones sin reseñas visibles no aparecen en el mapa. 400: falta listingIds, viene vacío o algún id no es un número.'
+      security: []
       parameters:
       - name: listingIds
         in: query
+        required: true
         schema:
           type: string
-        description: Ids separados por coma
+          example: 15,16,17
+        description: Ids de publicación separados por coma
       responses:
         '200':
           description: Operación exitosa
@@ -142,7 +147,10 @@ components:
       type: object
       additionalProperties:
         type: number
-      description: Mapa publicacionId a calificación promedio
+      description: Mapa publicacionId a calificación promedio (1 decimal, sin reseñas ocultas)
+      example:
+        '15': 4.5
+        '16': 3.7
     Error:
       type: object
       description: Formato de error de todos los servicios
@@ -159,6 +167,8 @@ components:
         motivo:
           type: string
           minLength: 3
+          maxLength: 500
+          example: Lenguaje ofensivo hacia el anfitrión
       required:
       - motivo
     Review:
@@ -208,6 +218,9 @@ components:
       properties:
         calificacionPromedio:
           type: number
+          nullable: true
+          description: Promedio de las reseñas visibles con 1 decimal; null si no hay reseñas visibles
+          example: 4.3
         items:
           type: array
           items:

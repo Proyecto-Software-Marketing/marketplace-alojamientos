@@ -1,5 +1,6 @@
 package co.edu.unbosque.marketplace.resenas.client;
 
+import co.edu.unbosque.marketplace.resenas.dto.EventoAuditoriaDTO;
 import co.edu.unbosque.marketplace.resenas.dto.ReservaDTO;
 import co.edu.unbosque.marketplace.resenas.exception.AutenticacionException;
 import co.edu.unbosque.marketplace.resenas.exception.NoEncontradoException;
@@ -17,7 +18,10 @@ import org.springframework.web.client.RestClient;
 import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.content;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
@@ -30,6 +34,9 @@ class ServiciosExternosTest {
 
     private static final String URL_IDENTIDAD = "http://identidad";
     private static final String URL_RESERVAS = "http://reservas";
+    private static final String URL_AUDITORIA = "http://auditoria";
+    private static final String URL_AUTORIZAR_ADMIN = URL_IDENTIDAD + "/autenticacion/autorizar?roles=ADMINISTRADOR";
+    private static final String URL_EVENTOS = URL_AUDITORIA + "/internal/audit-events";
     private static final String URL_AUTORIZAR = URL_IDENTIDAD + "/autenticacion/autorizar?roles=HUESPED";
     private static final String URL_RESERVA = URL_RESERVAS + "/bookings/300";
     private static final String TOKEN = "Bearer token-de-prueba";
@@ -49,7 +56,7 @@ class ServiciosExternosTest {
     void prepararServidorSimulado() {
         RestClient.Builder constructor = RestClient.builder();
         servidor = MockRestServiceServer.bindTo(constructor).build();
-        serviciosExternos = new ServiciosExternos(constructor, URL_IDENTIDAD, URL_RESERVAS);
+        serviciosExternos = new ServiciosExternos(constructor, URL_IDENTIDAD, URL_RESERVAS, URL_AUDITORIA);
     }
 
     // ---------- Identidad: solo el huésped puede reseñar ----------
@@ -170,5 +177,65 @@ class ServiciosExternosTest {
 
         assertThrows(ServicioNoDisponibleException.class,
                 () -> serviciosExternos.consultarReserva(TOKEN, RESERVA));
+    }
+
+    // ---------- HU-36: Identidad verifica el rol ADMINISTRADOR ----------
+
+    @Test
+    @DisplayName("HU-36 decisión 1: el administrador obtiene su id desde el token")
+    void administradorConSesion() {
+        servidor.expect(requestTo(URL_AUTORIZAR_ADMIN))
+                .andExpect(method(HttpMethod.GET))
+                .andExpect(header("Authorization", TOKEN))
+                .andRespond(withSuccess("{\"id\":1,\"rol\":\"ADMINISTRADOR\"}", MediaType.APPLICATION_JSON));
+
+        assertEquals(1L, serviciosExternos.verificarAdministrador(TOKEN));
+        servidor.verify();
+    }
+
+    @Test
+    @DisplayName("HU-36 decisión 1: un usuario que no es administrador recibe 403")
+    void noEsAdministrador() {
+        servidor.expect(requestTo(URL_AUTORIZAR_ADMIN)).andRespond(withStatus(HttpStatus.FORBIDDEN));
+
+        PermisoException error = assertThrows(PermisoException.class,
+                () -> serviciosExternos.verificarAdministrador(TOKEN));
+        assertEquals("Solo un administrador puede ocultar reseñas", error.getMessage());
+    }
+
+    // ---------- HU-36: evento en Auditoría (CA-101) ----------
+
+    @Test
+    @DisplayName("CA-101 se envía a Auditoría quién ocultó la reseña, cuál y por qué")
+    void registraEventoEnAuditoria() {
+        servidor.expect(requestTo(URL_EVENTOS))
+                .andExpect(method(HttpMethod.POST))
+                .andExpect(content().json("""
+                        {"usuarioId":1,"entidad":"RESENA","entidadId":40,"accion":"OCULTAR_RESENA",
+                         "resultado":"EXITO","detalle":"Lenguaje ofensivo"}
+                        """))
+                .andRespond(withStatus(HttpStatus.CREATED));
+
+        assertTrue(serviciosExternos.registrarAuditoria(new EventoAuditoriaDTO(1L, "RESENA", 40L,
+                "OCULTAR_RESENA", "EXITO", "Lenguaje ofensivo")));
+        servidor.verify();
+    }
+
+    @Test
+    @DisplayName("Decisión 6: si Auditoría no responde no se lanza error, solo se informa")
+    void auditoriaCaida() {
+        servidor.expect(requestTo(URL_EVENTOS)).andRespond(withException(new IOException("Sin conexión")));
+
+        assertFalse(serviciosExternos.registrarAuditoria(new EventoAuditoriaDTO(1L, "RESENA", 40L,
+                "OCULTAR_RESENA", "EXITO", "Spam")));
+    }
+
+    @Test
+    @DisplayName("Decisión 6: si Auditoría responde con error no se lanza error, solo se informa")
+    void auditoriaConError() {
+        servidor.expect(requestTo(URL_EVENTOS)).andRespond(withStatus(HttpStatus.INTERNAL_SERVER_ERROR));
+
+        assertFalse(serviciosExternos.registrarAuditoria(new EventoAuditoriaDTO(1L, "RESENA", 40L,
+                "OCULTAR_RESENA", "EXITO", "Spam")));
     }
 }
