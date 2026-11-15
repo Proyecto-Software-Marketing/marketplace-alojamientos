@@ -65,7 +65,7 @@ class BookingServiceIdempotenciaTest {
     }
 
     private Booking reservaGanadora(Long huespedId) {
-        return new Booking("RES-GANADORA", PUBLICACION_ID, huespedId, "cot-abc-123",
+        return new Booking("RES-GANADORA", PUBLICACION_ID, huespedId, 88L, "cot-abc-123",
                 LLEGADA, SALIDA, 2, TOTAL, "pm_card_visa", CLAVE,
                 BookingStatus.CONFIRMADA, LocalDateTime.now());
     }

@@ -18,4 +18,9 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     List<Booking> findByHuespedIdOrderByCreadaEnDesc(Long huespedId);
 
     List<Booking> findByHuespedIdAndEstadoOrderByCreadaEnDesc(Long huespedId, BookingStatus estado);
+
+    // HU-26: el anfitrión consulta las reservas de sus publicaciones
+    List<Booking> findByAnfitrionIdOrderByCreadaEnDesc(Long anfitrionId);
+
+    List<Booking> findByAnfitrionIdAndEstadoOrderByCreadaEnDesc(Long anfitrionId, BookingStatus estado);
 }

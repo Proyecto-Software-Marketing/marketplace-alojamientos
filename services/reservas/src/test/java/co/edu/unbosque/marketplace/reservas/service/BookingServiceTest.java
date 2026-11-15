@@ -2,13 +2,16 @@ package co.edu.unbosque.marketplace.reservas.service;
 
 import co.edu.unbosque.marketplace.reservas.client.CotizacionDTO;
 import co.edu.unbosque.marketplace.reservas.client.ServiciosExternos;
+import co.edu.unbosque.marketplace.reservas.client.UsuarioIdentidadDTO;
 import co.edu.unbosque.marketplace.reservas.dto.BookingListDTO;
 import co.edu.unbosque.marketplace.reservas.dto.BookingRequestDTO;
 import co.edu.unbosque.marketplace.reservas.dto.BookingResponseDTO;
 import co.edu.unbosque.marketplace.reservas.exception.ConflictoReservaException;
 import co.edu.unbosque.marketplace.reservas.exception.FechasInvalidasException;
+import co.edu.unbosque.marketplace.reservas.exception.NoEncontradoException;
 import co.edu.unbosque.marketplace.reservas.exception.PermisoException;
 import co.edu.unbosque.marketplace.reservas.exception.SolicitudInvalidaException;
+import co.edu.unbosque.marketplace.reservas.model.Booking;
 import co.edu.unbosque.marketplace.reservas.model.BookingStatus;
 import co.edu.unbosque.marketplace.reservas.repository.BookingRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,6 +23,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -34,13 +38,16 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-// Pruebas de la HU-23 Reserva inmediata (CA-064, CA-065, CA-066)
-// y de la HU-24 Evitar reservas duplicadas por reintento (CA-067, CA-068)
+// Pruebas de la HU-23 Reserva inmediata (CA-064, CA-065, CA-066),
+// de la HU-24 Evitar reservas duplicadas por reintento (CA-067, CA-068)
+// y de la HU-26 Historial y estado de reservas
 @SpringBootTest
 class BookingServiceTest {
 
     private static final String TOKEN = "Bearer token-huesped-valido";
+    private static final String TOKEN_ANFITRION = "Bearer token-anfitrion-valido";
     private static final Long HUESPED_ID = 25L;
+    private static final Long ANFITRION_ID = 88L;
     private static final Long PUBLICACION_ID = 101L;
     private static final String COTIZACION_ID = "cot-abc-123";
     private static final LocalDate LLEGADA = LocalDate.now().plusDays(5);
@@ -68,6 +75,12 @@ class BookingServiceTest {
 
     private BookingRequestDTO solicitudSoloCotizacion() {
         return new BookingRequestDTO(COTIZACION_ID, "pm_card_visa", null, null, null, null, null);
+    }
+
+    private Booking reservaGuardada(Long huespedId, Long anfitrionId, BookingStatus estado, String clave) {
+        return bookingRepository.save(new Booking("RES-" + clave.toUpperCase(), PUBLICACION_ID,
+                huespedId, anfitrionId, COTIZACION_ID, LLEGADA, SALIDA, 2, TOTAL,
+                "pm_card_visa", clave, estado, LocalDateTime.now()));
     }
 
     // ---------- CA-064 ----------
@@ -158,6 +171,7 @@ class BookingServiceTest {
                 eq(HUESPED_ID), eq(resultado.id()), eq(resultado.codigoReserva()), anyString());
         verify(serviciosExternos).notificarReservaConfirmada(
                 eq(88L), eq(resultado.id()), eq(resultado.codigoReserva()), anyString());
+        assertEquals(88L, bookingRepository.findById(resultado.id()).orElseThrow().getAnfitrionId());
     }
 
     // ---------- CA-067 ----------
@@ -189,6 +203,8 @@ class BookingServiceTest {
 
         bookingService.crearReserva(TOKEN, "idemp-pago", solicitudCompleta());
         bookingService.crearReserva(TOKEN, "idemp-pago", solicitudCompleta());
+        when(serviciosExternos.verificarSesion(TOKEN))
+                .thenReturn(new UsuarioIdentidadDTO(HUESPED_ID, "HUESPED"));
 
         BookingListDTO lista = bookingService.listarReservas(TOKEN, null);
 
@@ -209,6 +225,8 @@ class BookingServiceTest {
 
         bookingService.crearReserva(TOKEN, "idemp-propia", solicitudCompleta());
         bookingService.crearReserva("Bearer otro", "idemp-otro", solicitudCompleta());
+        when(serviciosExternos.verificarSesion(TOKEN))
+                .thenReturn(new UsuarioIdentidadDTO(HUESPED_ID, "HUESPED"));
 
         BookingListDTO lista = bookingService.listarReservas(TOKEN, null);
 
@@ -222,16 +240,18 @@ class BookingServiceTest {
         when(serviciosExternos.verificarRolHuesped(TOKEN)).thenReturn(HUESPED_ID);
         when(serviciosExternos.verificarDisponibilidad(PUBLICACION_ID, LLEGADA, SALIDA)).thenReturn(true);
         bookingService.crearReserva(TOKEN, "idemp-estado", solicitudCompleta());
+        when(serviciosExternos.verificarSesion(TOKEN))
+                .thenReturn(new UsuarioIdentidadDTO(HUESPED_ID, "HUESPED"));
 
         assertEquals(1, bookingService.listarReservas(TOKEN, BookingStatus.CONFIRMADA).items().size());
         assertTrue(bookingService.listarReservas(TOKEN, BookingStatus.CANCELADA).items().isEmpty());
     }
 
     @Test
-    @DisplayName("HU-24 mis reservas exige rol de huésped")
-    void listadoExigeRolHuesped() {
-        when(serviciosExternos.verificarRolHuesped(TOKEN))
-                .thenThrow(new PermisoException("Solo un huésped puede realizar una reserva"));
+    @DisplayName("HU-26 mis reservas exige una sesión de huésped o anfitrión")
+    void listadoExigeSesionDeHuespedOAnfitrion() {
+        when(serviciosExternos.verificarSesion(TOKEN))
+                .thenThrow(new PermisoException("No tiene permiso para consultar reservas"));
 
         assertThrows(PermisoException.class, () -> bookingService.listarReservas(TOKEN, null));
     }
@@ -247,6 +267,94 @@ class BookingServiceTest {
 
         assertThrows(PermisoException.class,
                 () -> bookingService.crearReserva("Bearer otro", "idemp-ajena", solicitudCompleta()));
+    }
+
+    // ---------- HU-26: historial y estado ----------
+
+    @Test
+    @DisplayName("HU-26 el anfitrión ve las reservas de sus publicaciones")
+    void listadoAnfitrionMuestraReservasDeSusPublicaciones() {
+        when(serviciosExternos.verificarRolHuesped(TOKEN)).thenReturn(HUESPED_ID);
+        when(serviciosExternos.verificarDisponibilidad(PUBLICACION_ID, LLEGADA, SALIDA)).thenReturn(true);
+        when(serviciosExternos.consultarAnfitrion(PUBLICACION_ID)).thenReturn(ANFITRION_ID);
+
+        BookingResponseDTO creada = bookingService.crearReserva(TOKEN, "idemp-host", solicitudCompleta());
+        when(serviciosExternos.verificarSesion(TOKEN_ANFITRION))
+                .thenReturn(new UsuarioIdentidadDTO(ANFITRION_ID, "ANFITRION"));
+
+        BookingListDTO lista = bookingService.listarReservas(TOKEN_ANFITRION, null);
+
+        assertEquals(1, lista.items().size());
+        assertEquals(creada.id(), lista.items().get(0).id());
+        assertEquals(HUESPED_ID, lista.items().get(0).huespedId());
+    }
+
+    @Test
+    @DisplayName("HU-26 el anfitrión puede filtrar sus reservas por estado")
+    void listadoAnfitrionFiltraPorEstado() {
+        reservaGuardada(HUESPED_ID, ANFITRION_ID, BookingStatus.CONFIRMADA, "host-conf");
+        reservaGuardada(HUESPED_ID, ANFITRION_ID, BookingStatus.CANCELADA, "host-canc");
+        when(serviciosExternos.verificarSesion(TOKEN_ANFITRION))
+                .thenReturn(new UsuarioIdentidadDTO(ANFITRION_ID, "ANFITRION"));
+
+        assertEquals(1, bookingService.listarReservas(TOKEN_ANFITRION, BookingStatus.CONFIRMADA).items().size());
+        assertEquals(1, bookingService.listarReservas(TOKEN_ANFITRION, BookingStatus.CANCELADA).items().size());
+    }
+
+    @Test
+    @DisplayName("HU-26 el huésped consulta el estado de su propia reserva")
+    void huespedConsultaSuReserva() {
+        Booking reserva = reservaGuardada(HUESPED_ID, ANFITRION_ID, BookingStatus.CONFIRMADA, "detalle-huesped");
+        when(serviciosExternos.verificarSesion(TOKEN))
+                .thenReturn(new UsuarioIdentidadDTO(HUESPED_ID, "HUESPED"));
+
+        BookingResponseDTO detalle = bookingService.consultarReserva(TOKEN, reserva.getId());
+
+        assertEquals(reserva.getId(), detalle.id());
+        assertEquals(BookingStatus.CONFIRMADA, detalle.estado());
+        assertEquals("RES-DETALLE-HUESPED", detalle.codigoReserva());
+    }
+
+    @Test
+    @DisplayName("HU-26 el anfitrión consulta el estado de una reserva de su publicación")
+    void anfitrionConsultaReservaDeSuPublicacion() {
+        Booking reserva = reservaGuardada(HUESPED_ID, ANFITRION_ID, BookingStatus.CONFIRMADA, "detalle-host");
+        when(serviciosExternos.verificarSesion(TOKEN_ANFITRION))
+                .thenReturn(new UsuarioIdentidadDTO(ANFITRION_ID, "ANFITRION"));
+
+        assertEquals(reserva.getId(), bookingService.consultarReserva(TOKEN_ANFITRION, reserva.getId()).id());
+    }
+
+    @Test
+    @DisplayName("HU-26 un tercero no puede consultar una reserva ajena")
+    void terceroNoConsultaReservaAjena() {
+        Booking reserva = reservaGuardada(HUESPED_ID, ANFITRION_ID, BookingStatus.CONFIRMADA, "detalle-ajena");
+        when(serviciosExternos.verificarSesion(TOKEN))
+                .thenReturn(new UsuarioIdentidadDTO(99L, "HUESPED"));
+
+        assertThrows(PermisoException.class,
+                () -> bookingService.consultarReserva(TOKEN, reserva.getId()));
+    }
+
+    @Test
+    @DisplayName("HU-26 una reserva sin anfitrión registrado no es visible para el anfitrión")
+    void reservaSinAnfitrionNoEsVisibleParaElAnfitrion() {
+        Booking reserva = reservaGuardada(HUESPED_ID, null, BookingStatus.CONFIRMADA, "detalle-sin-host");
+        when(serviciosExternos.verificarSesion(TOKEN_ANFITRION))
+                .thenReturn(new UsuarioIdentidadDTO(ANFITRION_ID, "ANFITRION"));
+
+        assertThrows(PermisoException.class,
+                () -> bookingService.consultarReserva(TOKEN_ANFITRION, reserva.getId()));
+    }
+
+    @Test
+    @DisplayName("HU-26 consultar una reserva inexistente responde no encontrado")
+    void reservaInexistenteNoSeEncuentra() {
+        when(serviciosExternos.verificarSesion(TOKEN))
+                .thenReturn(new UsuarioIdentidadDTO(HUESPED_ID, "HUESPED"));
+
+        assertThrows(NoEncontradoException.class,
+                () -> bookingService.consultarReserva(TOKEN, 999999L));
     }
 
     // ---------- Validaciones ----------
