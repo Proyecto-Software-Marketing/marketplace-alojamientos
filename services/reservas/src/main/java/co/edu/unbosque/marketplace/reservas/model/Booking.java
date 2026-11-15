@@ -21,6 +21,7 @@ import java.time.LocalDateTime;
 @Table(name = "reserva", indexes = {
         @Index(name = "idx_reserva_publicacion", columnList = "id_publicacion"),
         @Index(name = "idx_reserva_huesped", columnList = "id_huesped"),
+        @Index(name = "idx_reserva_anfitrion", columnList = "id_anfitrion"),
         @Index(name = "idx_reserva_codigo", columnList = "codigo_reserva", unique = true)
 })
 public class Booking {
@@ -37,6 +38,10 @@ public class Booking {
 
     @Column(name = "id_huesped", nullable = false)
     private Long huespedId;
+
+    // HU-26: dueño de la publicación, para que el anfitrión consulte sus reservas
+    @Column(name = "id_anfitrion")
+    private Long anfitrionId;
 
     @Column(name = "id_cotizacion", nullable = false)
     private String cotizacionId;
@@ -69,13 +74,14 @@ public class Booking {
     public Booking() {
     }
 
-    public Booking(String codigoReserva, Long publicacionId, Long huespedId, String cotizacionId,
-                   LocalDate fechaLlegada, LocalDate fechaSalida, Integer cantidadHuespedes,
-                   BigDecimal montoTotal, String metodoPago, String idempotencyKey,
-                   BookingStatus estado, LocalDateTime creadaEn) {
+    public Booking(String codigoReserva, Long publicacionId, Long huespedId, Long anfitrionId,
+                   String cotizacionId, LocalDate fechaLlegada, LocalDate fechaSalida,
+                   Integer cantidadHuespedes, BigDecimal montoTotal, String metodoPago,
+                   String idempotencyKey, BookingStatus estado, LocalDateTime creadaEn) {
         this.codigoReserva = codigoReserva;
         this.publicacionId = publicacionId;
         this.huespedId = huespedId;
+        this.anfitrionId = anfitrionId;
         this.cotizacionId = cotizacionId;
         this.fechaLlegada = fechaLlegada;
         this.fechaSalida = fechaSalida;
@@ -101,6 +107,10 @@ public class Booking {
 
     public Long getHuespedId() {
         return huespedId;
+    }
+
+    public Long getAnfitrionId() {
+        return anfitrionId;
     }
 
     public String getCotizacionId() {

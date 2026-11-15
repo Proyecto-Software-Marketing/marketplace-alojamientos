@@ -4,6 +4,7 @@ import co.edu.unbosque.marketplace.reservas.dto.BookingListDTO;
 import co.edu.unbosque.marketplace.reservas.dto.BookingRequestDTO;
 import co.edu.unbosque.marketplace.reservas.dto.BookingResponseDTO;
 import co.edu.unbosque.marketplace.reservas.exception.ConflictoReservaException;
+import co.edu.unbosque.marketplace.reservas.exception.NoEncontradoException;
 import co.edu.unbosque.marketplace.reservas.exception.PermisoException;
 import co.edu.unbosque.marketplace.reservas.exception.ServicioNoDisponibleException;
 import co.edu.unbosque.marketplace.reservas.model.BookingStatus;
@@ -33,7 +34,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-// Pruebas de las rutas públicas de reservas: HU-23 (POST) y HU-24 (GET)
+// Pruebas de las rutas públicas de reservas: HU-23 (POST), HU-24 (GET) y HU-26 (GET por id)
 @SpringBootTest
 class BookingControllerTest {
 
@@ -222,6 +223,58 @@ class BookingControllerTest {
         mockMvc.perform(get(RUTA)
                         .header("Authorization", TOKEN)
                         .param("estado", "NO_EXISTE"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.mensajes[0]").value("El identificador enviado no es válido"));
+    }
+
+    // ---------- HU-26: GET /bookings/{id} ----------
+
+    @Test
+    @DisplayName("HU-26 GET /bookings/{id} responde 200 con el estado de la reserva")
+    void consultarReservaResponde200() throws Exception {
+        when(bookingService.consultarReserva(TOKEN, 1L)).thenReturn(respuesta());
+
+        mockMvc.perform(get(RUTA + "/1").header("Authorization", TOKEN))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.codigoReserva").value("RES-ABCD1234"))
+                .andExpect(jsonPath("$.estado").value("CONFIRMADA"));
+    }
+
+    @Test
+    @DisplayName("HU-26 GET /bookings/{id} sin Authorization responde 401")
+    void consultarReservaSinTokenResponde401() throws Exception {
+        mockMvc.perform(get(RUTA + "/1"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.mensajes[0]").value("Debe iniciar sesión"));
+    }
+
+    @Test
+    @DisplayName("HU-26 GET /bookings/{id} de una reserva ajena responde 403")
+    void consultarReservaAjenaResponde403() throws Exception {
+        when(bookingService.consultarReserva(anyString(), eq(1L)))
+                .thenThrow(new PermisoException("No tiene permiso para consultar esta reserva"));
+
+        mockMvc.perform(get(RUTA + "/1").header("Authorization", TOKEN))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.mensajes[0]").value("No tiene permiso para consultar esta reserva"));
+    }
+
+    @Test
+    @DisplayName("HU-26 GET /bookings/{id} inexistente responde 404")
+    void consultarReservaInexistenteResponde404() throws Exception {
+        when(bookingService.consultarReserva(anyString(), eq(999L)))
+                .thenThrow(new NoEncontradoException("La reserva no existe"));
+
+        mockMvc.perform(get(RUTA + "/999").header("Authorization", TOKEN))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.mensajes[0]").value("La reserva no existe"));
+    }
+
+    @Test
+    @DisplayName("HU-26 GET /bookings/{id} con un id no numérico responde 400")
+    void consultarReservaConIdInvalidoResponde400() throws Exception {
+        mockMvc.perform(get(RUTA + "/abc").header("Authorization", TOKEN))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.mensajes[0]").value("El identificador enviado no es válido"));
     }

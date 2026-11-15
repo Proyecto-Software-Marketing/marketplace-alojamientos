@@ -9,6 +9,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -34,11 +35,19 @@ public class BookingController {
                 .body(bookingService.crearReserva(autorizacion, idempotencyKey, solicitud));
     }
 
-    // HU-24 (CA-068): consultar mis reservas. Por ahora solo el huésped ve las suyas.
+    // HU-26: historial de reservas. El huésped ve las suyas y el anfitrión las de sus publicaciones.
     @GetMapping("/bookings")
     public ResponseEntity<BookingListDTO> listarReservas(
             @RequestHeader("Authorization") String autorizacion,
             @RequestParam(required = false) BookingStatus estado) {
         return ResponseEntity.ok(bookingService.listarReservas(autorizacion, estado));
+    }
+
+    // HU-26: estado y detalle de una reserva. Solo su huésped o el anfitrión de la publicación.
+    @GetMapping("/bookings/{id}")
+    public ResponseEntity<BookingResponseDTO> consultarReserva(
+            @RequestHeader("Authorization") String autorizacion,
+            @PathVariable Long id) {
+        return ResponseEntity.ok(bookingService.consultarReserva(autorizacion, id));
     }
 }

@@ -91,6 +91,37 @@ class ServiciosExternosTest {
     }
 
     @Test
+    @DisplayName("HU-26 verificarSesion devuelve id y rol para HUESPED o ANFITRION")
+    void verificarSesionExitosa() {
+        servidor.expect(requestTo(URL_IDENTIDAD + "/autenticacion/autorizar?roles=HUESPED,ANFITRION"))
+                .andExpect(method(HttpMethod.GET))
+                .andExpect(header("Authorization", TOKEN))
+                .andRespond(withSuccess("{\"id\":88,\"rol\":\"ANFITRION\"}", MediaType.APPLICATION_JSON));
+
+        UsuarioIdentidadDTO usuario = serviciosExternos.verificarSesion(TOKEN);
+
+        assertEquals(88L, usuario.id());
+        assertEquals("ANFITRION", usuario.rol());
+        servidor.verify();
+    }
+
+    @Test
+    @DisplayName("HU-26 verificarSesion lanza PermisoException si el rol no está permitido")
+    void verificarSesionSinPermiso() {
+        servidor.expect(requestTo(URL_IDENTIDAD + "/autenticacion/autorizar?roles=HUESPED,ANFITRION"))
+                .andRespond(withStatus(HttpStatus.FORBIDDEN));
+
+        assertThrows(PermisoException.class, () -> serviciosExternos.verificarSesion(TOKEN));
+        servidor.verify();
+    }
+
+    @Test
+    @DisplayName("HU-26 verificarSesion lanza AutenticacionException sin token")
+    void verificarSesionSinToken() {
+        assertThrows(AutenticacionException.class, () -> serviciosExternos.verificarSesion(" "));
+    }
+
+    @Test
     @DisplayName("consultarCotizacion devuelve los datos de la cotización")
     void consultarCotizacionExitosa() {
         String json = """

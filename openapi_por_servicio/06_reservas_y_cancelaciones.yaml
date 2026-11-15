@@ -54,7 +54,7 @@ paths:
       - Reservas y Cancelaciones
       summary: 'Historial de reservas (Huésped: las suyas; Anfitrión: las de sus publicaciones)'
       operationId: listBookings
-      description: 'Historias: HU-24 (CA-068). Por ahora solo el HUESPED consulta sus propias reservas, de la más reciente a la más antigua. La vista del anfitrión queda para HU-26.'
+      description: 'Historias: HU-24 (CA-068) y HU-26. El HUESPED consulta sus propias reservas y el ANFITRION las de sus publicaciones, de la más reciente a la más antigua.'
       parameters:
       - name: estado
         in: query
@@ -75,16 +75,16 @@ paths:
     get:
       tags:
       - Reservas y Cancelaciones
-      summary: Consultar estado de una reserva
+      summary: Consultar estado y detalle de una reserva
       operationId: getBooking
-      description: 'Historias: HU-26.'
+      description: 'Historias: HU-26. Solo el HUESPED dueño de la reserva o el ANFITRION de la publicación pueden consultarla.'
       parameters:
       - name: id
         in: path
         required: true
         schema:
-          type: string
-          format: uuid
+          type: integer
+          format: int64
       responses:
         '200':
           description: Operación exitosa

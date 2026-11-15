@@ -2,11 +2,13 @@ package co.edu.unbosque.marketplace.reservas.service;
 
 import co.edu.unbosque.marketplace.reservas.client.CotizacionDTO;
 import co.edu.unbosque.marketplace.reservas.client.ServiciosExternos;
+import co.edu.unbosque.marketplace.reservas.client.UsuarioIdentidadDTO;
 import co.edu.unbosque.marketplace.reservas.dto.BookingListDTO;
 import co.edu.unbosque.marketplace.reservas.dto.BookingRequestDTO;
 import co.edu.unbosque.marketplace.reservas.dto.BookingResponseDTO;
 import co.edu.unbosque.marketplace.reservas.exception.ConflictoReservaException;
 import co.edu.unbosque.marketplace.reservas.exception.FechasInvalidasException;
+import co.edu.unbosque.marketplace.reservas.exception.NoEncontradoException;
 import co.edu.unbosque.marketplace.reservas.exception.PermisoException;
 import co.edu.unbosque.marketplace.reservas.exception.SolicitudInvalidaException;
 import co.edu.unbosque.marketplace.reservas.model.Booking;
@@ -26,6 +28,7 @@ import java.util.UUID;
 
 // HU-23: reserva inmediata sin aprobación del anfitrión.
 // HU-24: un reintento (incluso simultáneo) nunca crea dos reservas ni dos pagos.
+// HU-26: historial y estado de reservas para huésped y anfitrión.
 @Service
 public class BookingService {
 
@@ -79,24 +82,52 @@ public class BookingService {
         }
     }
 
-    // CA-068: el huésped solo ve sus propias reservas
+    // CA-068 (HU-24) y HU-26: el huésped ve sus reservas y el anfitrión las de sus publicaciones
     public BookingListDTO listarReservas(String autorizacion, BookingStatus estado) {
-        Long huespedId = serviciosExternos.verificarRolHuesped(autorizacion);
+        UsuarioIdentidadDTO usuario = serviciosExternos.verificarSesion(autorizacion);
 
-        List<Booking> reservas = estado == null
-                ? bookingRepository.findByHuespedIdOrderByCreadaEnDesc(huespedId)
-                : bookingRepository.findByHuespedIdAndEstadoOrderByCreadaEnDesc(huespedId, estado);
+        List<Booking> reservas;
+        if ("ANFITRION".equalsIgnoreCase(usuario.rol())) {
+            reservas = estado == null
+                    ? bookingRepository.findByAnfitrionIdOrderByCreadaEnDesc(usuario.id())
+                    : bookingRepository.findByAnfitrionIdAndEstadoOrderByCreadaEnDesc(usuario.id(), estado);
+        } else {
+            reservas = estado == null
+                    ? bookingRepository.findByHuespedIdOrderByCreadaEnDesc(usuario.id())
+                    : bookingRepository.findByHuespedIdAndEstadoOrderByCreadaEnDesc(usuario.id(), estado);
+        }
 
         return new BookingListDTO(reservas.stream().map(BookingResponseDTO::desde).toList());
+    }
+
+    // HU-26: detalle de una reserva; solo su huésped o el anfitrión de la publicación
+    public BookingResponseDTO consultarReserva(String autorizacion, Long reservaId) {
+        UsuarioIdentidadDTO usuario = serviciosExternos.verificarSesion(autorizacion);
+
+        Booking reserva = bookingRepository.findById(reservaId)
+                .orElseThrow(() -> new NoEncontradoException("La reserva no existe"));
+
+        boolean esHuesped = reserva.getHuespedId().equals(usuario.id());
+        boolean esAnfitrion = reserva.getAnfitrionId() != null
+                && reserva.getAnfitrionId().equals(usuario.id());
+        if (!esHuesped && !esAnfitrion) {
+            throw new PermisoException("No tiene permiso para consultar esta reserva");
+        }
+
+        return BookingResponseDTO.desde(reserva);
     }
 
     // CA-067: una única ejecución confirma la reserva y sus efectos externos
     private BookingResponseDTO confirmarReserva(Long huespedId, String idempotencyKey,
             BookingRequestDTO solicitud, DatosReserva datos) {
+        // HU-26: se guarda el anfitrión para que pueda consultar el historial
+        Long anfitrionId = serviciosExternos.consultarAnfitrion(datos.publicacionId());
+
         Booking reserva = new Booking(
                 generarCodigoReserva(),
                 datos.publicacionId(),
                 huespedId,
+                anfitrionId,
                 solicitud.cotizacionId(),
                 datos.fechaLlegada(),
                 datos.fechaSalida(),
@@ -119,7 +150,6 @@ public class BookingService {
         notificar(huespedId, reserva,
                 "Tu reserva " + reserva.getCodigoReserva() + " fue confirmada del "
                         + datos.fechaLlegada() + " al " + datos.fechaSalida());
-        Long anfitrionId = serviciosExternos.consultarAnfitrion(datos.publicacionId());
         if (anfitrionId != null && !anfitrionId.equals(huespedId)) {
             notificar(anfitrionId, reserva,
                     "Se confirmó la reserva " + reserva.getCodigoReserva() + " en tu publicación del "

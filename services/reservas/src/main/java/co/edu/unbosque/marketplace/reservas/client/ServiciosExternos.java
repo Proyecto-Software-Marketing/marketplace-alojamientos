@@ -23,6 +23,7 @@ import java.util.List;
 public class ServiciosExternos {
 
     private static final Logger log = LoggerFactory.getLogger(ServiciosExternos.class);
+    private static final String ROLES_SESION = "HUESPED,ANFITRION";
 
     private final RestClient cliente;
     private final String urlIdentidad;
@@ -59,12 +60,21 @@ public class ServiciosExternos {
 
     // Solo un huésped puede reservar. Devuelve el id del usuario autenticado.
     public Long verificarRolHuesped(String autorizacion) {
+        return verificarRol(autorizacion, "HUESPED", "Solo un huésped puede realizar una reserva").id();
+    }
+
+    // HU-26: huésped o anfitrión con sesión válida; devuelve id y rol
+    public UsuarioIdentidadDTO verificarSesion(String autorizacion) {
+        return verificarRol(autorizacion, ROLES_SESION, "No tiene permiso para consultar reservas");
+    }
+
+    private UsuarioIdentidadDTO verificarRol(String autorizacion, String roles, String mensajeSinPermiso) {
         if (autorizacion == null || autorizacion.isBlank()) {
             throw new AutenticacionException("Debe iniciar sesión");
         }
         try {
             UsuarioIdentidadDTO usuario = cliente.get()
-                    .uri(urlIdentidad + "/autenticacion/autorizar?roles=HUESPED")
+                    .uri(urlIdentidad + "/autenticacion/autorizar?roles=" + roles)
                     .header("Authorization", autorizacion)
                     .retrieve()
                     .body(UsuarioIdentidadDTO.class);
@@ -72,12 +82,12 @@ public class ServiciosExternos {
             if (usuario == null || usuario.id() == null) {
                 throw new AutenticacionException("Debe iniciar sesión");
             }
-            return usuario.id();
+            return usuario;
 
         } catch (HttpClientErrorException.Unauthorized e) {
             throw new AutenticacionException("Debe iniciar sesión");
         } catch (HttpClientErrorException.Forbidden e) {
-            throw new PermisoException("Solo un huésped puede realizar una reserva");
+            throw new PermisoException(mensajeSinPermiso);
         } catch (RestClientException e) {
             throw new ServicioNoDisponibleException("No fue posible validar la sesión. Intente más tarde");
         }
