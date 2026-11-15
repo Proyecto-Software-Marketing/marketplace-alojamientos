@@ -1,0 +1,33 @@
+<div class="centro">
+  <section class="tarjeta cuadro">
+
+    @if (modo() === 'login') {
+      <h2>Iniciar sesión</h2>
+      <p class="subtitulo">Inicia sesión para reservar o gestionar tus alojamientos.</p>
+
+      <form (ngSubmit)="iniciarSesion()">
+        <label class="campo">Correo
+          <input type="email" name="correo" placeholder="tu@correo.com" [(ngModel)]="correo">
+        </label>
+        <label class="campo">Contraseña
+          <input type="password" name="contrasena" placeholder="Introduce tu contraseña" [(ngModel)]="contrasena">
+        </label>
+
+        @if (mensajeExito()) {
+          <p class="exito">{{ mensajeExito() }}</p>
+        }
+        @for (mensaje of errores(); track mensaje) {
+          <p class="error">{{ mensaje }}</p>
+        }
+
+        <button class="boton" type="submit">Entrar</button>
+      </form>
+
+      <p class="cambiar">¿No tienes cuenta? <button class="enlace" (click)="irARegistro()">Regístrate</button></p>
+      <p class="aviso">El administrador entra solo con sus credenciales; no se puede registrar.</p>
+    } @else {
+      <app-registro (volver)="volverAlLogin($event)" />
+    }
+
+  </section>
+</div>

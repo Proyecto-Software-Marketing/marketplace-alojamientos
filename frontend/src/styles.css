@@ -1,1 +1,127 @@
-/* You can add global styles to this file, and also import other style files */
+ 
+:root {
+  --azul: #2563eb;
+  --azul-oscuro: #1d4ed8;
+  --fondo: #f5f5f5;
+  --blanco: #ffffff;
+  --borde: #dcdcdc;
+  --texto: #111827;
+  --texto-suave: #6b7280;
+  --rojo: #b91c1c;
+  --verde: #15803d;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', Arial, sans-serif;
+  background: var(--fondo);
+  color: var(--texto);
+}
+
+a {
+  color: var(--azul);
+}
+
+h1 {
+  font-size: 28px;
+  font-weight: 600;
+  margin: 0 0 8px;
+}
+
+.subtitulo {
+  color: var(--texto-suave);
+  margin: 0 0 32px;
+}
+
+/* Caja blanca con borde */
+.tarjeta {
+  background: var(--blanco);
+  border: 1px solid var(--borde);
+  padding: 32px;
+}
+
+.tarjeta h2 {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0 0 24px;
+}
+
+/* Campos de formulario */
+.campo {
+  display: block;
+  margin-bottom: 20px;
+  font-size: 14px;
+}
+
+.campo input,
+.campo select,
+.campo textarea {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--borde);
+  background: var(--blanco);
+  font: inherit;
+}
+
+/* Botones */
+.boton {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  border: none;
+  background: var(--azul);
+  color: var(--blanco);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.boton:hover {
+  background: var(--azul-oscuro);
+}
+
+.boton-secundario {
+  padding: 10px 16px;
+  border: 1px solid var(--azul);
+  background: var(--blanco);
+  color: var(--azul);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+/* Mensajes */
+.error {
+  color: var(--rojo);
+  font-size: 14px;
+}
+
+.exito {
+  color: var(--verde);
+  font-size: 14px;
+}
+
+/* Caja gris con informacion */
+.nota {
+  background: #f0f0f0;
+  padding: 20px;
+  margin-top: 24px;
+}
+
+.nota h3 {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.nota p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--texto-suave);
+}
