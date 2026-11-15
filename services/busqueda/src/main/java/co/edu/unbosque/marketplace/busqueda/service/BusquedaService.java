@@ -1,5 +1,6 @@
 package co.edu.unbosque.marketplace.busqueda.service;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -8,8 +9,11 @@ import org.springframework.stereotype.Service;
 import co.edu.unbosque.marketplace.busqueda.client.ServiciosExternos;
 import co.edu.unbosque.marketplace.busqueda.dto.BusquedaRequest;
 import co.edu.unbosque.marketplace.busqueda.dto.BusquedaResponse;
+import co.edu.unbosque.marketplace.busqueda.dto.DetalleResponse;
+import co.edu.unbosque.marketplace.busqueda.dto.PublicacionDetalle;
 import co.edu.unbosque.marketplace.busqueda.dto.PublicacionResumen;
 import co.edu.unbosque.marketplace.busqueda.exception.BusquedaException;
+import co.edu.unbosque.marketplace.busqueda.exception.PublicacionNoEncontradaException;
 
 // la logica de la busqueda
 @Service
@@ -60,6 +64,17 @@ public class BusquedaService {
             return new BusquedaResponse(resultados, "No hay alojamientos que cumplan con la búsqueda");
         }
         return new BusquedaResponse(resultados, null);
+    }
+     //detalle de una publicacion para compararla antes de cotizar
+    public DetalleResponse detalle(Long idPublicacion, LocalDate llegada, LocalDate salida, Integer huespedes) {
+        PublicacionDetalle publicacion = serviciosExternos.obtenerDetalle(idPublicacion);
+
+        
+        if (publicacion == null || !"ACTIVA".equals(publicacion.getEstado())) {
+            throw new PublicacionNoEncontradaException("La publicación no existe o no está disponible");
+        }
+       
+        return new DetalleResponse(publicacion, llegada, salida, huespedes);
     }
 
     // Revisa los filtros uno por uno y si el huesped no lleno un filtro ese no se aplica

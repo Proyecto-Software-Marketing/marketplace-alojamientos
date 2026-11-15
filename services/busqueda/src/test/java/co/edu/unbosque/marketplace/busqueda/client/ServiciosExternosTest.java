@@ -2,9 +2,11 @@ package co.edu.unbosque.marketplace.busqueda.client;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
 import java.time.LocalDate;
@@ -13,13 +15,15 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
 
+import co.edu.unbosque.marketplace.busqueda.dto.PublicacionDetalle;
 import co.edu.unbosque.marketplace.busqueda.dto.PublicacionResumen;
 
-// Pruebas de las llamadas a Alojamientos y Disponibilidad con un servidor simulado
+// Pruebas de las llamadas a Alojamientos y Disponibilidad  simulado
 class ServiciosExternosTest {
 
     private MockRestServiceServer servidor;
@@ -47,6 +51,32 @@ class ServiciosExternosTest {
 
         assertEquals(1, publicaciones.size());
         assertEquals("Casa", publicaciones.get(0).getTitulo());
+        servidor.verify();
+    }
+
+    @Test
+    void traeElDetalleDeAlojamientos() {
+        servidor.expect(requestTo("http://alojamientos/interno/publicaciones/5"))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(withSuccess("{\"id\":5,\"titulo\":\"Casa\",\"estado\":\"ACTIVA\","
+                        + "\"reglas\":[\"No fumar\"],\"politicaCancelacion\":\"FLEXIBLE\"}",
+                        MediaType.APPLICATION_JSON));
+
+        PublicacionDetalle detalle = serviciosExternos.obtenerDetalle(5L);
+
+        assertEquals(5L, detalle.getId());
+        assertEquals(List.of("No fumar"), detalle.getReglas());
+        assertEquals("FLEXIBLE", detalle.getPoliticaCancelacion());
+        servidor.verify();
+    }
+
+    @Test
+    void siAlojamientosRespondeNoEncontradoElDetalleEsNulo() {
+        servidor.expect(requestTo("http://alojamientos/interno/publicaciones/99"))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(withStatus(HttpStatus.NOT_FOUND));
+
+        assertNull(serviciosExternos.obtenerDetalle(99L));
         servidor.verify();
     }
 
