@@ -56,7 +56,7 @@ class ConsultaResenasControllerTest {
         resena(300L, 15L, 5, "Excelente", 5);
         resena(301L, 15L, 4, "Muy bien", 1);
         Resena ocultada = resena(302L, 15L, 1, "Ofensiva", 0);
-        ocultada.ocultar();
+        ocultada.ocultar(1L, "Incumple las políticas", HOY);
         resenaRepository.save(ocultada);
         resena(303L, 16L, 2, "Otra publicación", 0);
 
