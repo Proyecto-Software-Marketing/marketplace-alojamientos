@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingRequestHeaderException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -39,6 +40,12 @@ public class ControlErrores {
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<Map<String, List<String>>> manejarTipo(MethodArgumentTypeMismatchException e) {
         return respuesta(HttpStatus.BAD_REQUEST, "El identificador enviado no es válido");
+    }
+
+    // 400: falta un parámetro obligatorio, por ejemplo listingIds en /internal/reviews/averages
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<Map<String, List<String>>> manejarSinParametro(MissingServletRequestParameterException e) {
+        return respuesta(HttpStatus.BAD_REQUEST, "Falta el parámetro obligatorio: " + e.getParameterName());
     }
 
     // 400: regla de la reseña verificada en el servicio

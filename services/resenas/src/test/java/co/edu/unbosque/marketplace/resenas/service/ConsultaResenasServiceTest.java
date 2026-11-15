@@ -1,5 +1,6 @@
 package co.edu.unbosque.marketplace.resenas.service;
 
+import co.edu.unbosque.marketplace.resenas.exception.SolicitudInvalidaException;
 import co.edu.unbosque.marketplace.resenas.model.Resena;
 import co.edu.unbosque.marketplace.resenas.repository.ResenaRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -10,9 +11,11 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 // Pruebas de la HU-33: consultar reseñas y calificación promedio
@@ -153,5 +156,41 @@ class ConsultaResenasServiceTest {
 
         assertTrue(resultado.resenas().isEmpty());
         assertNull(resultado.calificacionPromedio());
+    }
+
+    // ---------- Decisión 6: promedios para Búsqueda ----------
+
+    @Test
+    @DisplayName("Decisión 6: devuelve el promedio de cada publicación pedida, sin contar las ocultas")
+    void promediosDeVariasPublicaciones() {
+        resena(PUBLICACION, 5, 2);
+        resena(PUBLICACION, 4, 1);
+        oculta(PUBLICACION, 1, 0);
+        resena(OTRA_PUBLICACION, 3, 1);
+        resena(OTRA_PUBLICACION, 4, 1);
+        resena(OTRA_PUBLICACION, 4, 1);
+        resena(17L, 2, 1);
+
+        Map<Long, Double> promedios = consultaResenasService.promedios("15, 16");
+
+        assertEquals(Map.of(PUBLICACION, 4.5, OTRA_PUBLICACION, 3.7), promedios);
+    }
+
+    @Test
+    @DisplayName("Decisión 6: las publicaciones sin reseñas visibles no aparecen en el mapa")
+    void omiteSinResenasVisibles() {
+        resena(PUBLICACION, 5, 1);
+        oculta(OTRA_PUBLICACION, 2, 1);
+
+        assertEquals(Map.of(PUBLICACION, 5.0), consultaResenasService.promedios("15,16,999"));
+    }
+
+    @Test
+    @DisplayName("Decisión 6: sin ids o con un id que no es número se rechaza")
+    void rechazaIdsInvalidos() {
+        assertThrows(SolicitudInvalidaException.class, () -> consultaResenasService.promedios(""));
+        assertThrows(SolicitudInvalidaException.class, () -> consultaResenasService.promedios(null));
+        assertThrows(SolicitudInvalidaException.class, () -> consultaResenasService.promedios("15,abc"));
+        assertThrows(SolicitudInvalidaException.class, () -> consultaResenasService.promedios("15,,16"));
     }
 }
