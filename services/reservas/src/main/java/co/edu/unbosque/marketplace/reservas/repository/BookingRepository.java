@@ -4,6 +4,7 @@ import co.edu.unbosque.marketplace.reservas.model.Booking;
 import co.edu.unbosque.marketplace.reservas.model.BookingStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -23,4 +24,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     List<Booking> findByAnfitrionIdOrderByCreadaEnDesc(Long anfitrionId);
 
     List<Booking> findByAnfitrionIdAndEstadoOrderByCreadaEnDesc(Long anfitrionId, BookingStatus estado);
+
+    // HU-27: reservas en un estado cuya fecha de salida es anterior a la fecha dada
+    List<Booking> findByEstadoAndFechaSalidaBefore(BookingStatus estado, LocalDate fecha);
 }
