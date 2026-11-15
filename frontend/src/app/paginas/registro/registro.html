@@ -1,0 +1,32 @@
+<h2>Registrarse</h2>
+<p class="subtitulo">Crea tu cuenta como huésped o anfitrión.</p>
+
+<form (ngSubmit)="registrar()">
+  <label class="campo">Nombre
+    <input type="text" name="nombre" placeholder="Nombre y apellidos" [(ngModel)]="nombre">
+  </label>
+  <label class="campo">Correo
+    <input type="email" name="correo" placeholder="tu@correo.com" [(ngModel)]="correo">
+  </label>
+  <label class="campo">Contraseña
+    <input type="password" name="contrasena" placeholder="Mínimo 8 caracteres" [(ngModel)]="contrasena">
+  </label>
+
+  <span class="campo">Rol</span>
+  <div class="roles">
+    <label class="rol" [class.elegido]="rol === 'HUESPED'">
+      <input type="radio" name="rol" value="HUESPED" [(ngModel)]="rol"> Huésped
+    </label>
+    <label class="rol" [class.elegido]="rol === 'ANFITRION'">
+      <input type="radio" name="rol" value="ANFITRION" [(ngModel)]="rol"> Anfitrión
+    </label>
+  </div>
+
+  @for (mensaje of errores(); track mensaje) {
+    <p class="error">{{ mensaje }}</p>
+  }
+
+  <button class="boton" type="submit">Crear cuenta</button>
+</form>
+
+<p class="cambiar">¿Ya tienes cuenta? <button class="enlace" (click)="volver.emit(false)">Inicia sesión</button></p>    

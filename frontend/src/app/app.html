@@ -1,1 +1,33 @@
-<router-outlet />
+<header class="cabecera">
+  <a routerLink="/" class="logo">Marketplace Alojamientos</a>
+
+  <!--Cada rol ve solo sus opciones -->
+  <nav>
+    @switch (sesion.usuario()?.rol) {
+      @case ('HUESPED') {
+        <a routerLink="/">Buscar alojamiento</a>
+        <a routerLink="/mis-reservas">Mis reservas</a>
+      }
+      @case ('ANFITRION') {
+        <a routerLink="/mis-publicaciones">Mis publicaciones</a>
+      }
+      @case ('ADMINISTRADOR') {
+        <a routerLink="/aprobaciones">Aprobaciones</a>
+        <a routerLink="/dashboard">Dashboard</a>
+      }
+      @default {
+        <a routerLink="/login">Iniciar sesión</a>
+        <a routerLink="/login" [queryParams]="{ modo: 'registro' }">Registrarse</a>
+      }
+    }
+
+    @if (sesion.usuario()) {
+      <a routerLink="/perfil">Mi cuenta</a>
+      <button class="enlace" (click)="cerrarSesion()">Cerrar sesión</button>
+    }
+  </nav>
+</header>
+
+<main class="contenido">
+  <router-outlet />
+</main>
