@@ -1491,16 +1491,16 @@ components:
       type: object
       properties:
         id:
-          type: string
-          format: uuid
+          type: integer
+          format: int64
         codigoReserva:
           type: string
         publicacionId:
-          type: string
-          format: uuid
+          type: integer
+          format: int64
         huespedId:
-          type: string
-          format: uuid
+          type: integer
+          format: int64
         fechaLlegada:
           type: string
           format: date
@@ -1532,6 +1532,26 @@ components:
         metodoPago:
           type: string
           description: Token de método de pago de prueba de Stripe, p. ej. pm_card_visa
+        publicacionId:
+          type: integer
+          format: int64
+          description: Snapshot opcional de la cotización. Si falta, se consulta en Cotización.
+        fechaLlegada:
+          type: string
+          format: date
+          description: Snapshot opcional de la cotización. Si falta, se consulta en Cotización.
+        fechaSalida:
+          type: string
+          format: date
+          description: Snapshot opcional de la cotización. Si falta, se consulta en Cotización.
+        cantidadHuespedes:
+          type: integer
+          minimum: 1
+          description: Snapshot opcional de la cotización. Si falta, se consulta en Cotización.
+        montoTotal:
+          type: number
+          minimum: 0
+          description: Snapshot opcional de la cotización. Si falta, se consulta en Cotización.
       required:
       - cotizacionId
       - metodoPago
