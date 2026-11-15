@@ -1,0 +1,66 @@
+@for (error of errores(); track error) {
+  <p class="tarjeta error">{{ error }}</p>
+}
+
+@if (publicacion(); as p) {
+  <h1>{{ p.titulo }}</h1>
+  <p class="subtitulo">{{ p.ciudad }} · {{ p.tipo }} · Capacidad: {{ p.capacidad }} huéspedes</p>
+
+  <div class="columnas">
+   
+    <div>
+      @if (p.imagenes.length > 0) {
+        <img class="foto-principal" [src]="p.imagenes[0]" [alt]="p.titulo">
+        <div class="miniaturas">
+          @for (imagen of p.imagenes.slice(1, 4); track imagen) {
+            <img [src]="imagen" [alt]="p.titulo">
+          }
+        </div>
+      } @else {
+        <div class="foto-principal sin-imagen">Sin imágenes</div>
+      }
+
+      <h2>Descripción</h2>
+      <p>{{ p.descripcion }}</p>
+
+      <h2>Servicios</h2>
+      <p>{{ p.servicios.join(' · ') }}</p>
+
+      <div class="dos">
+        <div>
+          <h2>Reglas</h2>
+          <p class="suave">{{ p.reglas.join('. ') }}</p>
+        </div>
+        <div>
+          <h2>Política de cancelación</h2>
+          <p class="suave">{{ p.politicaCancelacion }}</p>
+        </div>
+      </div>
+    </div>
+
+   
+    <aside class="tarjeta estancia">
+      <p class="precio">$ {{ p.precioNoche | number: '1.0-0' }} / noche</p>
+      <p class="suave">Configura tu estancia</p>
+
+      <label class="campo">Fecha llegada
+        <input type="date" name="llegada" [(ngModel)]="llegada">
+      </label>
+      <label class="campo">Fecha salida
+        <input type="date" name="salida" [(ngModel)]="salida">
+      </label>
+      <label class="campo">Nº huéspedes
+        <input type="number" name="huespedes" min="1" [(ngModel)]="huespedes">
+      </label>
+
+      <p class="suave">{{ noches() }} noches · {{ huespedes }} huéspedes</p>
+
+      <a class="boton ver-cotizacion"
+         routerLink="/cotizacion"
+         [queryParams]="{ idPublicacion: p.id, llegada: llegada, salida: salida, huespedes: huespedes }">
+        Ver cotización
+      </a>
+      <p class="suave nota-pie">El desglose incluirá limpieza y tarifa de servicio. Todavía no se realizará ningún cobro.</p>
+    </aside>
+  </div>
+}
