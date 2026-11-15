@@ -1,5 +1,6 @@
 package co.edu.unbosque.marketplace.reservas.controller;
 
+import co.edu.unbosque.marketplace.reservas.dto.BookingListDTO;
 import co.edu.unbosque.marketplace.reservas.dto.BookingRequestDTO;
 import co.edu.unbosque.marketplace.reservas.dto.BookingResponseDTO;
 import co.edu.unbosque.marketplace.reservas.exception.ConflictoReservaException;
@@ -21,16 +22,18 @@ import org.springframework.web.context.WebApplicationContext;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-// Pruebas de la ruta pública POST /bookings de la HU-23
+// Pruebas de las rutas públicas de reservas: HU-23 (POST) y HU-24 (GET)
 @SpringBootTest
 class BookingControllerTest {
 
@@ -164,5 +167,62 @@ class BookingControllerTest {
                         .content("{}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.mensajes.length()").value(2));
+    }
+
+    // ---------- HU-24: GET /bookings ----------
+
+    @Test
+    @DisplayName("CA-068 GET /bookings responde 200 con las reservas del huésped")
+    void listarReservasResponde200() throws Exception {
+        when(bookingService.listarReservas(eq(TOKEN), any()))
+                .thenReturn(new BookingListDTO(List.of(respuesta())));
+
+        mockMvc.perform(get(RUTA).header("Authorization", TOKEN))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(1))
+                .andExpect(jsonPath("$.items[0].id").value(1))
+                .andExpect(jsonPath("$.items[0].codigoReserva").value("RES-ABCD1234"))
+                .andExpect(jsonPath("$.items[0].estado").value("CONFIRMADA"));
+    }
+
+    @Test
+    @DisplayName("GET /bookings filtra por estado")
+    void listarReservasFiltraPorEstado() throws Exception {
+        when(bookingService.listarReservas(eq(TOKEN), eq(BookingStatus.CONFIRMADA)))
+                .thenReturn(new BookingListDTO(List.of(respuesta())));
+
+        mockMvc.perform(get(RUTA)
+                        .header("Authorization", TOKEN)
+                        .param("estado", "CONFIRMADA"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(1));
+    }
+
+    @Test
+    @DisplayName("GET /bookings sin Authorization responde 401")
+    void listarReservasSinTokenResponde401() throws Exception {
+        mockMvc.perform(get(RUTA))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.mensajes[0]").value("Debe iniciar sesión"));
+    }
+
+    @Test
+    @DisplayName("GET /bookings si el usuario no es huésped responde 403")
+    void listarReservasSinRolHuespedResponde403() throws Exception {
+        when(bookingService.listarReservas(anyString(), any()))
+                .thenThrow(new PermisoException("Solo un huésped puede realizar una reserva"));
+
+        mockMvc.perform(get(RUTA).header("Authorization", TOKEN))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("GET /bookings con un estado inválido responde 400")
+    void listarReservasConEstadoInvalidoResponde400() throws Exception {
+        mockMvc.perform(get(RUTA)
+                        .header("Authorization", TOKEN)
+                        .param("estado", "NO_EXISTE"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.mensajes[0]").value("El identificador enviado no es válido"));
     }
 }

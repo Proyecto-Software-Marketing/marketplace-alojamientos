@@ -1108,7 +1108,7 @@ paths:
         schema:
           type: string
           format: uuid
-        description: Clave de idempotencia (RF-026, RN-015). Un reintento con la misma clave devuelve la misma reserva.
+        description: Clave de idempotencia (RF-026, RN-015). Un reintento con la misma clave, incluso simultáneo, devuelve la misma reserva y no genera otro pago.
       requestBody:
         required: true
         content:
@@ -1137,7 +1137,7 @@ paths:
       - Reservas y Cancelaciones
       summary: 'Historial de reservas (Huésped: las suyas; Anfitrión: las de sus publicaciones)'
       operationId: listBookings
-      description: 'Historias: HU-26. Rol requerido: HUESPED, ANFITRION.'
+      description: 'Historias: HU-24 (CA-068). Por ahora solo el HUESPED consulta sus propias reservas, de la más reciente a la más antigua. La vista del anfitrión queda para HU-26.'
       parameters:
       - name: estado
         in: query
