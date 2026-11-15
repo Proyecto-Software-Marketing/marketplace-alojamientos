@@ -10,12 +10,14 @@ import co.edu.unbosque.marketplace.identidad.repository.UsuarioRepository;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import co.edu.unbosque.marketplace.identidad.client.ServiciosExternos;
+import co.edu.unbosque.marketplace.identidad.dto.EstadisticasUsuariosResponse;
 import co.edu.unbosque.marketplace.identidad.dto.PerfilRequest;
 import co.edu.unbosque.marketplace.identidad.exception.AutenticacionException;
 import co.edu.unbosque.marketplace.identidad.exception.CuentaException;
 import co.edu.unbosque.marketplace.identidad.model.EstadoUsuario;
 import co.edu.unbosque.marketplace.identidad.model.Sesion;
 import java.util.List;
+
 
 // Reglas de negocio de los usuarios
 
@@ -103,5 +105,12 @@ public class UsuarioService {
         if (usuario.getRol() == Rol.ANFITRION) {
             serviciosExternos.pausarPublicaciones(idUsuario);
         }
+    }
+     //cuantos usuarios hay en total y por rol
+    public EstadisticasUsuariosResponse estadisticas() {
+        return new EstadisticasUsuariosResponse(
+                usuarioRepository.count(),
+                usuarioRepository.countByRol(Rol.HUESPED),
+                usuarioRepository.countByRol(Rol.ANFITRION));
     }
 }

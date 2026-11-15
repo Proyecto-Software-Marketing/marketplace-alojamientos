@@ -282,7 +282,8 @@ paths:
       - Identidad y Usuarios
       summary: Conteo de usuarios para el dashboard
       operationId: estadisticasUsuarios
-      description: 'Historias: HU-39. Operación interna entre servicios. Pendiente de implementar.'
+      description: 'Historias: HU-39. Operación interna entre servicios (la usa Reportes para el dashboard); no pide sesión. Cuenta los usuarios en total y por rol.'
+      security: []
       responses:
         '200':
           description: Operación exitosa
@@ -290,8 +291,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Estadisticas'
-        '401':
-          $ref: '#/components/responses/E401'
 components:
   securitySchemes:
     bearerAuth:
@@ -420,8 +419,17 @@ components:
           type: string
     Estadisticas:
       type: object
-      additionalProperties: true
-      description: Indicadores agregados
+      properties:
+        total:
+          type: integer
+          format: int64
+          description: Usuarios registrados (incluye al administrador)
+        huespedes:
+          type: integer
+          format: int64
+        anfitriones:
+          type: integer
+          format: int64
   responses:
     E400:
       description: Datos inválidos
