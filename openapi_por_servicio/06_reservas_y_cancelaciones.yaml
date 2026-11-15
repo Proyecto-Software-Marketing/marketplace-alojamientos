@@ -237,16 +237,16 @@ components:
       type: object
       properties:
         id:
-          type: string
-          format: uuid
+          type: integer
+          format: int64
         codigoReserva:
           type: string
         publicacionId:
-          type: string
-          format: uuid
+          type: integer
+          format: int64
         huespedId:
-          type: string
-          format: uuid
+          type: integer
+          format: int64
         fechaLlegada:
           type: string
           format: date
@@ -316,15 +316,14 @@ components:
           $ref: '#/components/schemas/BookingStatus'
     Error:
       type: object
+      description: Formato de error de todos los servicios
       properties:
-        codigo:
-          type: string
-        mensaje:
-          type: string
-        detalles:
+        mensajes:
           type: array
           items:
             type: string
+          example:
+          - El alojamiento ya no está disponible para las fechas seleccionadas
     FutureBookings:
       type: object
       properties:
