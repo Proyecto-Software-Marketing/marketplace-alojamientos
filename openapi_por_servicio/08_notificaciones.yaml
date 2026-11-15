@@ -17,7 +17,7 @@ paths:
       - Notificaciones
       summary: Mis notificaciones, de la más reciente a la más antigua
       operationId: listNotifications
-      description: 'Historias: HU-31.'
+      description: 'Historias: HU-31 (CA-085, CA-087). Cualquier rol con sesión. Solo devuelve las notificaciones del usuario del token, ordenadas por creadaEn descendente; noLeidas cuenta las que tienen leida = false.'
       responses:
         '200':
           description: Operación exitosa
@@ -27,13 +27,15 @@ paths:
                 $ref: '#/components/schemas/NotificationList'
         '401':
           $ref: '#/components/responses/E401'
+        '503':
+          $ref: '#/components/responses/E503'
   /notifications/{id}/read:
     patch:
       tags:
       - Notificaciones
       summary: Marcar notificación como leída
       operationId: markRead
-      description: 'Historias: HU-31.'
+      description: 'Historias: HU-31 (CA-086, CA-087). Idempotente: marcar una ya leída responde 200. Si la notificación es de otro usuario responde 404, igual que si no existe.'
       parameters:
       - name: id
         in: path
@@ -48,10 +50,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Notification'
+        '400':
+          $ref: '#/components/responses/E400'
         '401':
           $ref: '#/components/responses/E401'
         '404':
           $ref: '#/components/responses/E404'
+        '503':
+          $ref: '#/components/responses/E503'
   /internal/notifications:
     post:
       tags:
@@ -164,8 +170,13 @@ components:
       properties:
         items:
           type: array
+          description: De la más reciente a la más antigua
           items:
             $ref: '#/components/schemas/Notification'
+        noLeidas:
+          type: integer
+          format: int64
+          description: Cantidad de notificaciones con leida = false
   responses:
     E400:
       description: Solicitud inválida (validación)
@@ -181,6 +192,12 @@ components:
             $ref: '#/components/schemas/Error'
     E404:
       description: No encontrado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    E503:
+      description: Identidad no respondió
       content:
         application/json:
           schema:

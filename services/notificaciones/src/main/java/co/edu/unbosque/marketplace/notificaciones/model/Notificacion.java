@@ -65,6 +65,11 @@ public class Notificacion {
         this.fechaCreacion = fechaCreacion;
     }
 
+    // CA-086: marcar como leída. Si ya estaba leída no cambia nada
+    public void marcarLeida() {
+        this.leida = true;
+    }
+
     public Long getId() {
         return id;
     }

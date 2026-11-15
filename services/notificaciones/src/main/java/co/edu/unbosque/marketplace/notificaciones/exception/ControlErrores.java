@@ -4,8 +4,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.util.List;
 import java.util.Map;
@@ -34,6 +36,36 @@ public class ControlErrores {
     @ExceptionHandler(SolicitudInvalidaException.class)
     public ResponseEntity<Map<String, List<String>>> manejarSolicitud(SolicitudInvalidaException e) {
         return respuesta(HttpStatus.BAD_REQUEST, e.getMessage());
+    }
+
+    // 400: el id de la URL no es un número, por ejemplo /notifications/abc/read
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<Map<String, List<String>>> manejarTipo(MethodArgumentTypeMismatchException e) {
+        return respuesta(HttpStatus.BAD_REQUEST, "El identificador enviado no es válido");
+    }
+
+    // 401: token inválido o vencido
+    @ExceptionHandler(AutenticacionException.class)
+    public ResponseEntity<Map<String, List<String>>> manejarAutenticacion(AutenticacionException e) {
+        return respuesta(HttpStatus.UNAUTHORIZED, e.getMessage());
+    }
+
+    // 401: no enviaron el encabezado Authorization
+    @ExceptionHandler(MissingRequestHeaderException.class)
+    public ResponseEntity<Map<String, List<String>>> manejarSinToken(MissingRequestHeaderException e) {
+        return respuesta(HttpStatus.UNAUTHORIZED, "Debe iniciar sesión");
+    }
+
+    // 404: la notificación no existe o es de otro usuario (CA-087)
+    @ExceptionHandler(NoEncontradoException.class)
+    public ResponseEntity<Map<String, List<String>>> manejarNoEncontrado(NoEncontradoException e) {
+        return respuesta(HttpStatus.NOT_FOUND, e.getMessage());
+    }
+
+    // 503: Identidad no respondió
+    @ExceptionHandler(ServicioNoDisponibleException.class)
+    public ResponseEntity<Map<String, List<String>>> manejarServicioCaido(ServicioNoDisponibleException e) {
+        return respuesta(HttpStatus.SERVICE_UNAVAILABLE, e.getMessage());
     }
 
     private ResponseEntity<Map<String, List<String>>> respuesta(HttpStatus estado, String mensaje) {

@@ -17,14 +17,14 @@ paths:
       - Reseñas
       summary: Calificar y reseñar una reserva COMPLETADA propia
       operationId: createReview
-      description: 'Historias: HU-32. Rol requerido: HUESPED.'
+      description: 'Historias: HU-32. Rol requerido: HUESPED. El huésped sale del token y la reserva se consulta en Reservas (GET /bookings/{id}) con ese mismo token. 400: calificación fuera de 1 a 5, decimal o ausente, o contenido vacío o de más de 1000 caracteres (CA-091). 404: la reserva no existe o es de otro huésped. 409: la reserva no está COMPLETADA (CA-089) o ya tiene reseña (CA-090). 503: Identidad o Reservas no responden.'
       parameters:
       - name: id
         in: path
         required: true
         schema:
-          type: string
-          format: uuid
+          type: integer
+          format: int64
       requestBody:
         required: true
         content:
@@ -48,6 +48,8 @@ paths:
           $ref: '#/components/responses/E404'
         '409':
           $ref: '#/components/responses/E409'
+        '503':
+          $ref: '#/components/responses/E503'
   /listings/{id}/reviews:
     get:
       tags:
@@ -61,8 +63,8 @@ paths:
         in: path
         required: true
         schema:
-          type: string
-          format: uuid
+          type: integer
+          format: int64
       responses:
         '200':
           description: Operación exitosa
@@ -84,8 +86,8 @@ paths:
         in: path
         required: true
         schema:
-          type: string
-          format: uuid
+          type: integer
+          format: int64
       requestBody:
         required: true
         content:
@@ -143,15 +145,14 @@ components:
       description: Mapa publicacionId a calificación promedio
     Error:
       type: object
+      description: Formato de error de todos los servicios
       properties:
-        codigo:
-          type: string
-        mensaje:
-          type: string
-        detalles:
+        mensajes:
           type: array
           items:
             type: string
+          example:
+          - Solo se puede reseñar una estancia completada
     ReasonInput:
       type: object
       properties:
@@ -164,26 +165,29 @@ components:
       type: object
       properties:
         id:
-          type: string
-          format: uuid
+          type: integer
+          format: int64
         reservaId:
-          type: string
-          format: uuid
+          type: integer
+          format: int64
         huespedId:
-          type: string
-          format: uuid
+          type: integer
+          format: int64
         publicacionId:
-          type: string
-          format: uuid
+          type: integer
+          format: int64
         calificacion:
           type: integer
         contenido:
           type: string
         visible:
           type: boolean
+          description: true al publicarse; false si un administrador la oculta (HU-36)
         fecha:
           type: string
           format: date-time
+          description: Fecha y hora de Bogotá en que se registró
+          example: '2026-11-15T10:30:00'
     ReviewInput:
       type: object
       properties:
@@ -191,8 +195,11 @@ components:
           type: integer
           minimum: 1
           maximum: 5
+          description: Número entero; un decimal como 4.5 se rechaza con 400
         contenido:
           type: string
+          minLength: 1
+          maxLength: 1000
       required:
       - calificacion
       - contenido
@@ -231,7 +238,13 @@ components:
           schema:
             $ref: '#/components/schemas/Error'
     E409:
-      description: Conflicto (reserva superpuesta, estado no permitido, duplicado)
+      description: Conflicto (reserva no COMPLETADA o ya reseñada)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    E503:
+      description: Identidad o Reservas no respondieron
       content:
         application/json:
           schema:
