@@ -49,7 +49,7 @@ class ConsultaResenasServiceTest {
     private Resena oculta(Long publicacionId, int calificacion, int horasAtras) {
         Resena resena = new Resena(siguienteReserva++, publicacionId, 21L, calificacion, "Oculta",
                 HOY.minusHours(horasAtras));
-        resena.ocultar();
+        resena.ocultar(1L, "Incumple las políticas", HOY);
         return resenaRepository.save(resena);
     }
 

@@ -53,7 +53,7 @@ class ResenaInternaControllerTest {
         resena(300L, 15L, 5);
         resena(301L, 15L, 4);
         Resena ocultada = resena(302L, 15L, 1);
-        ocultada.ocultar();
+        ocultada.ocultar(1L, "Incumple las políticas", HOY);
         resenaRepository.save(ocultada);
         resena(303L, 16L, 3);
 
