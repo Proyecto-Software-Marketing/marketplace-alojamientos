@@ -17,7 +17,7 @@ paths:
       - Reportes y Dashboard
       summary: 'Indicadores: usuarios, publicaciones activas, reservas por estado, ingresos estimados, ciudades con mayor demanda'
       operationId: dashboard
-      description: 'Historias: HU-39. Rol requerido: ADMINISTRADOR.'
+      description: 'Historia: HU-39 (CA-108, CA-109, CA-110). Rol requerido: ADMINISTRADOR, se verifica con Identidad (GET /autenticacion/autorizar?roles=ADMINISTRADOR). Los indicadores se piden en cada consulta a Identidad (GET /interno/usuarios/estadisticas), Alojamientos (GET /interno/publicaciones/estadisticas) y Reservas (GET /interno/reservas/estadisticas); si un servicio no está configurado, sus indicadores quedan en cero.'
       responses:
         '200':
           description: Operación exitosa
@@ -35,7 +35,7 @@ paths:
       - Reportes y Dashboard
       summary: Exportar reporte a PDF o Excel y registrar quién y cuándo
       operationId: exportReport
-      description: 'Historias: HU-40, HU-41. Rol requerido: ADMINISTRADOR.'
+      description: 'Historias: HU-40, HU-41. Rol requerido: ADMINISTRADOR. Pendiente de implementar.'
       requestBody:
         required: true
         content:
@@ -65,7 +65,7 @@ components:
     bearerAuth:
       type: http
       scheme: bearer
-      bearerFormat: JWT
+      description: Token de sesión que entrega Identidad en /autenticacion/login (se guarda en base de datos, no es JWT)
   schemas:
     Dashboard:
       type: object
@@ -76,6 +76,7 @@ components:
           type: integer
         reservasPorEstado:
           type: object
+          description: 'Cantidad de reservas por estado, por ejemplo {"CONFIRMADA": 6, "CANCELADA": 2}'
           additionalProperties:
             type: integer
         ingresosEstimados:
@@ -91,12 +92,9 @@ components:
                 type: integer
     Error:
       type: object
+      description: Formato de error de todos los servicios
       properties:
-        codigo:
-          type: string
-        mensaje:
-          type: string
-        detalles:
+        mensajes:
           type: array
           items:
             type: string
