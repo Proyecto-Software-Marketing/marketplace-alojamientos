@@ -12,10 +12,10 @@ jobs:
     name: build-test-services (${{ matrix.service }})
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         # Cada servicio nuevo se debe agregar a esta lista
-        service: [ identidad, cotizacion, disponibilidad, busqueda, notificaciones, reportes, resenas ]
-
+        service: [ identidad, cotizacion, disponibilidad, busqueda, reservas, notificaciones, reportes, resenas ]
     steps:
       - name: Descargar el código
         uses: actions/checkout@v4
