@@ -35,3 +35,25 @@ jobs:
         run: ./mvnw -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:5.1.0.4751:sonar -Dsonar.organization=proyecto-software-marketing -Dsonar.projectKey=proyecto-software-marketing_${{ matrix.service }} -Dsonar.host.url=https://sonarcloud.io
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  # compila el front de Angular en cada PR para saber que no se rompio nada
+  build-test-frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      # instala node para poder usar npm y angular
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      # instala las librerias tal cual estan en el package-lock
+      - run: npm ci
+
+      # si esto falla es porque algo del front no compila
+      - run: npx ng build
