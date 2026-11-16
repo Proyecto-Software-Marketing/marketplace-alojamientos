@@ -1,0 +1,68 @@
+<div class="encabezado">
+  <div>
+    <h1>Exportar reportes</h1>
+    <p class="subtitulo">
+      Elige el reporte y el formato. Cada descarga queda registrada en la auditoría con tu usuario y la fecha.
+    </p>
+  </div>
+</div>
+
+<section class="tarjeta controles">
+  <label class="campo">Tipo de reporte
+    <select name="tipoReporte" [(ngModel)]="tipoReporte">
+      @for (tipo of tiposReporte; track tipo.valor) {
+        <option [value]="tipo.valor">{{ tipo.texto }}</option>
+      }
+    </select>
+  </label>
+
+  <label class="campo">Formato
+    <select name="formato" [(ngModel)]="formato">
+      @for (opcion of formatos; track opcion.valor) {
+        <option [value]="opcion.valor">{{ opcion.texto }}</option>
+      }
+    </select>
+  </label>
+
+  <button class="boton" type="button" (click)="descargarReporte()" [disabled]="exportando()">
+    {{ exportando() ? 'Descargando...' : 'Descargar reporte' }}
+  </button>
+
+  @if (mensajeExportar()) {
+    <p class="exito">{{ mensajeExportar() }}</p>
+  }
+  @for (error of erroresExportar(); track error) {
+    <p class="error">{{ error }}</p>
+  }
+</section>
+
+<section class="tarjeta auditoria">
+  <h2>Auditoría de exportaciones</h2>
+  <p class="vacio">Quién exportó cada reporte y cuándo lo exportó.</p>
+  @for (error of erroresExportaciones(); track error) {
+    <p class="error">{{ error }}</p>
+  }
+
+  @if (exportaciones().length > 0) {
+    <table class="tabla">
+      <thead>
+        <tr>
+          <th>Reporte</th>
+          <th>Usuario</th>
+          <th>Fecha</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (exportacion of exportaciones(); track exportacion.id) {
+          <tr>
+            <td class="detalle">{{ exportacion.detalle }}</td>
+            <td>{{ exportacion.usuarioId ? 'Usuario ' + exportacion.usuarioId : 'Sin usuario' }}</td>
+            <td class="fecha">{{ fecha(exportacion) }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  } @else {
+    <p class="vacio">Todavía no hay exportaciones registradas.</p>
+  }
+</section>
