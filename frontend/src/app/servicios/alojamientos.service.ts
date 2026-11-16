@@ -1,0 +1,81 @@
+import { HttpClient } from '@angular/common/http';
+import { Injectable, inject } from '@angular/core';
+
+export type TipoAlojamiento = 'APARTAMENTO' | 'CASA' | 'HABITACION' | 'CABANA' | 'OTRO';
+
+// Servicio que se cobra una vez por estancia (HU-10)
+export interface ServicioAdicional {
+  nombre: string;
+  costo: number;
+}
+
+// Una publicación tal como la devuelve el servicio Alojamientos
+export interface Publicacion {
+  id: number;
+  anfitrionId: number;
+  titulo: string;
+  descripcion: string;
+  ciudad: string;
+  ubicacionTextual: string;
+  tipoAlojamiento: TipoAlojamiento;
+  capacidad: number;
+  precioPorNoche: number;
+  tarifaLimpieza: number;
+  porcentajeDescuentoEstanciaLarga: number;
+  nochesMinimasDescuento: number | null;
+  serviciosAdicionales: ServicioAdicional[];
+  servicios: string[];
+  reglas: string[];
+  imagenes: string[];
+  estado: string;
+}
+
+// HU-07 datos básicos para crear el borrador
+export interface DatosPublicacion {
+  titulo: string;
+  descripcion: string;
+  ciudad: string;
+  ubicacionTextual: string;
+  tipoAlojamiento: TipoAlojamiento;
+  capacidad: number;
+  precioPorNoche: number;
+}
+
+// HU-10 configuración de precios
+export interface DatosTarifas {
+  tarifaLimpieza: number;
+  porcentajeDescuentoEstanciaLarga: number;
+  nochesMinimasDescuento: number | null;
+  serviciosAdicionales: ServicioAdicional[];
+}
+
+// Llamadas al servicio Alojamientos
+@Injectable({ providedIn: 'root' })
+export class AlojamientosService {
+
+  private http = inject(HttpClient);
+  private url = '/api/alojamientos/listings';
+
+  // HU-07 la publicación queda en BORRADOR
+  crear(datos: DatosPublicacion) {
+    return this.http.post<Publicacion>(this.url, datos);
+  }
+
+  // HU-09 cada lista reemplaza la anterior completa
+  guardarServicios(id: number, servicios: string[]) {
+    return this.http.put<Publicacion>(`${this.url}/${id}/amenities`, { servicios });
+  }
+
+  guardarReglas(id: number, reglas: string[]) {
+    return this.http.put<Publicacion>(`${this.url}/${id}/rules`, { reglas });
+  }
+
+  guardarImagenes(id: number, imagenes: string[]) {
+    return this.http.put<Publicacion>(`${this.url}/${id}/images`, { imagenes });
+  }
+
+  // HU-10 tarifas, descuento por estancia larga y servicios adicionales
+  guardarTarifas(id: number, datos: DatosTarifas) {
+    return this.http.put<Publicacion>(`${this.url}/${id}/pricing`, datos);
+  }
+}

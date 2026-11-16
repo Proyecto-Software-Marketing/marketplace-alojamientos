@@ -1,0 +1,178 @@
+.cuadro {
+  max-width: 720px;
+}
+
+h3 {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 24px 0 10px;
+}
+
+.suave {
+  color: var(--texto-suave);
+  font-size: 13px;
+  font-weight: 400;
+}
+
+/* Indicador de pasos: 1 Datos básicos · 2 ... */
+.pasos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  list-style: none;
+  padding: 0;
+  margin: 0 0 24px;
+  font-size: 14px;
+  color: var(--texto-suave);
+}
+
+.numero {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin-right: 6px;
+  border: 1px solid var(--borde);
+  font-size: 12px;
+}
+
+.activo {
+  color: var(--texto);
+  font-weight: 600;
+}
+
+.activo .numero {
+  background: var(--azul);
+  border-color: var(--azul);
+  color: var(--blanco);
+}
+
+.hecho .numero {
+  border-color: var(--verde);
+  color: var(--verde);
+}
+
+.dos {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.servicios {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  font-size: 14px;
+}
+
+.opcion {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+/* Campo + botón para agregar a una lista */
+.agregar {
+  display: flex;
+  gap: 8px;
+}
+
+.agregar input {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid var(--borde);
+  font: inherit;
+  font-size: 14px;
+}
+
+.agregar .costo {
+  flex: 0 0 140px;
+}
+
+.lista {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0;
+  font-size: 14px;
+}
+
+.lista li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--borde);
+}
+
+.quitar {
+  border: none;
+  background: none;
+  color: var(--texto-suave);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.quitar:hover {
+  color: var(--rojo);
+}
+
+.imagenes {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.imagenes figure {
+  position: relative;
+  margin: 0;
+  height: 80px;
+  border: 1px solid var(--borde);
+  background: var(--fondo);
+}
+
+.imagenes img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.imagenes .quitar {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  background: var(--blanco);
+}
+
+.botones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 24px;
+}
+
+.botones .boton {
+  width: auto;
+}
+
+.enlace {
+  text-decoration: none;
+}
+
+.resumen {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  gap: 8px 16px;
+  margin: 16px 0;
+  font-size: 14px;
+}
+
+.resumen dt {
+  color: var(--texto-suave);
+}
+
+.resumen dd {
+  margin: 0;
+}
