@@ -1473,16 +1473,21 @@ components:
             type: object
             properties:
               id:
-                type: string
-                format: uuid
+                type: integer
+                format: int64
               usuarioId:
-                type: string
-                format: uuid
+                type: integer
+                format: int64
               entidad:
                 type: string
+              entidadId:
+                type: integer
+                format: int64
               accion:
                 type: string
               resultado:
+                type: string
+              detalle:
                 type: string
               fecha:
                 type: string
