@@ -1,0 +1,73 @@
+<h1>Cotización</h1>
+@if (idPublicacion) {
+  <p class="subtitulo"><a [routerLink]="['/alojamiento', idPublicacion]">← Volver al alojamiento</a></p>
+}
+
+@if (!esHuesped()) {
+  <p class="tarjeta nota">Solo los huéspedes pueden cotizar una estancia.</p>
+} @else {
+  <div class="columnas">
+    <section class="tarjeta">
+      <h2>Tu estancia</h2>
+      <form (ngSubmit)="cotizar()">
+        <label class="campo">Fecha llegada
+          <input type="date" name="llegada" [(ngModel)]="llegada">
+        </label>
+        <label class="campo">Fecha salida
+          <input type="date" name="salida" [(ngModel)]="salida">
+        </label>
+        <label class="campo">Nº huéspedes
+          <input type="number" name="huespedes" min="1" step="1" [(ngModel)]="huespedes">
+        </label>
+        <button class="boton" type="submit" [disabled]="cargando()">Recalcular</button>
+      </form>
+    </section>
+
+    <section class="tarjeta desglose">
+      <h2>Desglose</h2>
+
+      @for (mensaje of errores(); track mensaje) {
+        <p class="error">{{ mensaje }}</p>
+      }
+
+      @if (cargando()) {
+        <p class="suave">Calculando...</p>
+      } @else if (cotizacion(); as c) {
+        <p class="suave">
+          Del {{ fecha(c.fechaLlegada) }} al {{ fecha(c.fechaSalida) }} · {{ c.cantidadHuespedes }} huéspedes
+        </p>
+
+        <dl class="lineas">
+          <dt>{{ c.noches }} noches × $ {{ c.precioPorNoche | number: '1.0-0' }}</dt>
+          <dd>$ {{ c.precioBase | number: '1.0-0' }}</dd>
+
+          <dt>Limpieza</dt>
+          <dd>$ {{ c.tarifaLimpieza | number: '1.0-0' }}</dd>
+
+          @for (servicio of c.serviciosAdicionales; track servicio.nombre) {
+            <dt>{{ servicio.nombre }}</dt>
+            <dd>$ {{ servicio.costo | number: '1.0-0' }}</dd>
+          }
+
+          @if (c.descuento > 0) {
+            <dt class="descuento">Descuento estancia larga ({{ c.porcentajeDescuento }} %)</dt>
+            <dd class="descuento">− $ {{ c.descuento | number: '1.0-0' }}</dd>
+          }
+
+          <dt class="separador">Subtotal</dt>
+          <dd class="separador">$ {{ subtotal(c) | number: '1.0-0' }}</dd>
+
+          <dt>Tarifa de servicio ({{ c.porcentajeTarifaServicio | number: '1.0-2' }} %)</dt>
+          <dd>$ {{ c.tarifaServicio | number: '1.0-0' }}</dd>
+
+          <dt class="total">Total</dt>
+          <dd class="total">$ {{ c.total | number: '1.0-0' }}</dd>
+        </dl>
+
+        <p class="suave">Cotización n.º {{ c.id }}. Todavía no se ha realizado ningún cobro.</p>
+      } @else if (errores().length === 0) {
+        <p class="suave">Elige las fechas y pulsa Recalcular.</p>
+      }
+    </section>
+  </div>
+}

@@ -1,0 +1,54 @@
+.columnas {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 24px;
+  align-items: start;
+  max-width: 900px;
+}
+
+@media (max-width: 800px) {
+  .columnas {
+    grid-template-columns: 1fr;
+  }
+}
+
+h2 {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 16px;
+}
+
+.suave {
+  color: var(--texto-suave);
+  font-size: 13px;
+}
+
+/* Una línea por concepto: texto a la izquierda, valor a la derecha */
+.lineas {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px 16px;
+  margin: 16px 0;
+  font-size: 14px;
+}
+
+.lineas dd {
+  margin: 0;
+  text-align: right;
+}
+
+.descuento {
+  color: var(--verde);
+}
+
+.separador {
+  padding-top: 10px;
+  border-top: 1px solid var(--borde);
+}
+
+.total {
+  padding-top: 12px;
+  border-top: 2px solid var(--texto);
+  font-size: 18px;
+  font-weight: 600;
+}
