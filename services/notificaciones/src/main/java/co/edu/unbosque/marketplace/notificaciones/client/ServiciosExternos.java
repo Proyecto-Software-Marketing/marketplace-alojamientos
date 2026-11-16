@@ -7,8 +7,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpClientErrorException.NotFound;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
+
+import java.util.Optional;
 
 // Lo que Notificaciones necesita de otros servicios
 @Component
@@ -50,6 +53,23 @@ public class ServiciosExternos {
             throw new AutenticacionException(DEBE_INICIAR_SESION);
         } catch (RestClientException e) {
             throw new ServicioNoDisponibleException("No fue posible validar la sesión. Intente más tarde");
+        }
+    }
+
+    // HU-04 (Decisión 10): le pregunta a Identidad el id del usuario dueño del correo.
+    // Si el correo no está registrado devuelve vacío.
+    public Optional<Long> buscarUsuarioPorCorreo(String correo) {
+        try {
+            UsuarioIdentidadDTO usuario = cliente.get()
+                    .uri(urlIdentidad + "/interno/usuarios/id?correo={correo}", correo)
+                    .retrieve()
+                    .body(UsuarioIdentidadDTO.class);
+            return Optional.ofNullable(usuario).map(UsuarioIdentidadDTO::id);
+
+        } catch (NotFound e) {
+            return Optional.empty();
+        } catch (RestClientException e) {
+            throw new ServicioNoDisponibleException("No fue posible consultar el usuario. Intente más tarde");
         }
     }
 }
