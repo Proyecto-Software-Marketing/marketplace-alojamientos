@@ -1,0 +1,104 @@
+<div class="encabezado">
+  <div>
+    <h1>Dashboard</h1>
+    <p class="subtitulo">Indicadores básicos de la plataforma.</p>
+  </div>
+    <button class="boton-secundario actualizar" (click)="cargar()">
+    <span class="material-symbols-outlined">refresh</span> Actualizar
+  </button>
+</div>
+
+@for (error of errores(); track error) {
+  <p class="tarjeta error">{{ error }}</p>
+}
+
+@if (datos(); as d) {
+
+  <div class="indicadores">
+    <div class="indicador azul">
+      <span class="icono material-symbols-outlined">group</span>
+      <div>
+        <p class="valor">{{ d.usuarios }}</p>
+        <p class="etiqueta">Usuarios registrados</p>
+      </div>
+    </div>
+    <div class="indicador verde">
+      <span class="icono material-symbols-outlined">home_work</span>
+      <div>
+        <p class="valor">{{ d.publicacionesActivas }}</p>
+        <p class="etiqueta">Publicaciones activas</p>
+      </div>
+    </div>
+    <div class="indicador morado">
+      <span class="icono material-symbols-outlined">event_available</span>
+      <div>
+        <p class="valor">{{ totalReservas() }}</p>
+        <p class="etiqueta">Reservas</p>
+      </div>
+    </div>
+    <div class="indicador naranja">
+      <span class="icono material-symbols-outlined">payments</span>
+      <div>
+        <p class="valor">$ {{ d.ingresosEstimados | number: '1.0-0' }}</p>
+        <p class="etiqueta">Ingresos estimados</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="dos">
+    <section class="tarjeta">
+      <h2>Reservas por estado</h2>
+      @for (estado of estados(); track estado.nombre) {
+        <div class="fila-barra">
+          <span class="nombre">{{ estado.nombre }}</span>
+          <div class="pista">
+            <div class="barra" [class]="colorEstado(estado.nombre)" [style.width.%]="anchoEstado(estado.cantidad)"></div>
+          </div>
+          <span class="cantidad">{{ estado.cantidad }}</span>
+        </div>
+      } @empty {
+        <p class="vacio">Todavía no hay reservas.</p>
+      }
+    </section>
+
+    <section class="tarjeta">
+      <h2>Ciudades con mayor demanda</h2>
+      @for (ciudad of d.ciudadesMayorDemanda; track ciudad.ciudad) {
+        <div class="fila-barra">
+          <span class="nombre">{{ ciudad.ciudad }}</span>
+          <div class="pista">
+            <div class="barra morado" [style.width.%]="anchoCiudad(ciudad.reservas)"></div>
+          </div>
+          <span class="cantidad">{{ ciudad.reservas }}</span>
+        </div>
+      } @empty {
+        <p class="vacio">Todavía no hay datos de demanda.</p>
+      }
+    </section>
+  </div>
+}
+
+
+<section class="tarjeta tarifa">
+  <div>
+    <h2>Tarifa de servicio</h2>
+    <p class="vacio">
+      Porcentaje que se cobra en cada cotización.
+      @if (porcentajeActual() !== null) {
+        Actualmente: <strong>{{ porcentajeActual() }} %</strong>
+      }
+    </p>
+  </div>
+  <form class="form-tarifa" (ngSubmit)="guardarTarifa()">
+    <label class="campo">Nuevo porcentaje (0 a 100)
+      <input type="number" name="porcentaje" step="0.5" [(ngModel)]="porcentaje">
+    </label>
+    <button class="boton" type="submit">Guardar</button>
+  </form>
+  @if (mensajeTarifa()) {
+    <p class="exito">{{ mensajeTarifa() }}</p>
+  }
+  @for (error of erroresTarifa(); track error) {
+    <p class="error">{{ error }}</p>
+  }
+</section>
