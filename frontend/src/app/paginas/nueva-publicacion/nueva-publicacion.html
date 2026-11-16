@@ -1,0 +1,177 @@
+<h1>Nueva publicación</h1>
+
+@if (!esAnfitrion()) {
+  <p class="tarjeta nota">Solo un anfitrión puede crear publicaciones.</p>
+} @else {
+  <p class="subtitulo">Crea tu alojamiento en borrador y complétalo paso a paso.</p>
+
+  <ol class="pasos">
+    @for (item of pasos; track item.valor) {
+      <li [class.activo]="item.valor === paso()" [class.hecho]="numeroPaso(item.valor) < numeroPaso(paso())">
+        <span class="numero">{{ $index + 1 }}</span> {{ item.texto }}
+      </li>
+    }
+  </ol>
+
+  <section class="tarjeta cuadro">
+    @switch (paso()) {
+
+      <!-- Paso 1 (HU-07) -->
+      @case ('datos') {
+        <h2>Datos básicos</h2>
+        <form (ngSubmit)="crearBorrador()">
+          <label class="campo">Título
+            <input type="text" name="titulo" maxlength="120" placeholder="Ej. Cabaña con vista al lago" [(ngModel)]="titulo">
+          </label>
+          <label class="campo">Descripción
+            <textarea name="descripcion" rows="4" maxlength="2000" [(ngModel)]="descripcion"></textarea>
+          </label>
+          <div class="dos">
+            <label class="campo">Ciudad
+              <input type="text" name="ciudad" maxlength="80" placeholder="Ej. Bogotá" [(ngModel)]="ciudad">
+            </label>
+            <label class="campo">Tipo de alojamiento
+              <select name="tipoAlojamiento" [(ngModel)]="tipoAlojamiento">
+                <option value="" disabled>Elige un tipo</option>
+                @for (tipo of tipos; track tipo.valor) {
+                  <option [value]="tipo.valor">{{ tipo.texto }}</option>
+                }
+              </select>
+            </label>
+          </div>
+          <label class="campo">Ubicación
+            <input type="text" name="ubicacionTextual" maxlength="200" placeholder="Ej. Barrio Chapinero, cerca al parque" [(ngModel)]="ubicacionTextual">
+          </label>
+          <div class="dos">
+            <label class="campo">Capacidad (huéspedes)
+              <input type="number" name="capacidad" min="1" max="50" step="1" [(ngModel)]="capacidad">
+            </label>
+            <label class="campo">Precio por noche ($)
+              <input type="number" name="precioPorNoche" min="1" step="1" [(ngModel)]="precioPorNoche">
+            </label>
+          </div>
+
+          @for (mensaje of errores(); track mensaje) {
+            <p class="error">{{ mensaje }}</p>
+          }
+          <button class="boton" type="submit" [disabled]="enviando()">Crear borrador</button>
+        </form>
+      }
+
+      <!-- Paso 2 (HU-09) -->
+      @case ('detalles') {
+        <h2>Servicios, reglas e imágenes</h2>
+        <p class="suave">Puedes omitir este paso y completarlo después.</p>
+
+        <h3>Servicios</h3>
+        <div class="servicios">
+          @for (servicio of catalogo; track servicio) {
+            <label class="opcion">
+              <input type="checkbox" [checked]="servicios().includes(servicio)" (change)="cambiarServicio(servicio)">
+              {{ servicio }}
+            </label>
+          }
+        </div>
+
+        <h3>Reglas <span class="suave">({{ reglas().length }}/20)</span></h3>
+        <form class="agregar" (ngSubmit)="agregarRegla()">
+          <input type="text" name="reglaNueva" maxlength="200" placeholder="Ej. No fumar" [(ngModel)]="reglaNueva">
+          <button class="boton-secundario" type="submit" [disabled]="reglas().length >= 20">Agregar</button>
+        </form>
+        <ul class="lista">
+          @for (regla of reglas(); track regla) {
+            <li>{{ regla }} <button type="button" class="quitar" (click)="quitarRegla($index)" aria-label="Quitar regla">✕</button></li>
+          }
+        </ul>
+
+        <h3>Imágenes <span class="suave">({{ imagenes().length }}/10, la primera es la principal)</span></h3>
+        <form class="agregar" (ngSubmit)="agregarImagen()">
+          <input type="text" name="imagenNueva" maxlength="500" placeholder="https://... o /imagenes/..." [(ngModel)]="imagenNueva">
+          <button class="boton-secundario" type="submit" [disabled]="imagenes().length >= 10">Agregar</button>
+        </form>
+        <div class="imagenes">
+          @for (imagen of imagenes(); track imagen) {
+            <figure>
+              <img [src]="imagen" alt="Imagen de la publicación">
+              <button type="button" class="quitar" (click)="quitarImagen($index)" aria-label="Quitar imagen">✕</button>
+            </figure>
+          }
+        </div>
+
+        @for (mensaje of errores(); track mensaje) {
+          <p class="error">{{ mensaje }}</p>
+        }
+        <div class="botones">
+          <button class="boton-secundario" type="button" (click)="omitir()">Omitir</button>
+          <button class="boton" type="button" (click)="guardarDetalles()" [disabled]="enviando()">Guardar y continuar</button>
+        </div>
+      }
+
+      <!-- Paso 3 (HU-10) -->
+      @case ('tarifas') {
+        <h2>Tarifas</h2>
+        <p class="suave">Valores en pesos, sin decimales. Puedes omitir este paso.</p>
+
+        <label class="campo">Tarifa de limpieza ($)
+          <input type="number" name="tarifaLimpieza" min="0" step="1" [(ngModel)]="tarifaLimpieza">
+        </label>
+        <div class="dos">
+          <label class="campo">Descuento por estancia larga (%)
+            <input type="number" name="porcentajeDescuento" min="0" max="90" step="1" [(ngModel)]="porcentajeDescuento">
+          </label>
+          <label class="campo">Desde cuántas noches
+            <input type="number" name="nochesMinimas" min="2" max="365" step="1"
+                   [disabled]="!porcentajeDescuento" [(ngModel)]="nochesMinimas">
+          </label>
+        </div>
+
+        <h3>Servicios adicionales <span class="suave">({{ adicionales().length }}/10, se cobran una vez por estancia)</span></h3>
+        <form class="agregar" (ngSubmit)="agregarAdicional()">
+          <input type="text" name="adicionalNombre" maxlength="60" placeholder="Ej. Desayuno" [(ngModel)]="adicionalNombre">
+          <input type="number" name="adicionalCosto" min="1" step="1" placeholder="Costo" class="costo" [(ngModel)]="adicionalCosto">
+          <button class="boton-secundario" type="submit" [disabled]="adicionales().length >= 10">Agregar</button>
+        </form>
+        <ul class="lista">
+          @for (adicional of adicionales(); track $index) {
+            <li>
+              {{ adicional.nombre }} · $ {{ adicional.costo | number: '1.0-0' }}
+              <button type="button" class="quitar" (click)="quitarAdicional($index)" aria-label="Quitar servicio adicional">✕</button>
+            </li>
+          }
+        </ul>
+
+        @for (mensaje of errores(); track mensaje) {
+          <p class="error">{{ mensaje }}</p>
+        }
+        <div class="botones">
+          <button class="boton-secundario" type="button" (click)="omitir()">Omitir</button>
+          <button class="boton" type="button" (click)="guardarTarifas()" [disabled]="enviando()">Guardar y terminar</button>
+        </div>
+      }
+
+      <!-- Paso 4 -->
+      @case ('listo') {
+        @if (publicacion(); as p) {
+          <h2>Publicación creada</h2>
+          <p class="exito">"{{ p.titulo }}" quedó guardada en borrador.</p>
+
+          <dl class="resumen">
+            <dt>ID</dt><dd>{{ p.id }}</dd>
+            <dt>Estado</dt><dd>{{ p.estado }}</dd>
+            <dt>Lugar</dt><dd>{{ p.ciudad }} · {{ textoTipo(p.tipoAlojamiento) }} · {{ p.capacidad }} huéspedes</dd>
+            <dt>Precio</dt><dd>$ {{ p.precioPorNoche | number: '1.0-0' }} / noche · limpieza $ {{ p.tarifaLimpieza | number: '1.0-0' }}</dd>
+            <dt>Servicios</dt><dd>{{ p.servicios.length ? p.servicios.join(' · ') : 'Sin servicios' }}</dd>
+            <dt>Reglas</dt><dd>{{ p.reglas.length }} · Imágenes: {{ p.imagenes.length }} · Adicionales: {{ p.serviciosAdicionales.length }}</dd>
+          </dl>
+
+          <p class="nota">Anota el ID {{ p.id }}: por ahora no hay una pantalla para volver a esta publicación.</p>
+
+          <div class="botones">
+            <a class="boton-secundario enlace" [routerLink]="['/disponibilidad', p.id]">Gestionar disponibilidad</a>
+            <button class="boton" type="button" (click)="crearOtra()">Crear otra</button>
+          </div>
+        }
+      }
+    }
+  </section>
+}
