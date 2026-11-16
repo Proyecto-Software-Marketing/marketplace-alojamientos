@@ -54,4 +54,73 @@
       <p class="aviso">Esta publicación todavía no tiene periodos disponibles desde hoy.</p>
     }
   </section>
+
+  @if (esAnfitrion()) {
+    <div class="columnas">
+      <section class="tarjeta">
+        @if (editando() === null) {
+          <h2>Agregar periodo</h2>
+        } @else {
+          <h2>Editar periodo</h2>
+        }
+
+        <form (ngSubmit)="guardar()">
+          <label class="campo">Desde
+            <input type="date" name="fechaInicio" [(ngModel)]="fechaInicio">
+          </label>
+          <label class="campo">Hasta (día de salida)
+            <input type="date" name="fechaFin" [(ngModel)]="fechaFin">
+          </label>
+          <p class="suave">La noche del día de salida no queda disponible: ese día puede llegar otro huésped.</p>
+
+          @if (mensajeExito()) {
+            <p class="exito">{{ mensajeExito() }}</p>
+          }
+          @for (mensaje of erroresPeriodo(); track mensaje) {
+            <p class="error">{{ mensaje }}</p>
+          }
+
+          @if (editando() === null) {
+            <button class="boton" type="submit">Agregar periodo</button>
+          } @else {
+            <div class="botones">
+              <button class="boton-secundario" type="button" (click)="cancelarEdicion()">Cancelar</button>
+              <button class="boton" type="submit">Guardar cambios</button>
+            </div>
+          }
+        </form>
+      </section>
+
+      <section class="tarjeta">
+        <h2>Mis periodos</h2>
+
+        @for (periodo of periodos(); track periodo.id) {
+          <article class="periodo" [class.seleccionado]="editando() === periodo.id">
+            <div>
+              <p class="rango">{{ fechaCorta(periodo.fechaInicio) }} → {{ fechaCorta(periodo.fechaFin) }}</p>
+              @if (periodo.bloqueado) {
+                <span class="etiqueta bloqueado">Publicación bloqueada</span>
+              } @else if (periodo.tieneReservas) {
+                <span class="etiqueta reservado">Con reservas</span>
+              }
+            </div>
+
+            @if (confirmandoEliminar() === periodo.id) {
+              <div class="botones">
+                <button class="boton-secundario" type="button" (click)="confirmandoEliminar.set(null)">No</button>
+                <button class="boton boton-peligro" type="button" (click)="eliminar(periodo.id)">Sí, eliminar</button>
+              </div>
+            } @else {
+              <div class="botones">
+                <button class="boton-secundario" type="button" (click)="editar(periodo)">Editar</button>
+                <button class="boton-secundario" type="button" (click)="pedirConfirmacion(periodo.id)">Eliminar</button>
+              </div>
+            }
+          </article>
+        } @empty {
+          <p class="suave">Todavía no hay periodos desde hoy.</p>
+        }
+      </section>
+    </div>
+  }
 }

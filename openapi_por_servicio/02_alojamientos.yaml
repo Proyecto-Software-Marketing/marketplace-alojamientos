@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Servicio Alojamientos - Marketplace de Alojamientos
   version: 1.0.0
-  description: 'Contrato del servicio Alojamientos: rutas públicas (las enruta el API Gateway) y rutas internas /internal/* (solo dentro de la red de Docker Compose). Swagger UI: http://localhost:8082/swagger-ui.html'
+  description: 'Contrato del servicio Alojamientos: rutas públicas (las enruta el API Gateway) y rutas internas /internal/* e /interno/* (solo dentro de la red de Docker Compose, sin token). Los errores se responden como {"mensajes": [...]}. Swagger UI: http://localhost:8082/swagger-ui.html'
 servers:
 - url: http://localhost:8082
   description: Servicio Alojamientos (local)
@@ -17,7 +17,7 @@ paths:
       - Alojamientos
       summary: Crear publicación en BORRADOR
       operationId: createListing
-      description: 'Historias: HU-07. Rol requerido: ANFITRION.'
+      description: 'Historias: HU-07. Rol requerido: ANFITRION (Huésped y Administrador reciben 403). La publicación queda en BORRADOR asociada al anfitrión del token; id, anfitrionId y estado se ignoran si vienen en el cuerpo. No se valida título repetido. La respuesta trae servicios, reglas e imagenes como listas vacías hasta la HU-09. 400: falta un campo, capacidad fuera de 1 a 50 o con decimales, precio no positivo o con decimales, tipo fuera de la lista o JSON mal formado.'
       requestBody:
         required: true
         content:
@@ -37,6 +37,8 @@ paths:
           $ref: '#/components/responses/E401'
         '403':
           $ref: '#/components/responses/E403'
+        '503':
+          $ref: '#/components/responses/E503'
   /listings/mine:
     get:
       tags:
@@ -67,8 +69,8 @@ paths:
         in: path
         required: true
         schema:
-          type: string
-          format: uuid
+          type: integer
+          format: int64
       responses:
         '200':
           description: Operación exitosa
@@ -93,8 +95,8 @@ paths:
         in: path
         required: true
         schema:
-          type: string
-          format: uuid
+          type: integer
+          format: int64
       requestBody:
         required: true
         content:
@@ -128,8 +130,8 @@ paths:
         in: path
         required: true
         schema:
-          type: string
-          format: uuid
+          type: integer
+          format: int64
       requestBody:
         required: true
         content:
@@ -163,8 +165,8 @@ paths:
         in: path
         required: true
         schema:
-          type: string
-          format: uuid
+          type: integer
+          format: int64
       requestBody:
         required: true
         content:
@@ -198,8 +200,8 @@ paths:
         in: path
         required: true
         schema:
-          type: string
-          format: uuid
+          type: integer
+          format: int64
       requestBody:
         required: true
         content:
@@ -233,8 +235,8 @@ paths:
         in: path
         required: true
         schema:
-          type: string
-          format: uuid
+          type: integer
+          format: int64
       requestBody:
         required: true
         content:
@@ -268,8 +270,8 @@ paths:
         in: path
         required: true
         schema:
-          type: string
-          format: uuid
+          type: integer
+          format: int64
       requestBody:
         required: true
         content:
@@ -319,8 +321,8 @@ paths:
         in: path
         required: true
         schema:
-          type: string
-          format: uuid
+          type: integer
+          format: int64
       responses:
         '200':
           description: Operación exitosa
@@ -348,8 +350,8 @@ paths:
         in: path
         required: true
         schema:
-          type: string
-          format: uuid
+          type: integer
+          format: int64
       responses:
         '200':
           description: Operación exitosa
@@ -377,8 +379,8 @@ paths:
         in: path
         required: true
         schema:
-          type: string
-          format: uuid
+          type: integer
+          format: int64
       responses:
         '200':
           description: Operación exitosa
@@ -429,8 +431,8 @@ paths:
         in: path
         required: true
         schema:
-          type: string
-          format: uuid
+          type: integer
+          format: int64
       responses:
         '200':
           description: Operación exitosa
@@ -458,8 +460,8 @@ paths:
         in: path
         required: true
         schema:
-          type: string
-          format: uuid
+          type: integer
+          format: int64
       requestBody:
         required: true
         content:
@@ -495,8 +497,8 @@ paths:
         in: path
         required: true
         schema:
-          type: string
-          format: uuid
+          type: integer
+          format: int64
       requestBody:
         required: true
         content:
@@ -518,53 +520,6 @@ paths:
           $ref: '#/components/responses/E403'
         '404':
           $ref: '#/components/responses/E404'
-  /internal/listings/search:
-    get:
-      tags:
-      - Alojamientos
-      summary: Publicaciones ACTIVAS que cumplen los filtros (lo consume Búsqueda)
-      operationId: internalSearchListings
-      description: 'Historias: HU-19, HU-20. Operación interna entre servicios (no expuesta al front).'
-      parameters:
-      - name: ciudad
-        in: query
-        schema:
-          type: string
-        description: Ciudad
-      - name: huespedes
-        in: query
-        schema:
-          type: integer
-        description: Capacidad mínima
-      - name: tipo
-        in: query
-        schema:
-          type: string
-        description: Tipo
-      - name: precioMin
-        in: query
-        schema:
-          type: number
-        description: Precio mínimo
-      - name: precioMax
-        in: query
-        schema:
-          type: number
-        description: Precio máximo
-      - name: servicios
-        in: query
-        schema:
-          type: string
-        description: Amenities separados por coma
-      responses:
-        '200':
-          description: Operación exitosa
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ListingList'
-        '400':
-          $ref: '#/components/responses/E400'
   /internal/listings/{id}/quote-data:
     get:
       tags:
@@ -577,8 +532,8 @@ paths:
         in: path
         required: true
         schema:
-          type: string
-          format: uuid
+          type: integer
+          format: int64
       responses:
         '200':
           description: Operación exitosa
@@ -600,8 +555,8 @@ paths:
         in: path
         required: true
         schema:
-          type: string
-          format: uuid
+          type: integer
+          format: int64
       responses:
         '200':
           description: Operación exitosa
@@ -611,32 +566,109 @@ paths:
                 $ref: '#/components/schemas/Policy'
         '404':
           $ref: '#/components/responses/E404'
-  /internal/listings/pause-by-host/{hostId}:
+  /internal/listings/{id}/owner:
+    get:
+      tags:
+      - Alojamientos
+      summary: Dueño y estado de la publicación (la consumen Disponibilidad y Reservas)
+      operationId: listingOwner
+      description: 'Historias: HU-07, HU-16, HU-17. Operación interna entre servicios (no expuesta al front, sin token). Responde en cualquier estado de la publicación. 400: el id no es un número.'
+      security: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        '200':
+          description: Operación exitosa
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListingOwner'
+        '400':
+          $ref: '#/components/responses/E400'
+        '404':
+          $ref: '#/components/responses/E404'
+  /interno/publicaciones/activas:
+    get:
+      tags:
+      - Alojamientos
+      summary: Publicaciones ACTIVA de una ciudad (la consume Búsqueda)
+      operationId: publicacionesActivas
+      description: 'Historias: HU-19, HU-20. Operación interna entre servicios (no expuesta al front, sin token). Responde un arreglo, de la publicación más antigua a la más nueva. La ciudad se compara sin distinguir mayúsculas; sin ciudad responde todas las activas. Los demás filtros los aplica Búsqueda.'
+      security: []
+      parameters:
+      - name: ciudad
+        in: query
+        schema:
+          type: string
+        description: Ciudad
+      responses:
+        '200':
+          description: Operación exitosa
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PublicacionResumen'
+  /interno/publicaciones/{id}:
+    get:
+      tags:
+      - Alojamientos
+      summary: Detalle de una publicación (la consume Búsqueda)
+      operationId: publicacionDetalle
+      description: 'Historias: HU-21. Operación interna entre servicios (no expuesta al front, sin token). Responde en cualquier estado; Búsqueda solo muestra las ACTIVA. 400: el id no es un número.'
+      security: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        '200':
+          description: Operación exitosa
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicacionDetalle'
+        '400':
+          $ref: '#/components/responses/E400'
+        '404':
+          $ref: '#/components/responses/E404'
+  /interno/publicaciones/pausar:
     post:
       tags:
       - Alojamientos
       summary: Pausar las publicaciones activas de un anfitrión (lo invoca Identidad al desactivar la cuenta)
-      operationId: pauseByHost
-      description: 'Historias: HU-06. Operación interna entre servicios (no expuesta al front).'
+      operationId: pausarPorAnfitrion
+      description: 'Historias: HU-06. Operación interna entre servicios (no expuesta al front, sin token). Las publicaciones ACTIVA del anfitrión pasan a PAUSADA; las demás no cambian. Se puede repetir: si el anfitrión no tiene publicaciones activas también responde 204. 400: falta idAnfitrion o no es un número.'
+      security: []
       parameters:
-      - name: hostId
-        in: path
+      - name: idAnfitrion
+        in: query
         required: true
         schema:
-          type: string
-          format: uuid
+          type: integer
+          format: int64
       responses:
         '204':
           description: Operación exitosa
-        '404':
-          $ref: '#/components/responses/E404'
-  /internal/listings/stats:
+        '400':
+          $ref: '#/components/responses/E400'
+  /interno/publicaciones/estadisticas:
     get:
       tags:
       - Alojamientos
-      summary: Publicaciones activas y datos por ciudad para el dashboard
-      operationId: listingStats
-      description: 'Historias: HU-39. Operación interna entre servicios (no expuesta al front).'
+      summary: Cantidad de publicaciones activas para el dashboard (la consume Reportes)
+      operationId: estadisticasPublicaciones
+      description: 'Historias: HU-39. Operación interna entre servicios (no expuesta al front, sin token).'
+      security: []
       responses:
         '200':
           description: Operación exitosa
@@ -644,8 +676,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Stats'
-        '401':
-          $ref: '#/components/responses/E401'
 components:
   securitySchemes:
     bearerAuth:
@@ -664,15 +694,14 @@ components:
       - servicios
     Error:
       type: object
+      description: Formato de error de todos los servicios
       properties:
-        codigo:
-          type: string
-        mensaje:
-          type: string
-        detalles:
+        mensajes:
           type: array
           items:
             type: string
+          example:
+          - La capacidad debe ser un número entero entre 1 y 50
     ImagesInput:
       type: object
       properties:
@@ -686,11 +715,11 @@ components:
       type: object
       properties:
         id:
-          type: string
-          format: uuid
+          type: integer
+          format: int64
         anfitrionId:
-          type: string
-          format: uuid
+          type: integer
+          format: int64
         titulo:
           type: string
         descripcion:
@@ -722,8 +751,8 @@ components:
           items:
             type: string
         politicaCancelacionId:
-          type: string
-          format: uuid
+          type: integer
+          format: int64
         estado:
           $ref: '#/components/schemas/ListingStatus'
         motivoRechazo:
@@ -735,12 +764,16 @@ components:
       properties:
         titulo:
           type: string
+          maxLength: 120
         descripcion:
           type: string
+          maxLength: 2000
         ciudad:
           type: string
+          maxLength: 80
         ubicacionTextual:
           type: string
+          maxLength: 200
         tipoAlojamiento:
           type: string
           enum:
@@ -752,9 +785,12 @@ components:
         capacidad:
           type: integer
           minimum: 1
+          maximum: 50
         precioPorNoche:
-          type: number
-          exclusiveMinimum: 0
+          type: integer
+          minimum: 1
+          maximum: 999999999
+          description: Pesos, sin decimales
       required:
       - titulo
       - descripcion
@@ -763,6 +799,17 @@ components:
       - tipoAlojamiento
       - capacidad
       - precioPorNoche
+    ListingOwner:
+      type: object
+      properties:
+        publicacionId:
+          type: integer
+          format: int64
+        anfitrionId:
+          type: integer
+          format: int64
+        estado:
+          $ref: '#/components/schemas/ListingStatus'
     ListingList:
       type: object
       properties:
@@ -782,8 +829,8 @@ components:
       type: object
       properties:
         id:
-          type: string
-          format: uuid
+          type: integer
+          format: int64
         nombre:
           type: string
         descripcion:
@@ -796,8 +843,8 @@ components:
       type: object
       properties:
         politicaId:
-          type: string
-          format: uuid
+          type: integer
+          format: int64
       required:
       - politicaId
     PolicyList:
@@ -807,6 +854,48 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Policy'
+    PublicacionResumen:
+      type: object
+      description: Publicación con los nombres de campos que usa Búsqueda (tipo y precioNoche)
+      properties:
+        id:
+          type: integer
+          format: int64
+        titulo:
+          type: string
+        ciudad:
+          type: string
+        tipo:
+          type: string
+        capacidad:
+          type: integer
+        precioNoche:
+          type: number
+        estado:
+          $ref: '#/components/schemas/ListingStatus'
+        servicios:
+          type: array
+          items:
+            type: string
+    PublicacionDetalle:
+      allOf:
+      - $ref: '#/components/schemas/PublicacionResumen'
+      - type: object
+        properties:
+          descripcion:
+            type: string
+          reglas:
+            type: array
+            items:
+              type: string
+          imagenes:
+            type: array
+            items:
+              type: string
+          politicaCancelacion:
+            type: string
+            nullable: true
+            description: Nombre de la política; null hasta que se asocie una (HU-11)
     PricingInput:
       type: object
       properties:
@@ -837,8 +926,8 @@ components:
       type: object
       properties:
         publicacionId:
-          type: string
-          format: uuid
+          type: integer
+          format: int64
         estado:
           $ref: '#/components/schemas/ListingStatus'
         capacidad:
@@ -879,8 +968,11 @@ components:
       - reglas
     Stats:
       type: object
-      additionalProperties: true
-      description: Indicadores agregados (conteos, sumas y agrupaciones)
+      description: Indicadores de publicaciones para el dashboard
+      properties:
+        activas:
+          type: integer
+          format: int64
   responses:
     E400:
       description: Solicitud inválida (validación)
@@ -908,6 +1000,12 @@ components:
             $ref: '#/components/schemas/Error'
     E409:
       description: Conflicto (reserva superpuesta, estado no permitido, duplicado)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    E503:
+      description: Identidad no respondió
       content:
         application/json:
           schema:
