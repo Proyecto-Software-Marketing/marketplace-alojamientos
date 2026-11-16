@@ -21,6 +21,9 @@
         }
 
         <button class="boton" type="submit">Entrar</button>
+        @if (puedeReactivar()) {
+          <button class="boton-secundario reactivar" type="button" (click)="reactivar()">Reactivar mi cuenta y entrar</button>
+        }
       </form>
 
       <p class="cambiar">¿No tienes cuenta? <button class="enlace" (click)="irARegistro()">Regístrate</button></p>

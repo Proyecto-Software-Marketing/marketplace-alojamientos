@@ -1,6 +1,5 @@
 import { Injectable, signal } from '@angular/core';
 
-// Datos del usuario que devuelve 
 export interface Usuario {
   id: number;
   nombre: string;
@@ -13,11 +12,15 @@ export interface Usuario {
 @Injectable({ providedIn: 'root' })
 export class SesionService {
 
-  // el usuario que inicio sesion, o null si no hay nadie
+ 
   usuario = signal<Usuario | null>(this.leerUsuario());
 
   guardar(token: string, usuario: Usuario): void {
     localStorage.setItem('token', token);
+    localStorage.setItem('usuario', JSON.stringify(usuario));
+    this.usuario.set(usuario);
+  }
+  actualizarUsuario(usuario: Usuario): void {
     localStorage.setItem('usuario', JSON.stringify(usuario));
     this.usuario.set(usuario);
   }

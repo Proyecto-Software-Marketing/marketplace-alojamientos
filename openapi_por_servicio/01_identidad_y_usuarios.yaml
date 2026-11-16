@@ -154,7 +154,7 @@ paths:
       - Identidad y Usuarios
       summary: Solicitar recuperación simulada de contraseña
       operationId: recuperarContrasena
-      description: 'Historias: HU-04. Pendiente de implementar.'
+      description: 'Historias: HU-04 (CA-010). Sin sesión. Si el correo está registrado (cuenta ACTIVO o INACTIVO) genera un token UUID que vence en 30 minutos, deja sin efecto los tokens anteriores sin usar y lo envía a Notificaciones (tipo RECUPERACION_CONTRASENA) para mostrarlo en una notificación interna, sin correo real. Si el correo no está registrado o la cuenta está RESTRINGIDO responde 204 igual, para no revelar si existe. El usuario ve el token en GET /notifications/password-recovery de Notificaciones.'
       security: []
       requestBody:
         required: true
@@ -167,13 +167,15 @@ paths:
           description: Solicitud registrada
         '400':
           $ref: '#/components/responses/E400'
+        '503':
+          $ref: '#/components/responses/E503'
   /autenticacion/restablecer-contrasena:
     post:
       tags:
       - Identidad y Usuarios
       summary: Restablecer la contraseña con el token de recuperación
       operationId: restablecerContrasena
-      description: 'Historias: HU-04. Pendiente de implementar.'
+      description: 'Historias: HU-04 (CA-011, CA-012). Sin sesión. Con un token vigente cambia la contraseña, el token deja de servir y se cierran las sesiones abiertas del usuario. Un token vencido, ya usado o inexistente responde 410.'
       security: []
       requestBody:
         required: true
@@ -291,6 +293,30 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Estadisticas'
+  /interno/usuarios/id:
+    get:
+      tags:
+      - Identidad y Usuarios
+      summary: Usuario dueño de un correo
+      operationId: usuarioPorCorreo
+      description: 'Historias: HU-04. Operación interna entre servicios (la usa Notificaciones para el buzón simulado de recuperación); no pide sesión.'
+      security: []
+      parameters:
+      - name: correo
+        in: query
+        required: true
+        schema:
+          type: string
+          format: email
+      responses:
+        '200':
+          description: Operación exitosa
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Usuario'
+        '404':
+          description: El correo no está registrado
 components:
   securitySchemes:
     bearerAuth:
@@ -463,6 +489,12 @@ components:
             $ref: '#/components/schemas/Error'
     E410:
       description: Token vencido o ya usado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    E503:
+      description: Otro servicio necesario no está disponible
       content:
         application/json:
           schema:

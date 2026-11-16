@@ -1,0 +1,51 @@
+<h1>Mi cuenta</h1>
+<p class="subtitulo">Consulta y actualiza tus datos.</p>
+
+<div class="columnas">
+  <section class="tarjeta">
+    <h2>Mis datos</h2>
+    <form (ngSubmit)="guardar()">
+      <label class="campo">Nombre
+        <input type="text" name="nombre" [(ngModel)]="nombre">
+      </label>
+      <label class="campo">Correo
+        <input type="email" name="correo" [(ngModel)]="correo">
+      </label>
+      <p class="suave">Rol: {{ rol() }}</p>
+
+      @if (mensajeExito()) {
+        <p class="exito">{{ mensajeExito() }}</p>
+      }
+      @for (error of errores(); track error) {
+        <p class="error">{{ error }}</p>
+      }
+
+      <button class="boton" type="submit">Guardar cambios</button>
+    </form>
+  </section>
+
+  <section class="tarjeta">
+    <h2>Desactivar cuenta</h2>
+    <p class="suave">
+      Si desactivas tu cuenta no podrás iniciar sesión hasta que la reactives.
+      No se puede desactivar si tienes reservas futuras confirmadas.
+      Si eres anfitrión, tus publicaciones quedarán pausadas.
+    </p>
+
+    @for (error of erroresCuenta(); track error) {
+      <p class="error">{{ error }}</p>
+    }
+
+    @if (confirmando()) {
+      <div class="nota">
+        <h3>¿Seguro que quieres desactivar tu cuenta?</h3>
+        <div class="botones">
+          <button class="boton-secundario" (click)="confirmando.set(false)">Cancelar</button>
+          <button class="boton boton-peligro" (click)="desactivar()">Sí, desactivar</button>
+        </div>
+      </div>
+    } @else {
+      <button class="boton-secundario" (click)="pedirConfirmacion()">Desactivar mi cuenta</button>
+    }
+  </section>
+</div>

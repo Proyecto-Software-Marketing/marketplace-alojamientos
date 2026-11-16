@@ -22,4 +22,8 @@ public interface NotificacionRepository extends JpaRepository<Notificacion, Long
 
     // CA-086 y CA-087: la notificación solo se encuentra si es del usuario
     Optional<Notificacion> findByIdAndIdUsuario(Long id, Long idUsuario);
+
+    // HU-04 (Decisión 10): la notificación más reciente de un tipo para el usuario
+    Optional<Notificacion> findFirstByIdUsuarioAndTipoEventoOrderByFechaCreacionDescIdDesc(Long idUsuario,
+            TipoEvento tipoEvento);
 }

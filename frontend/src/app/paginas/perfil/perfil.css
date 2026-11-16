@@ -1,0 +1,33 @@
+.columnas {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+@media (max-width: 800px) {
+  .columnas {
+    grid-template-columns: 1fr;
+  }
+}
+
+.suave {
+  color: var(--texto-suave);
+  font-size: 13px;
+  margin: 0 0 20px;
+}
+
+.botones {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.boton-peligro {
+  width: auto;
+  background: var(--rojo);
+}
+
+.boton-peligro:hover {
+  background: #991b1b;
+}
