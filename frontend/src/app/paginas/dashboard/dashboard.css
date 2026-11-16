@@ -1,0 +1,147 @@
+.encabezado {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.indicadores {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+@media (max-width: 900px) {
+  .indicadores {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.indicador {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  background: var(--blanco);
+  border: 1px solid var(--borde);
+  border-left: 6px solid;
+}
+
+.icono {
+  font-size: 26px;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.valor {
+  font-size: 26px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.etiqueta {
+  font-size: 13px;
+  color: var(--texto-suave);
+  margin: 4px 0 0;
+}
+
+
+.indicador.azul { border-left-color: #2563eb; }
+.indicador.azul .icono { background: #dbeafe; }
+.indicador.verde { border-left-color: #16a34a; }
+.indicador.verde .icono { background: #dcfce7; }
+.indicador.morado { border-left-color: #7c3aed; }
+.indicador.morado .icono { background: #ede9fe; }
+.indicador.naranja { border-left-color: #ea580c; }
+.indicador.naranja .icono { background: #ffedd5; }
+
+.dos {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+@media (max-width: 900px) {
+  .dos {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* las barras */
+.fila-barra {
+  display: grid;
+  grid-template-columns: 150px 1fr 40px;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  font-size: 13px;
+}
+
+.pista {
+  background: #f1f5f9;
+  height: 14px;
+  border-radius: 7px;
+  overflow: hidden;
+}
+
+.barra {
+  height: 100%;
+  border-radius: 7px;
+}
+
+.barra.verde { background: #16a34a; }
+.barra.azul { background: #2563eb; }
+.barra.rojo { background: #dc2626; }
+.barra.naranja { background: #ea580c; }
+.barra.morado { background: #7c3aed; }
+
+.cantidad {
+  text-align: right;
+  font-weight: 600;
+}
+
+.vacio {
+  color: var(--texto-suave);
+  font-size: 14px;
+}
+
+
+.tarifa h2 {
+  margin-bottom: 8px;
+}
+
+.form-tarifa {
+  display: flex;
+  gap: 16px;
+  align-items: flex-end;
+  max-width: 480px;
+}
+
+.form-tarifa .campo {
+  flex: 1;
+}
+
+.form-tarifa .boton {
+  width: auto;
+  padding: 10px 28px;
+  margin-bottom: 20px;
+}
+.indicador.azul .icono { color: #2563eb; }
+.indicador.verde .icono { color: #16a34a; }
+.indicador.morado .icono { color: #7c3aed; }
+.indicador.naranja .icono { color: #ea580c; }
+
+.actualizar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.actualizar .material-symbols-outlined {
+  font-size: 18px;
+}
