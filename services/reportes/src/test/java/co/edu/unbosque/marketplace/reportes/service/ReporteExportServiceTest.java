@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -29,6 +30,7 @@ import co.edu.unbosque.marketplace.reportes.dto.CiudadDemanda;
 import co.edu.unbosque.marketplace.reportes.dto.EstadisticasPublicaciones;
 import co.edu.unbosque.marketplace.reportes.dto.EstadisticasReservas;
 import co.edu.unbosque.marketplace.reportes.dto.EstadisticasUsuarios;
+import co.edu.unbosque.marketplace.reportes.dto.EventoAuditoriaDTO;
 import co.edu.unbosque.marketplace.reportes.dto.ExportRequestDTO;
 import co.edu.unbosque.marketplace.reportes.dto.FormatoReporte;
 import co.edu.unbosque.marketplace.reportes.dto.ReporteTabla;
@@ -40,6 +42,7 @@ import co.edu.unbosque.marketplace.reportes.exception.ServicioNoDisponibleExcept
 class ReporteExportServiceTest {
 
     private static final String TOKEN_ADMIN = "Bearer token-admin";
+    private static final Long ID_ADMIN = 7L;
 
     @Mock
     private ServiciosExternos serviciosExternos;
@@ -55,6 +58,7 @@ class ReporteExportServiceTest {
     @BeforeEach
     void preparar() {
         servicio = new ReporteExportService(serviciosExternos, generadorExcel, generadorPdf);
+        lenient().when(serviciosExternos.verificarAdministradorParaExportar(anyString())).thenReturn(ID_ADMIN);
     }
 
     private EstadisticasUsuarios usuarios(long total, long huespedes, long anfitriones) {
@@ -212,14 +216,45 @@ class ReporteExportServiceTest {
     @Test
     @DisplayName("Solo el administrador puede exportar")
     void noAdministradorNoExporta() {
-        doThrow(new PermisoException("Solo el administrador puede ver el dashboard"))
-                .when(serviciosExternos).verificarAdministrador(anyString());
+        doThrow(new PermisoException("Solo el administrador puede exportar los reportes"))
+                .when(serviciosExternos).verificarAdministradorParaExportar(anyString());
 
         assertThrows(PermisoException.class, () -> servicio.exportar(TOKEN_ADMIN,
                 new ExportRequestDTO(TipoReporte.USUARIOS, FormatoReporte.PDF)));
 
         verify(generadorPdf, never()).generar(any());
         verify(generadorExcel, never()).generar(any());
+        verify(serviciosExternos, never()).registrarAuditoria(any());
+    }
+
+    @Test
+    @DisplayName("CA-113: la exportación queda registrada con quien la pidió, qué reporte fue y el formato")
+    void registraLaExportacionEnAuditoria() {
+        when(serviciosExternos.estadisticasUsuarios()).thenReturn(usuarios(10, 7, 2));
+        when(generadorPdf.generar(any())).thenReturn(new byte[] {1, 2, 3});
+
+        servicio.exportar(TOKEN_ADMIN, new ExportRequestDTO(TipoReporte.USUARIOS, FormatoReporte.PDF));
+
+        ArgumentCaptor<EventoAuditoriaDTO> evento = ArgumentCaptor.forClass(EventoAuditoriaDTO.class);
+        verify(serviciosExternos).registrarAuditoria(evento.capture());
+
+        assertEquals(ID_ADMIN, evento.getValue().usuarioId());
+        assertEquals("REPORTE", evento.getValue().entidad());
+        assertEquals("EXPORTAR_REPORTE", evento.getValue().accion());
+        assertEquals("EXITO", evento.getValue().resultado());
+        assertTrue(evento.getValue().detalle().contains("Usuarios"));
+        assertTrue(evento.getValue().detalle().contains("PDF"));
+    }
+
+    @Test
+    @DisplayName("CA-113: si la exportación falla no queda registrada")
+    void noRegistraSiLaExportacionFalla() {
+        when(serviciosExternos.estadisticasUsuarios()).thenThrow(new RestClientException("Sin conexión"));
+
+        assertThrows(ServicioNoDisponibleException.class, () -> servicio.exportar(TOKEN_ADMIN,
+                new ExportRequestDTO(TipoReporte.USUARIOS, FormatoReporte.PDF)));
+
+        verify(serviciosExternos, never()).registrarAuditoria(any());
     }
 
     @Test
