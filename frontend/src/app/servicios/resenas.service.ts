@@ -13,6 +13,12 @@ export interface Resena {
   fecha: string;
 }
 
+// Reseñas visibles de una publicación con su promedio (null si no hay)
+export interface ListaResenas {
+  calificacionPromedio: number | null;
+  items: Resena[];
+}
+
 export interface DatosResena {
   calificacion: number;
   contenido: string;
@@ -28,5 +34,10 @@ export class ResenasService {
   // HU-32 el huésped califica y reseña una estancia completada
   calificar(idReserva: number, datos: DatosResena) {
     return this.http.post<Resena>(`${this.url}/bookings/${idReserva}/review`, datos);
+  }
+
+  // HU-33 reseñas visibles y promedio de una publicación, sin sesión
+  listar(idPublicacion: number) {
+    return this.http.get<ListaResenas>(`${this.url}/listings/${idPublicacion}/reviews`);
   }
 }
