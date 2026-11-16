@@ -34,12 +34,12 @@ public class CotizacionController {
             @Valid @RequestBody CotizacionRequest datos) {
         Long idHuesped = clienteCotizacion.verificarHuesped(autorizacion);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(new CotizacionResponse(cotizacionService.cotizar(idHuesped, datos)));
+                .body(CotizacionResponse.desde(cotizacionService.cotizar(idHuesped, datos)));
     }
 
     // Decisión 1: la consulta Reservas antes de confirmar la reserva (sin token)
     @GetMapping("/{id}")
     public ResponseEntity<CotizacionResponse> consultar(@PathVariable("id") String id) {
-        return ResponseEntity.ok(new CotizacionResponse(cotizacionService.consultar(id)));
+        return ResponseEntity.ok(CotizacionResponse.desde(cotizacionService.consultar(id)));
     }
 }
