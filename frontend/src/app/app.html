@@ -23,6 +23,7 @@
     }
 
     @if (sesion.usuario()) {
+      <a routerLink="/notificaciones">Notificaciones</a>
       <a routerLink="/perfil">Mi cuenta</a>
       <button class="enlace" (click)="cerrarSesion()">Cerrar sesión</button>
     }

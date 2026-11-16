@@ -1,0 +1,60 @@
+.bandeja {
+  max-width: 800px;
+  padding: 0;
+}
+
+.bandeja > .error {
+  padding: 16px 24px 0;
+  margin: 0;
+}
+
+/* Una fila por notificación */
+.notificacion {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--borde);
+  border-left: 6px solid transparent;
+  color: var(--texto-suave);
+}
+
+.notificacion:last-child {
+  border-bottom: none;
+}
+
+/* Las no leídas resaltan con la barra azul */
+.no-leida {
+  border-left-color: var(--azul);
+  color: var(--texto);
+}
+
+.notificacion h3 {
+  margin: 0 0 6px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.mensaje {
+  margin: 0 0 6px;
+  font-size: 14px;
+  word-break: break-word;
+}
+
+.fecha {
+  margin: 0;
+  font-size: 12px;
+  color: var(--texto-suave);
+}
+
+.notificacion .boton-secundario {
+  flex-shrink: 0;
+}
+
+.vacio {
+  padding: 24px;
+  margin: 0;
+  color: var(--texto-suave);
+  font-size: 14px;
+}

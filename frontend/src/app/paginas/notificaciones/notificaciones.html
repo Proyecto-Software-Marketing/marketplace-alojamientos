@@ -1,0 +1,33 @@
+<h1>Notificaciones</h1>
+<p class="subtitulo">
+  @if (noLeidas() === 1) {
+    Tienes 1 notificación sin leer.
+  } @else {
+    Tienes {{ noLeidas() }} notificaciones sin leer.
+  }
+</p>
+
+<section class="tarjeta bandeja">
+  @for (mensaje of errores(); track mensaje) {
+    <p class="error">{{ mensaje }}</p>
+  }
+
+  @if (cargando()) {
+    <p class="vacio">Cargando notificaciones...</p>
+  } @else {
+    @for (notificacion of items(); track notificacion.id) {
+      <article class="notificacion" [class.no-leida]="!notificacion.leida">
+        <div>
+          <h3>{{ titulo(notificacion.tipoEvento) }}</h3>
+          <p class="mensaje">{{ notificacion.mensaje }}</p>
+          <p class="fecha">{{ fecha(notificacion.creadaEn) }}</p>
+        </div>
+        @if (!notificacion.leida) {
+          <button class="boton-secundario" (click)="marcarLeida(notificacion)">Marcar como leída</button>
+        }
+      </article>
+    } @empty {
+      <p class="vacio">No tienes notificaciones todavía.</p>
+    }
+  }
+</section>
