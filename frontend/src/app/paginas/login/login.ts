@@ -35,11 +35,25 @@ export class Login {
   contrasena = '';
   errores = signal<string[]>([]);
   mensajeExito = signal('');
+  puedeReactivar = signal(false);
 
   iniciarSesion(): void {
     this.errores.set([]);
     this.mensajeExito.set('');
     this.identidad.login(this.correo, this.contrasena).subscribe({
+      next: (respuesta) => {
+        this.sesion.guardar(respuesta.token, respuesta.usuario);
+        this.router.navigate(['/']);
+      },
+      error: (error: HttpErrorResponse) => {
+        const mensajes = leerMensajes(error);
+        this.errores.set(mensajes);
+        this.puedeReactivar.set(mensajes.includes('La cuenta no está activa'));
+      }
+    });
+  }
+  reactivar(): void {
+    this.identidad.reactivarCuenta(this.correo, this.contrasena).subscribe({
       next: (respuesta) => {
         this.sesion.guardar(respuesta.token, respuesta.usuario);
         this.router.navigate(['/']);
