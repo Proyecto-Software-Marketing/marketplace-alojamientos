@@ -4,6 +4,7 @@
 
 .calendario {
   max-width: 800px;
+  margin-bottom: 24px;
 }
 
 .encabezado-mes {
@@ -90,4 +91,72 @@
   margin: 16px 0 0;
   font-size: 14px;
   color: var(--texto-suave);
+}
+
+/* HU-16 formulario y lista de periodos, debajo del calendario */
+.columnas {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  align-items: start;
+  max-width: 800px;
+}
+
+@media (max-width: 800px) {
+  .columnas {
+    grid-template-columns: 1fr;
+  }
+}
+
+.suave {
+  color: var(--texto-suave);
+  font-size: 13px;
+  margin: 0 0 20px;
+}
+
+.botones {
+  display: flex;
+  gap: 8px;
+}
+
+.botones .boton {
+  width: auto;
+}
+
+.boton-peligro {
+  background: var(--rojo);
+}
+
+.boton-peligro:hover {
+  background: #991b1b;
+}
+
+.periodo {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--borde);
+}
+
+.periodo:last-child {
+  border-bottom: none;
+}
+
+.seleccionado {
+  border-left: 4px solid var(--azul);
+  padding-left: 12px;
+}
+
+.rango {
+  margin: 0 0 6px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.etiqueta {
+  display: inline-block;
+  padding: 2px 8px;
+  font-size: 12px;
+  border: 1px solid;
 }
