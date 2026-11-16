@@ -1,15 +1,19 @@
 package co.edu.unbosque.marketplace.reservas.service;
 
 import co.edu.unbosque.marketplace.reservas.client.CotizacionDTO;
+import co.edu.unbosque.marketplace.reservas.client.PoliticaCancelacionDTO;
 import co.edu.unbosque.marketplace.reservas.client.ServiciosExternos;
 import co.edu.unbosque.marketplace.reservas.client.UsuarioIdentidadDTO;
 import co.edu.unbosque.marketplace.reservas.dto.BookingListDTO;
 import co.edu.unbosque.marketplace.reservas.dto.BookingRequestDTO;
 import co.edu.unbosque.marketplace.reservas.dto.BookingResponseDTO;
+import co.edu.unbosque.marketplace.reservas.dto.CancelRequestDTO;
+import co.edu.unbosque.marketplace.reservas.dto.CancellationResponseDTO;
 import co.edu.unbosque.marketplace.reservas.exception.ConflictoReservaException;
 import co.edu.unbosque.marketplace.reservas.exception.FechasInvalidasException;
 import co.edu.unbosque.marketplace.reservas.exception.NoEncontradoException;
 import co.edu.unbosque.marketplace.reservas.exception.PermisoException;
+import co.edu.unbosque.marketplace.reservas.exception.ServicioNoDisponibleException;
 import co.edu.unbosque.marketplace.reservas.exception.SolicitudInvalidaException;
 import co.edu.unbosque.marketplace.reservas.model.Booking;
 import co.edu.unbosque.marketplace.reservas.model.BookingStatus;
@@ -20,6 +24,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -115,6 +120,85 @@ public class BookingService {
         }
 
         return BookingResponseDTO.desde(reserva);
+    }
+
+    // HU-28: el huésped cancela su reserva o el administrador cancela cualquiera.
+    // CA-077/CA-078: devolución simulada según la política de la publicación.
+    // CA-079: el anfitrión no puede cancelar (Identidad solo autoriza HUESPED/ADMINISTRADOR).
+    // CA-080: si la política lo permite, se libera el periodo reservado.
+    // CA-128: se notifica al huésped y al anfitrión.
+    public CancellationResponseDTO cancelarReserva(String autorizacion, Long reservaId, CancelRequestDTO solicitud) {
+        UsuarioIdentidadDTO usuario = serviciosExternos.verificarSesionCancelacion(autorizacion);
+        return transaccion.execute(estado -> cancelarReservaEnTransaccion(usuario, reservaId, solicitud));
+    }
+
+    private CancellationResponseDTO cancelarReservaEnTransaccion(UsuarioIdentidadDTO usuario, Long reservaId,
+            CancelRequestDTO solicitud) {
+        Booking reserva = bookingRepository.findById(reservaId)
+                .orElseThrow(() -> new NoEncontradoException("La reserva no existe"));
+
+        boolean esAdministrador = "ADMINISTRADOR".equalsIgnoreCase(usuario.rol());
+        if (!esAdministrador && !reserva.getHuespedId().equals(usuario.id())) {
+            throw new PermisoException("No tiene permiso para cancelar esta reserva");
+        }
+        if (reserva.getEstado() != BookingStatus.CONFIRMADA) {
+            throw new ConflictoReservaException("Solo se puede cancelar una reserva CONFIRMADA");
+        }
+
+        PoliticaCancelacionDTO politica = serviciosExternos
+                .consultarPoliticaCancelacion(reserva.getPublicacionId());
+        BigDecimal devolucion = calcularDevolucion(reserva.getMontoTotal(), politica);
+
+        reserva.cancelar(usuario.id(), solicitud.motivo(), LocalDateTime.now(), devolucion);
+        Booking cancelada = bookingRepository.saveAndFlush(reserva);
+
+        // Si no se puede liberar el periodo, la transacción revierte la cancelación.
+        if (Boolean.TRUE.equals(politica.permiteLiberacionPeriodo())) {
+            serviciosExternos.liberarPeriodo(cancelada.getPublicacionId(), cancelada.getId(),
+                    cancelada.getFechaLlegada(), cancelada.getFechaSalida());
+        }
+
+        notificarCancelacion(cancelada);
+
+        return new CancellationResponseDTO(
+                cancelada.getId(),
+                cancelada.getCanceladaPor(),
+                cancelada.getFechaCancelacion(),
+                cancelada.getMotivoCancelacion(),
+                cancelada.getValorDevolucionSimulada(),
+                cancelada.getEstado());
+    }
+
+    private static BigDecimal calcularDevolucion(BigDecimal montoTotal, PoliticaCancelacionDTO politica) {
+        if (politica == null || politica.porcentajeDevolucion() == null
+                || politica.porcentajeDevolucion().compareTo(BigDecimal.ZERO) < 0
+                || politica.porcentajeDevolucion().compareTo(BigDecimal.valueOf(100)) > 0) {
+            throw new ServicioNoDisponibleException(
+                    "La política de cancelación de la publicación no es válida");
+        }
+        return montoTotal.multiply(politica.porcentajeDevolucion())
+                .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+    }
+
+    private void notificarCancelacion(Booking reserva) {
+        serviciosExternos.notificarReservaCancelada(
+                reserva.getHuespedId(),
+                reserva.getId(),
+                reserva.getCodigoReserva(),
+                "Tu reserva " + reserva.getCodigoReserva() + " fue cancelada. Devolución simulada: "
+                        + reserva.getValorDevolucionSimulada().toPlainString());
+
+        Long anfitrionId = reserva.getAnfitrionId();
+        if (anfitrionId == null) {
+            anfitrionId = serviciosExternos.consultarAnfitrion(reserva.getPublicacionId());
+        }
+        if (anfitrionId != null && !anfitrionId.equals(reserva.getHuespedId())) {
+            serviciosExternos.notificarReservaCancelada(
+                    anfitrionId,
+                    reserva.getId(),
+                    reserva.getCodigoReserva(),
+                    "La reserva " + reserva.getCodigoReserva() + " de tu publicación fue cancelada");
+        }
     }
 
     // CA-067: una única ejecución confirma la reserva y sus efectos externos
