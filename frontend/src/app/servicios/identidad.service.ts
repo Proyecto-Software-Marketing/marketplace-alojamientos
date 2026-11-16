@@ -2,7 +2,12 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Usuario } from './sesion.service';
 
-// Llamadas al servicio Identidad 
+
+export interface RespuestaSesion {
+  token: string;
+  usuario: Usuario;
+}
+
 @Injectable({ providedIn: 'root' })
 export class IdentidadService {
 
@@ -16,10 +21,28 @@ export class IdentidadService {
 
   // HU-02
   login(correo: string, contrasena: string) {
-    return this.http.post<{ token: string; usuario: Usuario }>(`${this.url}/autenticacion/login`, { correo, contrasena });
+    return this.http.post<RespuestaSesion>(`${this.url}/autenticacion/login`, { correo, contrasena });
   }
 
   logout() {
     return this.http.post<void>(`${this.url}/autenticacion/logout`, {});
+  }
+
+  // HU-05
+  consultarPerfil() {
+    return this.http.get<Usuario>(`${this.url}/usuarios/perfil`);
+  }
+
+  actualizarPerfil(nombre: string, correo: string) {
+    return this.http.put<Usuario>(`${this.url}/usuarios/perfil`, { nombre, correo });
+  }
+
+  // HU-06
+  desactivarCuenta() {
+    return this.http.post<void>(`${this.url}/usuarios/desactivar`, {});
+  }
+
+  reactivarCuenta(correo: string, contrasena: string) {
+    return this.http.post<RespuestaSesion>(`${this.url}/autenticacion/reactivar`, { correo, contrasena });
   }
 }
