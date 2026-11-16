@@ -103,42 +103,6 @@
   }
 </section>
 
-<section class="tarjeta exportar">
-  <h2>Exportar reportes</h2>
-  <p class="vacio">
-    Elige el reporte y el formato. Cada descarga queda registrada en la auditoría con tu usuario y la fecha.
-  </p>
-
-  <div class="controles">
-    <label class="campo">Tipo de reporte
-      <select name="tipoReporte" [(ngModel)]="tipoReporte">
-        @for (tipo of tiposReporte; track tipo.valor) {
-          <option [value]="tipo.valor">{{ tipo.texto }}</option>
-        }
-      </select>
-    </label>
-
-    <label class="campo">Formato
-      <select name="formato" [(ngModel)]="formato">
-        @for (opcion of formatos; track opcion.valor) {
-          <option [value]="opcion.valor">{{ opcion.texto }}</option>
-        }
-      </select>
-    </label>
-
-    <button class="boton" type="button" (click)="descargarReporte()" [disabled]="exportando()">
-      {{ exportando() ? 'Descargando...' : 'Descargar reporte' }}
-    </button>
-  </div>
-
-  @if (mensajeExportar()) {
-    <p class="exito">{{ mensajeExportar() }}</p>
-  }
-  @for (error of erroresExportar(); track error) {
-    <p class="error">{{ error }}</p>
-  }
-</section>
-
 <section class="tarjeta">
   <h2>Auditoría de exportaciones</h2>
   <p class="vacio">Quién exportó cada reporte y cuándo lo exportó.</p>
