@@ -1,0 +1,45 @@
+/* Mismos títulos y textos suaves que el detalle */
+h2 {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 24px 0 8px;
+}
+
+.suave {
+  color: var(--texto-suave);
+  font-size: 13px;
+}
+
+.estrellas {
+  color: #f59e0b;
+  letter-spacing: 2px;
+}
+
+.promedio {
+  margin: 0 0 16px;
+  font-size: 16px;
+}
+
+.promedio .estrellas {
+  font-size: 20px;
+  margin-right: 8px;
+}
+
+.resena {
+  padding: 16px 0;
+  border-top: 1px solid var(--borde);
+}
+
+.cabecera {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 0 0 6px;
+}
+
+.contenido {
+  margin: 0;
+  font-size: 14px;
+  white-space: pre-line;
+  word-break: break-word;
+}

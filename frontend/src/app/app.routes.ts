@@ -10,6 +10,7 @@ import { RecuperarContrasena } from './paginas/recuperar-contrasena/recuperar-co
 import { Notificaciones } from './paginas/notificaciones/notificaciones';
 import { MisReservas } from './paginas/mis-reservas/mis-reservas';
 import { ExportarReportes } from './paginas/exportar-reportes/exportar-reportes';
+import { Calificar } from './paginas/calificar/calificar';
 
 // Rutas de las ventanas
 export const routes: Routes = [
@@ -23,6 +24,7 @@ export const routes: Routes = [
   { path: 'perfil', component: Perfil, canActivate: [sesionGuard] },
   { path: 'notificaciones', component: Notificaciones, canActivate: [sesionGuard] },
   { path: 'mis-reservas', component: MisReservas, canActivate: [sesionGuard] },
+  { path: 'calificar/:idReserva', component: Calificar, canActivate: [sesionGuard] },
   { path: 'dashboard', component: Dashboard, canActivate: [adminGuard] },
   { path: 'exportar-reportes', component: ExportarReportes, canActivate: [adminGuard] },
   { path: '**', redirectTo: '' }

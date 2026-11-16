@@ -1,0 +1,37 @@
+<section class="resenas">
+  <h2>Reseñas</h2>
+
+  @if (cargando()) {
+    <p class="suave">Cargando reseñas...</p>
+  } @else {
+    @for (mensaje of errores(); track mensaje) {
+      <p class="error">{{ mensaje }}</p>
+    }
+
+    @if (promedio(); as valor) {
+      <p class="promedio">
+        <span class="estrellas">{{ estrellas(valor) }}</span>
+        <strong>{{ promedioTexto(valor) }}</strong> de 5 ·
+        @if (items().length === 1) {
+          1 reseña
+        } @else {
+          {{ items().length }} reseñas
+        }
+      </p>
+    }
+
+    @for (resena of items(); track resena.id) {
+      <article class="resena">
+        <p class="cabecera">
+          <span class="estrellas">{{ estrellas(resena.calificacion) }}</span>
+          <span class="suave">{{ fecha(resena.fecha) }}</span>
+        </p>
+        <p class="contenido">{{ resena.contenido }}</p>
+      </article>
+    } @empty {
+      @if (errores().length === 0) {
+        <p class="suave">Todavía no hay reseñas.</p>
+      }
+    }
+  }
+</section>
