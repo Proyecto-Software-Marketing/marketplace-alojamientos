@@ -17,10 +17,13 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -152,6 +155,72 @@ class NotificacionControllerTest {
                 .thenThrow(new ServicioNoDisponibleException("No fue posible validar la sesión. Intente más tarde"));
 
         mockMvc.perform(get("/notifications").header("Authorization", TOKEN))
+                .andExpect(status().isServiceUnavailable());
+    }
+
+    // ---------- HU-04 (CA-010, Decisión 10): GET /notifications/password-recovery ----------
+
+    @Test
+    @DisplayName("CA-010 y Decisión 10: sin sesión muestra solo la última notificación de recuperación del correo")
+    void buzonMuestraUltimaRecuperacion() throws Exception {
+        // Dado que el huésped pidió recuperar la contraseña dos veces y tiene otras notificaciones
+        when(serviciosExternos.buscarUsuarioPorCorreo("ana@correo.com")).thenReturn(Optional.of(HUESPED));
+        notificacion(HUESPED, TipoEvento.RECUPERACION_CONTRASENA, 1L, 2);
+        notificacion(HUESPED, TipoEvento.RECUPERACION_CONTRASENA, 2L, 1);
+        notificacion(HUESPED, TipoEvento.RESERVA_CONFIRMADA, 300L, 0);
+        notificacion(OTRO_USUARIO, TipoEvento.RECUPERACION_CONTRASENA, 3L, 0);
+
+        // Cuando abre el buzón simulado con su correo (sin token, con mayúsculas y espacios)
+        mockMvc.perform(get("/notifications/password-recovery").param("correo", "  Ana@Correo.com "))
+                // Entonces solo ve la notificación de recuperación más reciente
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(1))
+                .andExpect(jsonPath("$.items[0].tipoEvento").value("RECUPERACION_CONTRASENA"))
+                .andExpect(jsonPath("$.items[0].entidadTipo").value("USUARIO"))
+                .andExpect(jsonPath("$.items[0].entidadId").value(2))
+                .andExpect(jsonPath("$.noLeidas").value(1));
+        verify(serviciosExternos, never()).verificarSesion(anyString());
+    }
+
+    @Test
+    @DisplayName("Decisión 10: un correo no registrado responde 200 con la lista vacía")
+    void buzonCorreoNoRegistrado() throws Exception {
+        when(serviciosExternos.buscarUsuarioPorCorreo("nadie@correo.com")).thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/notifications/password-recovery").param("correo", "nadie@correo.com"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(0))
+                .andExpect(jsonPath("$.noLeidas").value(0));
+    }
+
+    @Test
+    @DisplayName("Decisión 10: un usuario sin solicitudes de recuperación ve la lista vacía")
+    void buzonSinRecuperaciones() throws Exception {
+        when(serviciosExternos.buscarUsuarioPorCorreo("ana@correo.com")).thenReturn(Optional.of(HUESPED));
+        notificacion(HUESPED, TipoEvento.RESERVA_CONFIRMADA, 300L, 0);
+
+        mockMvc.perform(get("/notifications/password-recovery").param("correo", "ana@correo.com"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(0));
+    }
+
+    @Test
+    @DisplayName("Decisión 10: 400 si no se envía el correo o viene vacío")
+    void buzonSinCorreo() throws Exception {
+        mockMvc.perform(get("/notifications/password-recovery"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.mensajes[0]").value("El correo es obligatorio"));
+        mockMvc.perform(get("/notifications/password-recovery").param("correo", "  "))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("Decisión 10: 503 si Identidad no responde al abrir el buzón")
+    void buzonIdentidadCaida() throws Exception {
+        when(serviciosExternos.buscarUsuarioPorCorreo(anyString()))
+                .thenThrow(new ServicioNoDisponibleException("No fue posible consultar el usuario. Intente más tarde"));
+
+        mockMvc.perform(get("/notifications/password-recovery").param("correo", "ana@correo.com"))
                 .andExpect(status().isServiceUnavailable());
     }
 }
