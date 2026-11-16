@@ -1,2 +1,92 @@
 <h1>Busca tu próximo alojamiento</h1>
 <p class="subtitulo">Encuentra una estancia por ciudad, fechas y número de huéspedes.</p>
+
+<form class="tarjeta buscador" (ngSubmit)="buscar()">
+
+  <div class="fila">
+    <label class="campo">Ciudad
+      <input type="text" name="ciudad" placeholder="Ej: Bogotá" [(ngModel)]="ciudad">
+    </label>
+    <label class="campo">Fecha llegada
+      <input type="date" name="llegada" [(ngModel)]="llegada">
+    </label>
+    <label class="campo">Fecha salida
+      <input type="date" name="salida" [(ngModel)]="salida">
+    </label>
+    <label class="campo">Nº huéspedes
+      <input type="number" name="huespedes" min="1" [(ngModel)]="huespedes">
+    </label>
+    <button class="boton boton-buscar" type="submit">Buscar</button>
+  </div>
+
+
+  <details class="filtros">
+    <summary>Más filtros</summary>
+    <div class="fila">
+      <label class="campo">Tipo
+        <select name="tipo" [(ngModel)]="tipo">
+          <option value="">Cualquiera</option>
+          @for (opcion of tipos; track opcion) {
+            <option [value]="opcion">{{ opcion }}</option>
+          }
+        </select>
+      </label>
+      <label class="campo">Precio mínimo por noche
+        <input type="number" name="precioMinimo" min="0" [(ngModel)]="precioMinimo">
+      </label>
+      <label class="campo">Precio máximo por noche
+        <input type="number" name="precioMaximo" min="0" [(ngModel)]="precioMaximo">
+      </label>
+    </div>
+    <span class="campo">Servicios</span>
+    <div class="servicios">
+      @for (servicio of servicios; track servicio) {
+        <label>
+          <input type="checkbox" (change)="cambiarServicio(servicio, $any($event.target).checked)"> {{ servicio }}
+        </label>
+      }
+    </div>
+  </details>
+
+  @for (error of errores(); track error) {
+    <p class="error">{{ error }}</p>
+  }
+</form>
+
+@if (ultimaBusqueda(); as busqueda) {
+  <div class="encabezado-resultados">
+    <div>
+      <h2>Alojamientos en {{ busqueda.ciudad }}</h2>
+      <p class="pequeno">{{ resultados().length }} resultados disponibles</p>
+    </div>
+    <p class="pequeno">{{ busqueda.llegada }} → {{ busqueda.salida }} · {{ noches() }} noches · {{ busqueda.huespedes }} huéspedes</p>
+  </div>
+
+
+  @if (mensaje()) {
+    <p class="tarjeta">{{ mensaje() }}</p>
+  }
+
+  <div class="resultados">
+    @for (publicacion of resultados(); track publicacion.id) {
+      <article class="tarjeta-alojamiento">
+        <div class="imagen">Sin imagen</div>
+        <div class="datos">
+          <h3>{{ publicacion.titulo }}</h3>
+          <p>{{ publicacion.ciudad }} · {{ publicacion.tipo }}</p>
+          <p class="pequeno">Capacidad: {{ publicacion.capacidad }} huéspedes</p>
+          <p class="precio">$ {{ publicacion.precioNoche | number: '1.0-0' }} / noche</p>
+          <p class="pequeno">Aprox. {{ noches() }} noches: $ {{ publicacion.precioNoche * noches() | number: '1.0-0' }} (sin tarifas)</p>
+          <!-- CA-059: el detalle recibe las fechas y los huespedes de la busqueda -->
+          <a class="boton-secundario ver-detalle"
+             [routerLink]="['/alojamiento', publicacion.id]"
+             [queryParams]="{ llegada: busqueda.llegada, salida: busqueda.salida, huespedes: busqueda.huespedes }">
+            Ver detalle
+          </a>
+        </div>
+      </article>
+    }
+  </div>
+
+  <p class="pequeno">Los precios se muestran por noche. Consulta el desglose completo antes de reservar.</p>
+}
