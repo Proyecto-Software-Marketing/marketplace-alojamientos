@@ -65,6 +65,10 @@
               @if (puedeCancelar(reserva)) {
                 <button class="boton-secundario" type="button" (click)="abrirCancelacion(reserva)">Cancelar</button>
               }
+              <!-- HU-32 el huésped califica su estancia completada -->
+              @if (reserva.estado === 'COMPLETADA' && !esAnfitrion()) {
+                <button class="boton-secundario" type="button" [routerLink]="['/calificar', reserva.id]">Calificar</button>
+              }
             </td>
           </tr>
         } @empty {

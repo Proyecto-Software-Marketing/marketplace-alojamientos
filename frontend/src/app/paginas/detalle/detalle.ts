@@ -5,11 +5,12 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { BusquedaService, PublicacionDetalle } from '../../servicios/busqueda.service';
 import { leerMensajes } from '../../servicios/errores';
+import { ResenasPublicacion } from '../resenas-publicacion/resenas-publicacion';
 
 
 @Component({
   selector: 'app-detalle',
-  imports: [FormsModule, RouterLink, DecimalPipe],
+  imports: [FormsModule, RouterLink, DecimalPipe, ResenasPublicacion],
   templateUrl: './detalle.html',
   styleUrl: './detalle.css'
 })
