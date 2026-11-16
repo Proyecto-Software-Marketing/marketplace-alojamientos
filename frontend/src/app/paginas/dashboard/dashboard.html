@@ -102,3 +102,20 @@
     <p class="error">{{ error }}</p>
   }
 </section>
+
+<section class="tarjeta">
+  <h2>Auditoría de exportaciones</h2>
+  <p class="vacio">Quién exportó cada reporte y cuándo lo exportó.</p>
+  @for (error of erroresExportaciones(); track error) {
+    <p class="error">{{ error }}</p>
+  }
+  @for (exportacion of exportaciones(); track exportacion.id) {
+    <div class="fila-barra">
+      <span class="nombre">{{ exportacion.detalle }}</span>
+      <span class="cantidad">{{ exportacion.usuarioId ? 'Usuario ' + exportacion.usuarioId : 'Sin usuario' }}</span>
+      <span class="cantidad">{{ fecha(exportacion) }}</span>
+    </div>
+  } @empty {
+    <p class="vacio">Todavía no hay exportaciones registradas.</p>
+  }
+</section>

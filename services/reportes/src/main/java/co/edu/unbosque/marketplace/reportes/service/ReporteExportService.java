@@ -17,6 +17,7 @@ import co.edu.unbosque.marketplace.reportes.dto.CiudadDemanda;
 import co.edu.unbosque.marketplace.reportes.dto.EstadisticasPublicaciones;
 import co.edu.unbosque.marketplace.reportes.dto.EstadisticasReservas;
 import co.edu.unbosque.marketplace.reportes.dto.EstadisticasUsuarios;
+import co.edu.unbosque.marketplace.reportes.dto.EventoAuditoriaDTO;
 import co.edu.unbosque.marketplace.reportes.dto.ExportRequestDTO;
 import co.edu.unbosque.marketplace.reportes.dto.FormatoReporte;
 import co.edu.unbosque.marketplace.reportes.dto.ReporteTabla;
@@ -43,12 +44,40 @@ public class ReporteExportService {
     }
 
     public ArchivoReporte exportar(String autorizacion, ExportRequestDTO solicitud) {
-        serviciosExternos.verificarAdministrador(autorizacion);
+        Long usuarioId = serviciosExternos.verificarAdministradorParaExportar(autorizacion);
         ReporteTabla tabla = tabla(solicitud.tipoReporte());
         byte[] contenido = solicitud.formato() == FormatoReporte.EXCEL
                 ? generadorExcel.generar(tabla)
                 : generadorPdf.generar(tabla);
-        return new ArchivoReporte(contenido, nombreArchivo(solicitud), contentType(solicitud.formato()));
+        ArchivoReporte archivo = new ArchivoReporte(contenido, nombreArchivo(solicitud),
+                contentType(solicitud.formato()));
+        registrarAuditoria(usuarioId, solicitud, archivo);
+        return archivo;
+    }
+
+    // HU-41 (CA-113): queda registrado quién exportó, qué reporte exportó y cuándo lo exportó
+    private void registrarAuditoria(Long usuarioId, ExportRequestDTO solicitud, ArchivoReporte archivo) {
+        String detalle = "Reporte: " + nombreReporte(solicitud.tipoReporte())
+                + "; Formato: " + solicitud.formato()
+                + "; Archivo: " + archivo.nombre();
+
+        serviciosExternos.registrarAuditoria(new EventoAuditoriaDTO(
+                usuarioId,
+                "REPORTE",
+                null,
+                "EXPORTAR_REPORTE",
+                "EXITO",
+                detalle));
+    }
+
+    private String nombreReporte(TipoReporte tipo) {
+        return switch (tipo) {
+            case USUARIOS -> "Usuarios";
+            case PUBLICACIONES -> "Publicaciones";
+            case RESERVAS -> "Reservas";
+            case INGRESOS -> "Ingresos estimados";
+            case DEMANDA -> "Demanda por ciudad";
+        };
     }
 
     private ReporteTabla tabla(TipoReporte tipo) {

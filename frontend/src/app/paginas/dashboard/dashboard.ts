@@ -2,6 +2,7 @@ import { DecimalPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { AuditoriaService, EventoAuditoria } from '../../servicios/auditoria.service';
 import { CotizacionService } from '../../servicios/cotizacion.service';
 import { leerMensajes } from '../../servicios/errores';
 import { DatosDashboard, ReportesService } from '../../servicios/reportes.service';
@@ -17,9 +18,14 @@ export class Dashboard {
 
   private reportes = inject(ReportesService);
   private cotizacion = inject(CotizacionService);
+  private auditoria = inject(AuditoriaService);
 
   datos = signal<DatosDashboard | null>(null);
   errores = signal<string[]>([]);
+
+  // HU-41 (CA-114): el administrador ve quien exporto cada reporte y cuando
+  exportaciones = signal<EventoAuditoria[]>([]);
+  erroresExportaciones = signal<string[]>([]);
 
 
   porcentaje: number | null = null;
@@ -30,6 +36,7 @@ export class Dashboard {
   constructor() {
     this.cargar();
     this.cargarTarifa();
+    this.cargarExportaciones();
   }
 
 
@@ -39,6 +46,20 @@ export class Dashboard {
       next: (datos) => this.datos.set(datos),
       error: (error: HttpErrorResponse) => this.errores.set(leerMensajes(error))
     });
+  }
+
+  // HU-41 (CA-114): pide el registro de las exportaciones de reportes
+  cargarExportaciones(): void {
+    this.erroresExportaciones.set([]);
+    this.auditoria.exportaciones().subscribe({
+      next: (respuesta) => this.exportaciones.set(respuesta.items),
+      error: (error: HttpErrorResponse) => this.erroresExportaciones.set(leerMensajes(error))
+    });
+  }
+
+  // Muestra la fecha de la exportacion en formato local
+  fecha(exportacion: EventoAuditoria): string {
+    return new Date(exportacion.fecha).toLocaleString();
   }
 
   estados(): { nombre: string; cantidad: number }[] {
