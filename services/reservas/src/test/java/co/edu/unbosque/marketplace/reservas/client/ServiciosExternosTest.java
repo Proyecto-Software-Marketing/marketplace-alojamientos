@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.jsonPath;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
@@ -122,6 +123,32 @@ class ServiciosExternosTest {
     }
 
     @Test
+    @DisplayName("HU-28 verificarSesionCancelacion permite HUESPED y ADMINISTRADOR")
+    void verificarSesionCancelacionExitosa() {
+        servidor.expect(requestTo(URL_IDENTIDAD + "/autenticacion/autorizar?roles=HUESPED,ADMINISTRADOR"))
+                .andExpect(method(HttpMethod.GET))
+                .andExpect(header("Authorization", TOKEN))
+                .andRespond(withSuccess("{\"id\":1,\"rol\":\"ADMINISTRADOR\"}", MediaType.APPLICATION_JSON));
+
+        UsuarioIdentidadDTO usuario = serviciosExternos.verificarSesionCancelacion(TOKEN);
+
+        assertEquals(1L, usuario.id());
+        assertEquals("ADMINISTRADOR", usuario.rol());
+        servidor.verify();
+    }
+
+    @Test
+    @DisplayName("CA-079 verificarSesionCancelacion lanza PermisoException para el anfitrión")
+    void verificarSesionCancelacionSinPermiso() {
+        servidor.expect(requestTo(URL_IDENTIDAD + "/autenticacion/autorizar?roles=HUESPED,ADMINISTRADOR"))
+                .andRespond(withStatus(HttpStatus.FORBIDDEN));
+
+        assertThrows(PermisoException.class,
+                () -> serviciosExternos.verificarSesionCancelacion(TOKEN));
+        servidor.verify();
+    }
+
+    @Test
     @DisplayName("consultarCotizacion devuelve los datos de la cotización")
     void consultarCotizacionExitosa() {
         String json = """
@@ -203,6 +230,88 @@ class ServiciosExternosTest {
     }
 
     @Test
+    @DisplayName("CA-080 liberarPeriodo hace POST /internal/availability/release")
+    void liberarPeriodoExitoso() {
+        servidor.expect(requestTo(URL_DISPONIBILIDAD + "/internal/availability/release"))
+                .andExpect(method(HttpMethod.POST))
+                .andExpect(jsonPath("$.publicacionId").value(15))
+                .andExpect(jsonPath("$.reservaId").value(100))
+                .andRespond(withStatus(HttpStatus.NO_CONTENT));
+
+        assertDoesNotThrow(() -> serviciosExternos.liberarPeriodo(15L, 100L,
+                LocalDate.now().plusDays(1), LocalDate.now().plusDays(3)));
+        servidor.verify();
+    }
+
+    @Test
+    @DisplayName("CA-080 si Disponibilidad falla al liberar, se informa servicio no disponible")
+    void liberarPeriodoNoDisponible() {
+        servidor.expect(requestTo(URL_DISPONIBILIDAD + "/internal/availability/release"))
+                .andRespond(withStatus(HttpStatus.INTERNAL_SERVER_ERROR));
+
+        assertThrows(ServicioNoDisponibleException.class, () -> serviciosExternos.liberarPeriodo(15L, 100L,
+                LocalDate.now().plusDays(1), LocalDate.now().plusDays(3)));
+        servidor.verify();
+    }
+
+    @Test
+    @DisplayName("CA-077 consultarPoliticaCancelacion devuelve la política de la publicación")
+    void consultarPoliticaCancelacionExitosa() {
+        String json = """
+                {
+                    "id": "pol-1",
+                    "nombre": "Flexible",
+                    "descripcion": "Devolución del 50%",
+                    "porcentajeDevolucion": 50,
+                    "permiteLiberacionPeriodo": true
+                }
+                """;
+        servidor.expect(requestTo(URL_ALOJAMIENTOS + "/internal/listings/15/cancellation-policy"))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(withSuccess(json, MediaType.APPLICATION_JSON));
+
+        PoliticaCancelacionDTO politica = serviciosExternos.consultarPoliticaCancelacion(15L);
+
+        assertEquals("Flexible", politica.nombre());
+        assertEquals(0, politica.porcentajeDevolucion().compareTo(new java.math.BigDecimal("50")));
+        assertTrue(politica.permiteLiberacionPeriodo());
+        servidor.verify();
+    }
+
+    @Test
+    @DisplayName("CA-077 si Alojamientos no encuentra la publicación, responde no encontrado")
+    void consultarPoliticaCancelacionNoExiste() {
+        servidor.expect(requestTo(URL_ALOJAMIENTOS + "/internal/listings/15/cancellation-policy"))
+                .andRespond(withStatus(HttpStatus.NOT_FOUND));
+
+        assertThrows(NoEncontradoException.class,
+                () -> serviciosExternos.consultarPoliticaCancelacion(15L));
+        servidor.verify();
+    }
+
+    @Test
+    @DisplayName("CA-077 si Alojamientos falla, responde servicio no disponible")
+    void consultarPoliticaCancelacionNoDisponible() {
+        servidor.expect(requestTo(URL_ALOJAMIENTOS + "/internal/listings/15/cancellation-policy"))
+                .andRespond(withStatus(HttpStatus.INTERNAL_SERVER_ERROR));
+
+        assertThrows(ServicioNoDisponibleException.class,
+                () -> serviciosExternos.consultarPoliticaCancelacion(15L));
+        servidor.verify();
+    }
+
+    @Test
+    @DisplayName("CA-077 una política vacía se considera inválida")
+    void consultarPoliticaCancelacionVacia() {
+        servidor.expect(requestTo(URL_ALOJAMIENTOS + "/internal/listings/15/cancellation-policy"))
+                .andRespond(withSuccess("", MediaType.APPLICATION_JSON));
+
+        assertThrows(ServicioNoDisponibleException.class,
+                () -> serviciosExternos.consultarPoliticaCancelacion(15L));
+        servidor.verify();
+    }
+
+    @Test
     @DisplayName("notificarReservaConfirmada hace POST /internal/notifications")
     void notificarReservaConfirmadaExitoso() {
         servidor.expect(requestTo(URL_NOTIFICACIONES + "/internal/notifications"))
@@ -220,6 +329,30 @@ class ServiciosExternosTest {
                 .andRespond(withStatus(HttpStatus.INTERNAL_SERVER_ERROR));
 
         assertDoesNotThrow(() -> serviciosExternos.notificarReservaConfirmada(30L, 100L, "RES-TEST", "Confirmada"));
+        servidor.verify();
+    }
+
+    @Test
+    @DisplayName("CA-128 notificarReservaCancelada hace POST /internal/notifications")
+    void notificarReservaCanceladaExitoso() {
+        servidor.expect(requestTo(URL_NOTIFICACIONES + "/internal/notifications"))
+                .andExpect(method(HttpMethod.POST))
+                .andExpect(jsonPath("$.tipoEvento").value("RESERVA_CANCELADA"))
+                .andExpect(jsonPath("$.entidadTipo").value("RESERVA"))
+                .andExpect(jsonPath("$.entidadId").value(100))
+                .andRespond(withStatus(HttpStatus.CREATED));
+
+        assertDoesNotThrow(() -> serviciosExternos.notificarReservaCancelada(30L, 100L, "RES-TEST", "Cancelada"));
+        servidor.verify();
+    }
+
+    @Test
+    @DisplayName("CA-128 si Notificaciones falla, la cancelación no se rompe (best-effort)")
+    void notificarReservaCanceladaNoRompeElFlujo() {
+        servidor.expect(requestTo(URL_NOTIFICACIONES + "/internal/notifications"))
+                .andRespond(withStatus(HttpStatus.INTERNAL_SERVER_ERROR));
+
+        assertDoesNotThrow(() -> serviciosExternos.notificarReservaCancelada(30L, 100L, "RES-TEST", "Cancelada"));
         servidor.verify();
     }
 
