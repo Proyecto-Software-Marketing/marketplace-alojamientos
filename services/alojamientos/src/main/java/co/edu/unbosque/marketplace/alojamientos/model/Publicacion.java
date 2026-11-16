@@ -44,6 +44,12 @@ public class Publicacion {
     public static final int CANTIDAD_MAXIMA_IMAGENES = 10;
     public static final int LONGITUD_MAXIMA_IMAGEN = 500;
 
+    // HU-10, decisiones 4 a 6: límites de las tarifas
+    public static final int PORCENTAJE_MAXIMO_DESCUENTO = 90;
+    public static final int NOCHES_MINIMAS_DESCUENTO = 2;
+    public static final int NOCHES_MAXIMAS_DESCUENTO = 365;
+    public static final int CANTIDAD_MAXIMA_SERVICIOS_ADICIONALES = 10;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -107,14 +113,60 @@ public class Publicacion {
     @Column(name = "imagen", nullable = false, length = LONGITUD_MAXIMA_IMAGEN)
     private List<String> imagenes = new ArrayList<>();
 
+    // HU-10 (CA-029): tarifa de limpieza en pesos, se cobra una vez por estancia. 0 = sin limpieza
+    @Column(name = "tarifa_limpieza", nullable = false, precision = DIGITOS_MAXIMOS_PRECIO, scale = 0)
+    private BigDecimal tarifaLimpieza = BigDecimal.ZERO;
+
+    // HU-10 (CA-030): porcentaje de descuento por estancia larga. 0 = sin descuento
+    @Column(name = "porcentaje_descuento", nullable = false)
+    private int porcentajeDescuento;
+
+    // HU-10 (CA-030): noches desde las que aplica el descuento; null si no hay descuento
+    @Column(name = "noches_minimas_descuento")
+    private Integer nochesMinimasDescuento;
+
+    // HU-10 (CA-129): servicios adicionales con costo, en el orden en que los escribió el anfitrión
+    @ElementCollection(fetch = FetchType.EAGER)
+    @Fetch(FetchMode.SELECT)
+    @CollectionTable(name = "publicacion_servicio_adicional", joinColumns = @JoinColumn(name = "id_publicacion"))
+    @OrderColumn(name = "posicion")
+    private List<ServicioAdicional> serviciosAdicionales = new ArrayList<>();
+
     public Publicacion() {
     }
 
-    // CA-020: queda en BORRADOR y asociada al anfitrión que la crea
+    // CA-020: queda en BORRADOR y asociada al anfitrión que la crea.
+    // HU-10, decisión 8: sin limpieza, sin descuento y sin servicios adicionales
     public Publicacion(Long anfitrionId, LocalDateTime creadaEn) {
         this.anfitrionId = anfitrionId;
         this.estado = EstadoPublicacion.BORRADOR;
         this.creadaEn = creadaEn;
+    }
+
+    // HU-10, decisión 1: la configuración de precios se reemplaza completa
+    public void definirTarifas(BigDecimal tarifaLimpieza, int porcentajeDescuento, Integer nochesMinimasDescuento,
+            List<ServicioAdicional> serviciosAdicionales) {
+        this.tarifaLimpieza = tarifaLimpieza;
+        this.porcentajeDescuento = porcentajeDescuento;
+        this.nochesMinimasDescuento = nochesMinimasDescuento;
+        this.serviciosAdicionales.clear();
+        this.serviciosAdicionales.addAll(serviciosAdicionales);
+    }
+
+    public BigDecimal getTarifaLimpieza() {
+        return tarifaLimpieza;
+    }
+
+    public int getPorcentajeDescuento() {
+        return porcentajeDescuento;
+    }
+
+    public Integer getNochesMinimasDescuento() {
+        return nochesMinimasDescuento;
+    }
+
+    public List<ServicioAdicional> getServiciosAdicionales() {
+        return List.copyOf(serviciosAdicionales);
     }
 
     // Datos básicos de la HU-07 (los mismos que editará la HU-08)
