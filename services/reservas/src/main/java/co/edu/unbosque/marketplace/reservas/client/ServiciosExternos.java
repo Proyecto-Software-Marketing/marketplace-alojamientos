@@ -24,6 +24,7 @@ public class ServiciosExternos {
 
     private static final Logger log = LoggerFactory.getLogger(ServiciosExternos.class);
     private static final String ROLES_SESION = "HUESPED,ANFITRION";
+    private static final String ROLES_CANCELACION = "HUESPED,ADMINISTRADOR";
 
     private final RestClient cliente;
     private final String urlIdentidad;
@@ -66,6 +67,11 @@ public class ServiciosExternos {
     // HU-26: huésped o anfitrión con sesión válida; devuelve id y rol
     public UsuarioIdentidadDTO verificarSesion(String autorizacion) {
         return verificarRol(autorizacion, ROLES_SESION, "No tiene permiso para consultar reservas");
+    }
+
+    // HU-28: solo huésped o administrador pueden cancelar; el anfitrión queda fuera (CA-079)
+    public UsuarioIdentidadDTO verificarSesionCancelacion(String autorizacion) {
+        return verificarRol(autorizacion, ROLES_CANCELACION, "No tiene permiso para cancelar esta reserva");
     }
 
     private UsuarioIdentidadDTO verificarRol(String autorizacion, String roles, String mensajeSinPermiso) {
@@ -155,6 +161,45 @@ public class ServiciosExternos {
         }
     }
 
+    // CA-080: libera el periodo reservado cuando la política de cancelación lo permite
+    public void liberarPeriodo(Long publicacionId, Long reservaId, LocalDate fechaLlegada, LocalDate fechaSalida) {
+        try {
+            BloqueoRequestDTO solicitud = new BloqueoRequestDTO(publicacionId, reservaId, fechaLlegada, fechaSalida);
+
+            cliente.post()
+                    .uri(urlDisponibilidad + "/internal/availability/release")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(solicitud)
+                    .retrieve()
+                    .toBodilessEntity();
+
+        } catch (RestClientException e) {
+            throw new ServicioNoDisponibleException("No fue posible liberar el periodo. Intente más tarde");
+        }
+    }
+
+    // CA-077: política de cancelación de la publicación (la define Alojamientos)
+    public PoliticaCancelacionDTO consultarPoliticaCancelacion(Long publicacionId) {
+        try {
+            PoliticaCancelacionDTO politica = cliente.get()
+                    .uri(urlAlojamientos + "/internal/listings/{id}/cancellation-policy", publicacionId)
+                    .retrieve()
+                    .body(PoliticaCancelacionDTO.class);
+
+            if (politica == null) {
+                throw new ServicioNoDisponibleException(
+                        "La política de cancelación de la publicación no es válida");
+            }
+            return politica;
+
+        } catch (HttpClientErrorException.NotFound e) {
+            throw new NoEncontradoException("La publicación de la reserva no existe");
+        } catch (RestClientException e) {
+            throw new ServicioNoDisponibleException(
+                    "No fue posible consultar la política de cancelación. Intente más tarde");
+        }
+    }
+
     // CA-066: genera la notificación de reserva confirmada (best-effort)
     public void notificarReservaConfirmada(Long usuarioId, Long reservaId, String codigoReserva, String mensaje) {
         try {
@@ -174,6 +219,29 @@ public class ServiciosExternos {
 
         } catch (RestClientException e) {
             log.warn("No fue posible enviar la notificación de reserva confirmada {} al usuario {}: {}",
+                    codigoReserva, usuarioId, e.getMessage());
+        }
+    }
+
+    // CA-128: notificación de reserva cancelada (best-effort)
+    public void notificarReservaCancelada(Long usuarioId, Long reservaId, String codigoReserva, String mensaje) {
+        try {
+            NotificacionRequestDTO notificacion = new NotificacionRequestDTO(
+                    usuarioId,
+                    "RESERVA_CANCELADA",
+                    "RESERVA",
+                    reservaId,
+                    mensaje);
+
+            cliente.post()
+                    .uri(urlNotificaciones + "/internal/notifications")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(notificacion)
+                    .retrieve()
+                    .toBodilessEntity();
+
+        } catch (RestClientException e) {
+            log.warn("No fue posible enviar la notificación de reserva cancelada {} al usuario {}: {}",
                     codigoReserva, usuarioId, e.getMessage());
         }
     }

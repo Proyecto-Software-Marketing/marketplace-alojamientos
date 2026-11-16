@@ -71,6 +71,19 @@ public class Booking {
     @Column(name = "creada_en", nullable = false)
     private LocalDateTime creadaEn;
 
+    // HU-28: datos de la cancelación y devolución simulada
+    @Column(name = "id_cancelada_por")
+    private Long canceladaPor;
+
+    @Column(name = "fecha_cancelacion")
+    private LocalDateTime fechaCancelacion;
+
+    @Column(name = "motivo_cancelacion", length = 500)
+    private String motivoCancelacion;
+
+    @Column(name = "valor_devolucion_simulada", precision = 12, scale = 2)
+    private BigDecimal valorDevolucionSimulada;
+
     public Booking() {
     }
 
@@ -151,5 +164,31 @@ public class Booking {
 
     public LocalDateTime getCreadaEn() {
         return creadaEn;
+    }
+
+    public Long getCanceladaPor() {
+        return canceladaPor;
+    }
+
+    public LocalDateTime getFechaCancelacion() {
+        return fechaCancelacion;
+    }
+
+    public String getMotivoCancelacion() {
+        return motivoCancelacion;
+    }
+
+    public BigDecimal getValorDevolucionSimulada() {
+        return valorDevolucionSimulada;
+    }
+
+    // HU-28: deja la reserva CANCELADA con el detalle de la devolución simulada
+    public void cancelar(Long canceladaPor, String motivo, LocalDateTime fechaCancelacion,
+            BigDecimal valorDevolucionSimulada) {
+        this.estado = BookingStatus.CANCELADA;
+        this.canceladaPor = canceladaPor;
+        this.motivoCancelacion = motivo;
+        this.fechaCancelacion = fechaCancelacion;
+        this.valorDevolucionSimulada = valorDevolucionSimulada;
     }
 }

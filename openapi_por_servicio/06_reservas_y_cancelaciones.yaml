@@ -110,8 +110,8 @@ paths:
         in: path
         required: true
         schema:
-          type: string
-          format: uuid
+          type: integer
+          format: int64
       requestBody:
         required: true
         content:
@@ -135,6 +135,8 @@ paths:
           $ref: '#/components/responses/E404'
         '409':
           $ref: '#/components/responses/E409'
+        '503':
+          $ref: '#/components/responses/E503'
   /internal/bookings/close-stays:
     post:
       tags:
@@ -329,17 +331,18 @@ components:
         motivo:
           type: string
           minLength: 3
+          maxLength: 500
       required:
       - motivo
     Cancellation:
       type: object
       properties:
         reservaId:
-          type: string
-          format: uuid
+          type: integer
+          format: int64
         canceladaPor:
-          type: string
-          format: uuid
+          type: integer
+          format: int64
         fecha:
           type: string
           format: date-time
@@ -409,6 +412,12 @@ components:
             $ref: '#/components/schemas/Error'
     E409:
       description: Conflicto (reserva superpuesta, estado no permitido, duplicado)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    E503:
+      description: Alojamientos, Disponibilidad o Identidad no respondieron
       content:
         application/json:
           schema:
