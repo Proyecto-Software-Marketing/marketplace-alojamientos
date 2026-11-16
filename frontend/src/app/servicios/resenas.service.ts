@@ -40,4 +40,9 @@ export class ResenasService {
   listar(idPublicacion: number) {
     return this.http.get<ListaResenas>(`${this.url}/listings/${idPublicacion}/reviews`);
   }
+
+  // HU-36 el administrador oculta una reseña con su motivo
+  ocultar(idResena: number, motivo: string) {
+    return this.http.post<Resena>(`${this.url}/admin/reviews/${idResena}/hide`, { motivo });
+  }
 }
