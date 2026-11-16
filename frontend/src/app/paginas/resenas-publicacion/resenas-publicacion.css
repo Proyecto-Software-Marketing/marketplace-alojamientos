@@ -43,3 +43,32 @@ h2 {
   white-space: pre-line;
   word-break: break-word;
 }
+
+/* HU-36 ocultar reseña (administrador) */
+.boton-ocultar {
+  margin-top: 10px;
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+.ocultar {
+  margin-top: 12px;
+}
+
+.botones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.botones .boton {
+  width: auto;
+}
+
+.boton-peligro {
+  background: var(--rojo);
+}
+
+.boton-peligro:hover {
+  background: #991b1b;
+}

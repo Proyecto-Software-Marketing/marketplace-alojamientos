@@ -7,6 +7,9 @@
     @for (mensaje of errores(); track mensaje) {
       <p class="error">{{ mensaje }}</p>
     }
+    @if (mensajeExito()) {
+      <p class="exito">{{ mensajeExito() }}</p>
+    }
 
     @if (promedio(); as valor) {
       <p class="promedio">
@@ -27,6 +30,26 @@
           <span class="suave">{{ fecha(resena.fecha) }}</span>
         </p>
         <p class="contenido">{{ resena.contenido }}</p>
+
+        <!-- HU-36 solo el administrador -->
+        @if (esAdministrador()) {
+          @if (ocultando() === resena.id) {
+            <form class="ocultar" (ngSubmit)="ocultar(resena.id)">
+              <label class="campo">Motivo (entre 3 y 500 caracteres)
+                <textarea name="motivo" rows="2" maxlength="500" [(ngModel)]="motivo"></textarea>
+              </label>
+              @for (mensaje of erroresOcultar(); track mensaje) {
+                <p class="error">{{ mensaje }}</p>
+              }
+              <div class="botones">
+                <button class="boton-secundario" type="button" (click)="cancelarOcultar()">Cancelar</button>
+                <button class="boton boton-peligro" type="submit">Ocultar reseña</button>
+              </div>
+            </form>
+          } @else {
+            <button class="boton-secundario boton-ocultar" type="button" (click)="abrirOcultar(resena.id)">Ocultar</button>
+          }
+        }
       </article>
     } @empty {
       @if (errores().length === 0) {
