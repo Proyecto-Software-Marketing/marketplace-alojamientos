@@ -1,0 +1,45 @@
+.centro {
+  display: flex;
+  justify-content: center;
+}
+
+.cuadro {
+  width: 100%;
+  max-width: 440px;
+}
+
+.cuadro .subtitulo {
+  margin-bottom: 24px;
+  font-size: 14px;
+}
+
+.cambiar {
+  text-align: center;
+  font-size: 14px;
+  margin: 20px 0 0;
+}
+
+/* Caja del buzón simulado arriba del formulario */
+.buzon {
+  margin: 0 0 24px;
+}
+
+.buzon .mensaje {
+  color: var(--texto);
+  word-break: break-all;
+}
+
+.actualizar {
+  margin-top: 12px;
+}
+
+.otro-token {
+  width: 100%;
+  margin-top: 12px;
+}
+
+.ir-login {
+  text-align: center;
+  text-decoration: none;
+  margin-top: 24px;
+}
