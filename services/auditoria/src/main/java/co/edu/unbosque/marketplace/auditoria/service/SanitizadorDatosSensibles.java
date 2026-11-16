@@ -13,10 +13,10 @@ public class SanitizadorDatosSensibles {
 			+ "secreto|tarjeta|card|cvv|cvc";
 
 	private static final Pattern VALOR_ENTRE_COMILLAS = Pattern.compile(
-			"(?i)([\"']?(?:" + CLAVES_SENSIBLES + ")[\"']?\\s*[:=]\\s*)([\"'])(.*?)\\2");
+			"(?iu)([\"']?(?:" + CLAVES_SENSIBLES + ")[\"']?\\s*[:=]\\s*)([\"'])(.*?)\\2");
 
 	private static final Pattern VALOR_SIN_COMILLAS = Pattern.compile(
-			"(?i)([\"']?(?:" + CLAVES_SENSIBLES + ")[\"']?\\s*[:=]\\s*)([^,;}]+)");
+			"(?iu)([\"']?(?:" + CLAVES_SENSIBLES + ")[\"']?\\s*[:=]\\s*)([^,;}]+)");
 
 	private static final Pattern CREDENCIAL_HTTP = Pattern.compile(
 			"(?i)\\b(Bearer|Basic)\\s+[A-Za-z0-9._~+/=-]+");

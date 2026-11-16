@@ -39,6 +39,13 @@ class SanitizadorDatosSensiblesTest {
 	}
 
 	@Test
+	@DisplayName("CA-116: se redacta una contraseña con mayúsculas y caracteres no ASCII")
+	void redactaContrasenaConMayusculasUnicode() {
+		assertEquals("CONTRASEÑA=***", sanitizador.limpiar("CONTRASEÑA=hola"));
+		assertEquals("\"CONTRASEÑA\":***", sanitizador.limpiar("\"CONTRASEÑA\":\"secreto\""));
+	}
+
+	@Test
 	@DisplayName("CA-116: se redacta una contraseña dentro de un JSON")
 	void redactaContrasenaEnJson() {
 		assertEquals("\"password\":***, \"usuario\":7",
