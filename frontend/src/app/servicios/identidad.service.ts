@@ -45,4 +45,13 @@ export class IdentidadService {
   reactivarCuenta(correo: string, contrasena: string) {
     return this.http.post<RespuestaSesion>(`${this.url}/autenticacion/reactivar`, { correo, contrasena });
   }
+
+  // HU-04
+  recuperarContrasena(correo: string) {
+    return this.http.post<void>(`${this.url}/autenticacion/recuperar-contrasena`, { correo });
+  }
+
+  restablecerContrasena(token: string, nuevaContrasena: string) {
+    return this.http.post<void>(`${this.url}/autenticacion/restablecer-contrasena`, { token, nuevaContrasena });
+  }
 }
