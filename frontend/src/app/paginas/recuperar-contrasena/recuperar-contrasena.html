@@ -1,0 +1,70 @@
+<div class="centro">
+  <section class="tarjeta cuadro">
+
+    @switch (paso()) {
+      @case ('correo') {
+        <h2>Recuperar contraseña</h2>
+        <p class="subtitulo">Escribe el correo de tu cuenta. Te dejaremos un token en el buzón simulado de notificaciones; no se envía correo real.</p>
+
+        <form (ngSubmit)="enviarCorreo()">
+          <label class="campo">Correo
+            <input type="email" name="correo" placeholder="tu@correo.com" [(ngModel)]="correo">
+          </label>
+
+          @for (mensaje of errores(); track mensaje) {
+            <p class="error">{{ mensaje }}</p>
+          }
+
+          <button class="boton" type="submit">Enviar token</button>
+        </form>
+      }
+
+      @case ('token') {
+        <h2>Nueva contraseña</h2>
+        <p class="subtitulo">Usa el token del buzón y escribe tu nueva contraseña.</p>
+
+        <div class="nota buzon">
+          <h3>Buzón simulado</h3>
+          @if (mensajeBuzon()) {
+            <p class="mensaje">{{ mensajeBuzon() }}</p>
+          } @else {
+            <p>Si {{ correo }} está registrado, aquí aparecerá tu token.</p>
+          }
+          <button class="boton-secundario actualizar" type="button" (click)="revisarBuzon()">Actualizar buzón</button>
+        </div>
+
+        <form (ngSubmit)="restablecer()">
+          <label class="campo">Token
+            <input type="text" name="token" placeholder="Pega aquí el token" [(ngModel)]="token">
+          </label>
+          <label class="campo">Nueva contraseña
+            <input type="password" name="nuevaContrasena" placeholder="Mínimo 8 caracteres" [(ngModel)]="nuevaContrasena">
+          </label>
+          <label class="campo">Confirmar contraseña
+            <input type="password" name="confirmacion" placeholder="Repite la nueva contraseña" [(ngModel)]="confirmacion">
+          </label>
+
+          @for (mensaje of errores(); track mensaje) {
+            <p class="error">{{ mensaje }}</p>
+          }
+
+          <button class="boton" type="submit">Cambiar contraseña</button>
+          @if (tokenVencido()) {
+            <button class="boton-secundario otro-token" type="button" (click)="pedirOtroToken()">Pedir un token nuevo</button>
+          }
+        </form>
+      }
+
+      @case ('listo') {
+        <h2>Contraseña actualizada</h2>
+        <p class="exito">Tu contraseña quedó actualizada. Ya puedes iniciar sesión con ella.</p>
+        <a class="boton ir-login" routerLink="/login">Ir a iniciar sesión</a>
+      }
+    }
+
+    @if (paso() !== 'listo') {
+      <p class="cambiar"><a routerLink="/login">Volver a iniciar sesión</a></p>
+    }
+
+  </section>
+</div>
