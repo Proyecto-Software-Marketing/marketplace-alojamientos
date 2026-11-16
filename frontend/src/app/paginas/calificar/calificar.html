@@ -1,0 +1,56 @@
+<h1>Calificar estancia</h1>
+<p class="subtitulo"><a routerLink="/mis-reservas">← Volver a mis reservas</a></p>
+
+<section class="tarjeta cuadro">
+  @if (cargando()) {
+    <p class="suave">Cargando reserva...</p>
+  } @else if (publicada()) {
+    <h2>¡Gracias por tu reseña!</h2>
+    <p class="exito">Tu reseña quedó publicada.</p>
+    @if (reserva(); as r) {
+      <a class="boton enlace-boton" [routerLink]="['/alojamiento', r.publicacionId]">Ver reseñas del alojamiento</a>
+    }
+  } @else {
+    @if (reserva(); as r) {
+      <p class="resumen">
+        Reserva <strong>{{ r.codigoReserva }}</strong> · Publicación {{ r.publicacionId }}<br>
+        Del {{ fecha(r.fechaLlegada) }} al {{ fecha(r.fechaSalida) }}
+      </p>
+
+      @if (r.estado !== 'COMPLETADA') {
+        <p class="nota">Solo puedes calificar una estancia completada. Esta reserva todavía no ha terminado o fue cancelada.</p>
+      } @else {
+        <form (ngSubmit)="publicar()">
+          <p class="etiqueta">Calificación</p>
+          <div class="estrellas">
+            @for (valor of estrellas; track valor) {
+              <button type="button" class="estrella" [class.activa]="valor <= calificacion()"
+                      (click)="elegir(valor)" [attr.aria-label]="valor + ' de 5'">★</button>
+            }
+            @if (calificacion() > 0) {
+              <span class="suave">{{ calificacion() }} de 5</span>
+            }
+          </div>
+
+          <label class="campo">Tu reseña
+            <textarea name="contenido" rows="5" [maxlength]="maximo" placeholder="Cuéntanos cómo fue tu estancia"
+                      [(ngModel)]="contenido"></textarea>
+          </label>
+          <p class="contador">{{ contenido.length }}/{{ maximo }}</p>
+
+          @for (mensaje of errores(); track mensaje) {
+            <p class="error">{{ mensaje }}</p>
+          }
+
+          <button class="boton" type="submit">Publicar reseña</button>
+        </form>
+      }
+    }
+
+    @if (!reserva()) {
+      @for (mensaje of errores(); track mensaje) {
+        <p class="error">{{ mensaje }}</p>
+      }
+    }
+  }
+</section>

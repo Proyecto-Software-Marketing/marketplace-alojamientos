@@ -1,6 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { leerMensajes } from '../../servicios/errores';
 import { Cancelacion, EstadoReserva, Reserva, ReservasService } from '../../servicios/reservas.service';
 import { SesionService } from '../../servicios/sesion.service';
@@ -19,7 +20,7 @@ const ESTADOS: { valor: EstadoReserva | ''; texto: string }[] = [
 // HU-28: desde el historial se puede cancelar una reserva.
 @Component({
   selector: 'app-mis-reservas',
-  imports: [FormsModule],
+  imports: [FormsModule, RouterLink],
   templateUrl: './mis-reservas.html',
   styleUrl: './mis-reservas.css'
 })
