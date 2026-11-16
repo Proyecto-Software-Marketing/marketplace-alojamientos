@@ -1,0 +1,57 @@
+<h1>Disponibilidad</h1>
+
+@if (idPublicacion() === null) {
+  <p class="subtitulo">Consulta el calendario de una publicación.</p>
+
+  <section class="tarjeta elegir">
+    <form (ngSubmit)="abrir()">
+      <label class="campo">ID de la publicación
+        <input type="number" name="idEscrito" min="1" placeholder="Ej. 1" [(ngModel)]="idEscrito">
+      </label>
+
+      @for (mensaje of errores(); track mensaje) {
+        <p class="error">{{ mensaje }}</p>
+      }
+
+      <button class="boton" type="submit">Ver disponibilidad</button>
+    </form>
+  </section>
+} @else {
+  <p class="subtitulo">
+    Publicación #{{ idPublicacion() }} · <a routerLink="/disponibilidad">Cambiar de publicación</a>
+  </p>
+
+  <section class="tarjeta calendario">
+    <div class="encabezado-mes">
+      <button class="boton-secundario" type="button" (click)="cambiarMes(-1)" aria-label="Mes anterior">‹</button>
+      <h2>{{ tituloMes() }}</h2>
+      <button class="boton-secundario" type="button" (click)="cambiarMes(1)" aria-label="Mes siguiente">›</button>
+    </div>
+
+    @for (mensaje of errores(); track mensaje) {
+      <p class="error">{{ mensaje }}</p>
+    }
+
+    <div class="cuadricula">
+      @for (nombre of diasSemana; track nombre) {
+        <span class="nombre-dia">{{ nombre }}</span>
+      }
+      @for (dia of dias(); track $index) {
+        <span class="dia {{ dia.clase }}">{{ dia.fecha ? dia.numero : '' }}</span>
+      }
+    </div>
+
+    <div class="leyenda">
+      <span><i class="muestra disponible"></i> Disponible</span>
+      <span><i class="muestra reservado"></i> Reservado</span>
+      <span><i class="muestra bloqueado"></i> Bloqueado</span>
+      <span><i class="muestra sin-periodo"></i> Sin periodo</span>
+    </div>
+
+    @if (cargando()) {
+      <p class="aviso">Cargando calendario...</p>
+    } @else if (tramos().length === 0 && errores().length === 0) {
+      <p class="aviso">Esta publicación todavía no tiene periodos disponibles desde hoy.</p>
+    }
+  </section>
+}
