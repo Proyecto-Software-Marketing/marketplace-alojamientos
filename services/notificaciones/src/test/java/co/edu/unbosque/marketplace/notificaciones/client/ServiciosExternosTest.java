@@ -12,7 +12,11 @@ import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
 
 import java.io.IOException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.util.Optional;
 
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
@@ -29,6 +33,7 @@ class ServiciosExternosTest {
     private static final String URL_SESION =
             URL_IDENTIDAD + "/autenticacion/autorizar?roles=HUESPED,ANFITRION,ADMINISTRADOR";
     private static final String TOKEN = "Bearer token-de-prueba";
+    private static final String URL_POR_CORREO = URL_IDENTIDAD + "/interno/usuarios/id?correo=";
 
     private MockRestServiceServer servidor;
     private ServiciosExternos serviciosExternos;
@@ -92,5 +97,40 @@ class ServiciosExternosTest {
         servidor.expect(requestTo(URL_SESION)).andRespond(withStatus(HttpStatus.INTERNAL_SERVER_ERROR));
 
         assertThrows(ServicioNoDisponibleException.class, () -> serviciosExternos.verificarSesion(TOKEN));
+    }
+
+    // ---------- HU-04 (Decisión 10): id del usuario por correo ----------
+
+    @Test
+    @DisplayName("Decisión 10: devuelve el id del usuario dueño del correo")
+    void buscaUsuarioPorCorreo() {
+        // Se revisa el correo ya decodificado, sin importar cómo se codificó la @ en la URL
+        servidor.expect(requestTo(startsWith(URL_POR_CORREO)))
+                .andExpect(method(HttpMethod.GET))
+                .andExpect(peticion -> assertEquals("correo=ana@correo.com",
+                        URLDecoder.decode(peticion.getURI().getRawQuery(), StandardCharsets.UTF_8)))
+                .andRespond(withSuccess("{\"id\":21,\"rol\":\"HUESPED\",\"correo\":\"ana@correo.com\"}",
+                        MediaType.APPLICATION_JSON));
+
+        assertEquals(Optional.of(21L), serviciosExternos.buscarUsuarioPorCorreo("ana@correo.com"));
+        servidor.verify();
+    }
+
+    @Test
+    @DisplayName("Decisión 10: si el correo no está registrado devuelve vacío")
+    void correoNoRegistrado() {
+        servidor.expect(requestTo(startsWith(URL_POR_CORREO))).andRespond(withStatus(HttpStatus.NOT_FOUND));
+
+        assertEquals(Optional.empty(), serviciosExternos.buscarUsuarioPorCorreo("nadie@correo.com"));
+    }
+
+    @Test
+    @DisplayName("Decisión 10: 503 si Identidad no responde al buscar por correo")
+    void identidadCaidaAlBuscarCorreo() {
+        servidor.expect(requestTo(startsWith(URL_POR_CORREO)))
+                .andRespond(withException(new IOException("sin conexión")));
+
+        assertThrows(ServicioNoDisponibleException.class,
+                () -> serviciosExternos.buscarUsuarioPorCorreo("ana@correo.com"));
     }
 }

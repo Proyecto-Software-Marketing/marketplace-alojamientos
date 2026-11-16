@@ -16,6 +16,7 @@ import java.util.Optional;
 
 // HU-30: registra la notificación de un evento para un usuario afectado
 // HU-31: el usuario consulta sus notificaciones y las marca como leídas
+// HU-04: buzón simulado con la última notificación de recuperación de contraseña
 @Service
 public class NotificacionService {
 
@@ -69,5 +70,12 @@ public class NotificacionService {
                 .orElseThrow(() -> new NoEncontradoException("La notificación no existe"));
         notificacion.marcarLeida();
         return notificacion;
+    }
+
+    // HU-04 (Decisión 10): solo la última notificación de recuperación de contraseña del usuario
+    @Transactional(readOnly = true)
+    public Optional<Notificacion> ultimaRecuperacion(Long idUsuario) {
+        return notificacionRepository.findFirstByIdUsuarioAndTipoEventoOrderByFechaCreacionDescIdDesc(idUsuario,
+                TipoEvento.RECUPERACION_CONTRASENA);
     }
 }

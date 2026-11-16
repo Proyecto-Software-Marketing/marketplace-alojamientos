@@ -64,4 +64,16 @@ public class ControlErrores {
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(Map.of("mensajes", List.of(e.getMessage())));
     }
+// HU-04 CA-012 token de recuperación vencido o ya usado
+    @ExceptionHandler(TokenRecuperacionException.class)
+    public ResponseEntity<Map<String, Object>> manejarTokenRecuperacion(TokenRecuperacionException e) {
+        return ResponseEntity.status(HttpStatus.GONE)
+                .body(Map.of("mensajes", List.of(e.getMessage())));
+    }
+// HU-04 el servicio de Notificaciones no respondió
+    @ExceptionHandler(ServicioNoDisponibleException.class)
+    public ResponseEntity<Map<String, Object>> manejarServicioNoDisponible(ServicioNoDisponibleException e) {
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(Map.of("mensajes", List.of(e.getMessage())));
+    }
 }
