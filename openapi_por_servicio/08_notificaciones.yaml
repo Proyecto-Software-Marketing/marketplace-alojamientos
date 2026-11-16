@@ -58,6 +58,32 @@ paths:
           $ref: '#/components/responses/E404'
         '503':
           $ref: '#/components/responses/E503'
+  /notifications/password-recovery:
+    get:
+      tags:
+      - Notificaciones
+      summary: Buzón simulado de recuperación de contraseña (sin sesión)
+      operationId: passwordRecoveryInbox
+      description: 'Historias: HU-04 (CA-010). Ruta pública sin token: quien olvidó la contraseña no puede iniciar sesión. Reemplaza el correo real (AMB-11). Devuelve solo la última notificación RECUPERACION_CONTRASENA del usuario dueño del correo (0 o 1 items). Si el correo no está registrado responde 200 con items vacío, para no revelar si existe. Notificaciones obtiene el id del usuario con GET /interno/usuarios/id de Identidad. Al ser una simulación, cualquiera que conozca el correo puede ver el token.'
+      security: []
+      parameters:
+      - name: correo
+        in: query
+        required: true
+        schema:
+          type: string
+          format: email
+      responses:
+        '200':
+          description: Operación exitosa
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationList'
+        '400':
+          $ref: '#/components/responses/E400'
+        '503':
+          $ref: '#/components/responses/E503'
   /internal/notifications:
     post:
       tags:
@@ -105,13 +131,14 @@ components:
           - Tipo de evento no válido
     TipoEvento:
       type: string
-      description: 'PUBLICACION_APROBADA y RESERVA_CONFIRMADA (HU-30); RESERVA_CANCELADA (HU-28), PUBLICACION_BLOQUEADA (HU-34) y USUARIO_RESTRINGIDO (HU-35).'
+      description: 'PUBLICACION_APROBADA y RESERVA_CONFIRMADA (HU-30); RESERVA_CANCELADA (HU-28), PUBLICACION_BLOQUEADA (HU-34) y USUARIO_RESTRINGIDO (HU-35); RECUPERACION_CONTRASENA (HU-04: entidadId es el id de la solicitud de recuperación y el mensaje trae el token).'
       enum:
       - PUBLICACION_APROBADA
       - RESERVA_CONFIRMADA
       - RESERVA_CANCELADA
       - PUBLICACION_BLOQUEADA
       - USUARIO_RESTRINGIDO
+      - RECUPERACION_CONTRASENA
     EntidadTipo:
       type: string
       description: Se deduce del tipo de evento (PUBLICACION_* -> PUBLICACION, RESERVA_* -> RESERVA, USUARIO_* -> USUARIO)
