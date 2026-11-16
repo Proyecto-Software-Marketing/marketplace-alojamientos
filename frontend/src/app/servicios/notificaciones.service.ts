@@ -26,6 +26,15 @@ export class NotificacionesService {
   private http = inject(HttpClient);
   private url = '/api/notificaciones/notifications';
 
+  // HU-31 mis notificaciones, de la más reciente a la más antigua
+  listar() {
+    return this.http.get<ListaNotificaciones>(this.url);
+  }
+
+  marcarLeida(id: number) {
+    return this.http.patch<Notificacion>(`${this.url}/${id}/read`, {});
+  }
+
   // HU-04 buzón simulado de recuperación, sin sesión
   buzonRecuperacion(correo: string) {
     const parametros = new HttpParams().set('correo', correo);
