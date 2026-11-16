@@ -241,7 +241,7 @@ paths:
       - Alojamientos
       summary: Definir tarifa de limpieza, descuento por estancia larga y servicios adicionales
       operationId: setPricing
-      description: 'Historias: HU-10. Rol requerido: ANFITRION.'
+      description: 'Historias: HU-10 (CA-029, CA-030, CA-031, CA-129). Rol requerido: ANFITRION. Reemplaza toda la configuración de precios y responde la publicación. Se puede en BORRADOR, ACTIVA y PAUSADA, sin cambiar el estado (en ACTIVA aplica de inmediato); en PENDIENTE_REVISION o BLOQUEADA responde 409. La publicación de otro anfitrión responde 404. 400: un valor negativo, con decimales o fuera de rango (se indican todos), descuento sin noches mínimas, noches mínimas sin descuento, o servicios adicionales con nombre repetido (sin distinguir mayúsculas).'
       parameters:
       - name: id
         in: path
@@ -270,6 +270,10 @@ paths:
           $ref: '#/components/responses/E403'
         '404':
           $ref: '#/components/responses/E404'
+        '409':
+          $ref: '#/components/responses/E409'
+        '503':
+          $ref: '#/components/responses/E503'
   /listings/{id}/cancellation-policy:
     put:
       tags:
@@ -538,7 +542,7 @@ paths:
       - Alojamientos
       summary: Datos tarifarios para cotizar (lo consume Cotización)
       operationId: quoteData
-      description: 'Historias: HU-22. Operación interna entre servicios (no expuesta al front).'
+      description: 'Historias: HU-10, HU-22. Operación interna entre servicios (no expuesta al front, sin token). Responde en cualquier estado; Cotización decide cuáles cotiza. Reglas de cálculo: la tarifa de limpieza se cobra una vez por estancia (CA-029); el porcentaje de descuento se aplica solo al valor de las noches (noches × precioPorNoche) cuando la estancia tiene al menos nochesMinimasDescuento noches, redondeado al peso más cercano (CA-030); cada servicio adicional que elija el huésped se cobra una vez por estancia y se identifica por su nombre (CA-129). 400: el id no es un número.'
       parameters:
       - name: id
         in: path
@@ -553,6 +557,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/QuoteData'
+        '400':
+          $ref: '#/components/responses/E400'
         '404':
           $ref: '#/components/responses/E404'
   /internal/listings/{id}/cancellation-policy:
@@ -765,7 +771,14 @@ components:
         tarifaLimpieza:
           type: number
         porcentajeDescuentoEstanciaLarga:
-          type: number
+          type: integer
+        nochesMinimasDescuento:
+          type: integer
+          nullable: true
+        serviciosAdicionales:
+          type: array
+          items:
+            $ref: '#/components/schemas/ServicioAdicional'
         servicios:
           type: array
           items:
@@ -926,30 +939,52 @@ components:
             description: Nombre de la política; null hasta que se asocie una (HU-11)
     PricingInput:
       type: object
+      required:
+      - tarifaLimpieza
+      - porcentajeDescuentoEstanciaLarga
+      - serviciosAdicionales
       properties:
         tarifaLimpieza:
-          type: number
+          type: integer
           minimum: 0
+          maximum: 999999999
+          description: Pesos, sin decimales. 0 = sin limpieza
+          example: 60000
         porcentajeDescuentoEstanciaLarga:
-          type: number
+          type: integer
           minimum: 0
-          maximum: 100
+          maximum: 90
+          description: 0 = sin descuento
+          example: 10
         nochesMinimasDescuento:
           type: integer
-          minimum: 1
+          minimum: 2
+          maximum: 365
+          nullable: true
+          description: Obligatoria si hay descuento; null si el porcentaje es 0
+          example: 7
         serviciosAdicionales:
           type: array
+          maxItems: 10
           items:
-            type: object
-            properties:
-              nombre:
-                type: string
-              costo:
-                type: number
-                minimum: 0
-            required:
-            - nombre
-            - costo
+            $ref: '#/components/schemas/ServicioAdicional'
+    ServicioAdicional:
+      type: object
+      required:
+      - nombre
+      - costo
+      properties:
+        nombre:
+          type: string
+          minLength: 1
+          maxLength: 60
+          example: Desayuno
+        costo:
+          type: integer
+          minimum: 1
+          maximum: 999999999
+          description: Pesos, sin decimales; se cobra una vez por estancia
+          example: 25000
     QuoteData:
       type: object
       properties:
@@ -965,18 +1000,14 @@ components:
         tarifaLimpieza:
           type: number
         porcentajeDescuentoEstanciaLarga:
-          type: number
+          type: integer
         nochesMinimasDescuento:
           type: integer
+          nullable: true
         serviciosAdicionales:
           type: array
           items:
-            type: object
-            properties:
-              nombre:
-                type: string
-              costo:
-                type: number
+            $ref: '#/components/schemas/ServicioAdicional'
     ReasonInput:
       type: object
       properties:
