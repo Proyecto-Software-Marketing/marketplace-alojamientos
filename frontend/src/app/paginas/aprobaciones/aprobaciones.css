@@ -1,0 +1,1 @@
+.item{margin-top:18px}.item h2{margin:0 0 10px}.acciones{display:flex;align-items:center;gap:16px;flex-wrap:wrap}.acciones button{border:0;background:var(--verde);color:white;padding:10px 16px;cursor:pointer}.acciones .rechazar{background:var(--rojo)}button:disabled{opacity:.5}.error{color:var(--rojo)}.exito{color:var(--verde)}

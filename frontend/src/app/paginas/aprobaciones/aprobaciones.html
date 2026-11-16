@@ -1,0 +1,10 @@
+<h1>Aprobaciones pendientes</h1><p class="subtitulo">Revisa las publicaciones antes de activarlas.</p>
+<button type="button" (click)="cargar()" [disabled]="cargando() || procesando() !== null">Actualizar lista</button>
+@if(mensaje()){<p class="exito" role="status">{{mensaje()}}</p>}
+@for(error of errores();track $index){<p class="error" role="alert">{{error}}</p>}
+@if(cargando()){<p>Cargando publicaciones...</p>}
+@else if(!items().length && !errores().length){<p class="tarjeta">No hay publicaciones pendientes.</p>}
+@for(item of items();track item.id){
+<section class="tarjeta item"><h2>{{item.titulo}}</h2><p>{{item.descripcion}}</p><p><strong>Ciudad:</strong> {{item.ciudad}} · <strong>Ubicación:</strong> {{item.ubicacionTextual}}</p><p><strong>Tipo:</strong> {{item.tipoAlojamiento}} · <strong>Capacidad:</strong> {{item.capacidad}} · <strong>Precio por noche:</strong> {{item.precioPorNoche}} COP</p>
+<div class="acciones"><a [routerLink]="['/publicaciones',item.id,'editar']">Ver / editar</a><button type="button" [disabled]="procesando() !== null" (click)="aprobar(item)">Aprobar</button><button type="button" class="rechazar" [disabled]="procesando() !== null" (click)="rechazar(item)">Rechazar</button></div></section>
+}
