@@ -3,6 +3,8 @@ package co.edu.unbosque.marketplace.reservas.controller;
 import co.edu.unbosque.marketplace.reservas.dto.BookingListDTO;
 import co.edu.unbosque.marketplace.reservas.dto.BookingRequestDTO;
 import co.edu.unbosque.marketplace.reservas.dto.BookingResponseDTO;
+import co.edu.unbosque.marketplace.reservas.dto.CancelRequestDTO;
+import co.edu.unbosque.marketplace.reservas.dto.CancellationResponseDTO;
 import co.edu.unbosque.marketplace.reservas.model.BookingStatus;
 import co.edu.unbosque.marketplace.reservas.service.BookingService;
 import jakarta.validation.Valid;
@@ -49,5 +51,14 @@ public class BookingController {
             @RequestHeader("Authorization") String autorizacion,
             @PathVariable Long id) {
         return ResponseEntity.ok(bookingService.consultarReserva(autorizacion, id));
+    }
+
+    // HU-28: cancelar una reserva. Huésped dueño o administrador.
+    @PostMapping("/bookings/{id}/cancel")
+    public ResponseEntity<CancellationResponseDTO> cancelarReserva(
+            @RequestHeader("Authorization") String autorizacion,
+            @PathVariable Long id,
+            @Valid @RequestBody CancelRequestDTO solicitud) {
+        return ResponseEntity.ok(bookingService.cancelarReserva(autorizacion, id, solicitud));
     }
 }
