@@ -5,6 +5,7 @@ import co.edu.unbosque.marketplace.reservas.client.ServiciosExternos;
 import co.edu.unbosque.marketplace.reservas.client.UsuarioIdentidadDTO;
 import co.edu.unbosque.marketplace.reservas.dto.CancelRequestDTO;
 import co.edu.unbosque.marketplace.reservas.dto.CancellationResponseDTO;
+import co.edu.unbosque.marketplace.reservas.dto.EventoAuditoriaDTO;
 import co.edu.unbosque.marketplace.reservas.exception.ConflictoReservaException;
 import co.edu.unbosque.marketplace.reservas.exception.NoEncontradoException;
 import co.edu.unbosque.marketplace.reservas.exception.PermisoException;
@@ -19,6 +20,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -122,6 +124,32 @@ class BookingServiceCancelacionTest {
                 eq(HUESPED_ID), eq(reserva.getId()), eq(reserva.getCodigoReserva()), anyString());
         verify(serviciosExternos).notificarReservaCancelada(
                 eq(ANFITRION_ID), eq(reserva.getId()), eq(reserva.getCodigoReserva()), anyString());
+
+        ArgumentCaptor<EventoAuditoriaDTO> evento = ArgumentCaptor.forClass(EventoAuditoriaDTO.class);
+        verify(serviciosExternos).registrarAuditoria(evento.capture());
+        String detalle = "Fecha de cancelación: " + resultado.fecha()
+                + "; Motivo: Viaje cancelado"
+                + "; Devolución simulada: 225000.00"
+                + "; Estado final: CANCELADA";
+        assertEquals(new EventoAuditoriaDTO(HUESPED_ID, "RESERVA", reserva.getId(),
+                "CANCELAR_RESERVA", "EXITO", detalle), evento.getValue());
+    }
+
+    @Test
+    @DisplayName("CA-082 si Auditoría falla, la cancelación igual queda registrada")
+    void auditoriaCaidaNoRevierteLaCancelacion() {
+        Booking reserva = reservaGuardada(HUESPED_ID, ANFITRION_ID, BookingStatus.CONFIRMADA, "auditoria-caida");
+        autorizarHuesped();
+        when(serviciosExternos.consultarPoliticaCancelacion(PUBLICACION_ID))
+                .thenReturn(new PoliticaCancelacionDTO("Flexible", new BigDecimal("50"), false));
+        when(serviciosExternos.registrarAuditoria(any())).thenReturn(false);
+
+        CancellationResponseDTO resultado = bookingService.cancelarReserva(TOKEN_HUESPED, reserva.getId(), solicitud());
+
+        assertEquals(BookingStatus.CANCELADA, resultado.estadoFinal());
+        assertEquals(BookingStatus.CANCELADA,
+                bookingRepository.findById(reserva.getId()).orElseThrow().getEstado());
+        verify(serviciosExternos).registrarAuditoria(any());
     }
 
     @Test
@@ -160,6 +188,7 @@ class BookingServiceCancelacionTest {
                 bookingRepository.findById(reserva.getId()).orElseThrow().getEstado());
         verify(serviciosExternos, never()).consultarPoliticaCancelacion(any());
         verify(serviciosExternos, never()).notificarReservaCancelada(any(), any(), anyString(), anyString());
+        verify(serviciosExternos, never()).registrarAuditoria(any());
     }
 
     @Test
@@ -200,6 +229,7 @@ class BookingServiceCancelacionTest {
         assertEquals(estado, bookingRepository.findById(reserva.getId()).orElseThrow().getEstado());
         verify(serviciosExternos, never()).consultarPoliticaCancelacion(any());
         verify(serviciosExternos, never()).liberarPeriodo(any(), any(), any(), any());
+        verify(serviciosExternos, never()).registrarAuditoria(any());
     }
 
     @ParameterizedTest
@@ -248,6 +278,7 @@ class BookingServiceCancelacionTest {
         assertNull(guardada.getCanceladaPor());
         assertNull(guardada.getFechaCancelacion());
         verify(serviciosExternos, never()).notificarReservaCancelada(any(), any(), anyString(), anyString());
+        verify(serviciosExternos, never()).registrarAuditoria(any());
     }
 
     @Test

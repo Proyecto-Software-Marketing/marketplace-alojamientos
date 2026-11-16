@@ -1,5 +1,6 @@
 package co.edu.unbosque.marketplace.reservas.client;
 
+import co.edu.unbosque.marketplace.reservas.dto.EventoAuditoriaDTO;
 import co.edu.unbosque.marketplace.reservas.exception.AutenticacionException;
 import co.edu.unbosque.marketplace.reservas.exception.ConflictoReservaException;
 import co.edu.unbosque.marketplace.reservas.exception.NoEncontradoException;
@@ -32,6 +33,7 @@ public class ServiciosExternos {
     private final String urlCotizacion;
     private final String urlNotificaciones;
     private final String urlAlojamientos;
+    private final String urlAuditoria;
 
     @Autowired
     public ServiciosExternos(
@@ -39,8 +41,10 @@ public class ServiciosExternos {
             @Value("${servicios.disponibilidad.url}") String urlDisponibilidad,
             @Value("${servicios.cotizacion.url}") String urlCotizacion,
             @Value("${servicios.notificaciones.url}") String urlNotificaciones,
-            @Value("${servicios.alojamientos.url}") String urlAlojamientos) {
-        this(RestClient.builder(), urlIdentidad, urlDisponibilidad, urlCotizacion, urlNotificaciones, urlAlojamientos);
+            @Value("${servicios.alojamientos.url}") String urlAlojamientos,
+            @Value("${servicios.auditoria.url}") String urlAuditoria) {
+        this(RestClient.builder(), urlIdentidad, urlDisponibilidad, urlCotizacion, urlNotificaciones, urlAlojamientos,
+                urlAuditoria);
     }
 
     // Constructor para las pruebas con un servidor simulado
@@ -50,13 +54,15 @@ public class ServiciosExternos {
             String urlDisponibilidad,
             String urlCotizacion,
             String urlNotificaciones,
-            String urlAlojamientos) {
+            String urlAlojamientos,
+            String urlAuditoria) {
         this.cliente = constructor.build();
         this.urlIdentidad = urlIdentidad;
         this.urlDisponibilidad = urlDisponibilidad;
         this.urlCotizacion = urlCotizacion;
         this.urlNotificaciones = urlNotificaciones;
         this.urlAlojamientos = urlAlojamientos;
+        this.urlAuditoria = urlAuditoria;
     }
 
     // Solo un huésped puede reservar. Devuelve el id del usuario autenticado.
@@ -258,6 +264,22 @@ public class ServiciosExternos {
         } catch (RestClientException e) {
             log.debug("No se pudo obtener el anfitrión de la publicación {}: {}", publicacionId, e.getMessage());
             return null;
+        }
+    }
+
+    public boolean registrarAuditoria(EventoAuditoriaDTO evento) {
+        try {
+            cliente.post()
+                    .uri(urlAuditoria + "/internal/audit-events")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(evento)
+                    .retrieve()
+                    .toBodilessEntity();
+            return true;
+        } catch (RestClientException e) {
+            log.warn("No se pudo registrar en Auditoría la acción {} sobre {} {}: {}",
+                    evento.accion(), evento.entidad(), evento.entidadId(), e.getMessage());
+            return false;
         }
     }
 }

@@ -33,9 +33,9 @@ paths:
     post:
       tags:
       - Reportes y Dashboard
-      summary: Exportar reporte a PDF o Excel y registrar quién y cuándo
+      summary: Exportar reporte de gestión a PDF o Excel
       operationId: exportReport
-      description: 'Historias: HU-40, HU-41. Rol requerido: ADMINISTRADOR. Pendiente de implementar.'
+      description: 'Historia: HU-40 (CA-111, CA-112), HU-41 (CA-113). Rol requerido: ADMINISTRADOR, se verifica con Identidad (GET /autenticacion/autorizar?roles=ADMINISTRADOR). Los reportes se arman con los indicadores agregados de Identidad (GET /interno/usuarios/estadisticas) y Reservas (GET /interno/reservas/estadisticas); si el reporte elegido no tiene datos, el archivo se genera indicando que no hay datos en lugar de fallar. Cuando el archivo se genera queda registrada la exportación en Auditoría (POST /internal/audit-events con entidad REPORTE, accion EXPORTAR_REPORTE, usuario, reporte, formato y fecha); el administrador la consulta en GET /admin/audit-events.'
       requestBody:
         required: true
         content:
@@ -60,6 +60,8 @@ paths:
           $ref: '#/components/responses/E401'
         '403':
           $ref: '#/components/responses/E403'
+        '503':
+          $ref: '#/components/responses/E503'
 components:
   securitySchemes:
     bearerAuth:
@@ -132,6 +134,12 @@ components:
             $ref: '#/components/schemas/Error'
     E403:
       description: Sin permiso para el rol o recurso
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    E503:
+      description: Algún servicio externo no respondió
       content:
         application/json:
           schema:

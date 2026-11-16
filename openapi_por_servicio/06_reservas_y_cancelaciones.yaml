@@ -104,7 +104,7 @@ paths:
       - Reservas y Cancelaciones
       summary: Cancelar reserva y calcular devolución simulada
       operationId: cancelBooking
-      description: 'Historias: HU-28, HU-29. Rol requerido: HUESPED, ADMINISTRADOR.'
+      description: 'Historias: HU-28, HU-29. Rol requerido: HUESPED, ADMINISTRADOR. HU-29 registra en Auditoría el evento CANCELAR_RESERVA con el usuario, la fecha, el motivo, la devolución simulada y el estado final (best-effort: si Auditoría no responde, la cancelación no se revierte).'
       parameters:
       - name: id
         in: path

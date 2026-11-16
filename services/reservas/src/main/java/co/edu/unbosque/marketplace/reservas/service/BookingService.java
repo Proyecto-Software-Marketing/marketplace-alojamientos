@@ -9,6 +9,7 @@ import co.edu.unbosque.marketplace.reservas.dto.BookingRequestDTO;
 import co.edu.unbosque.marketplace.reservas.dto.BookingResponseDTO;
 import co.edu.unbosque.marketplace.reservas.dto.CancelRequestDTO;
 import co.edu.unbosque.marketplace.reservas.dto.CancellationResponseDTO;
+import co.edu.unbosque.marketplace.reservas.dto.EventoAuditoriaDTO;
 import co.edu.unbosque.marketplace.reservas.exception.ConflictoReservaException;
 import co.edu.unbosque.marketplace.reservas.exception.FechasInvalidasException;
 import co.edu.unbosque.marketplace.reservas.exception.NoEncontradoException;
@@ -129,7 +130,25 @@ public class BookingService {
     // CA-128: se notifica al huésped y al anfitrión.
     public CancellationResponseDTO cancelarReserva(String autorizacion, Long reservaId, CancelRequestDTO solicitud) {
         UsuarioIdentidadDTO usuario = serviciosExternos.verificarSesionCancelacion(autorizacion);
-        return transaccion.execute(estado -> cancelarReservaEnTransaccion(usuario, reservaId, solicitud));
+        CancellationResponseDTO cancelacion = transaccion
+                .execute(estado -> cancelarReservaEnTransaccion(usuario, reservaId, solicitud));
+        registrarAuditoriaCancelacion(cancelacion);
+        return cancelacion;
+    }
+
+    private void registrarAuditoriaCancelacion(CancellationResponseDTO cancelacion) {
+        String detalle = "Fecha de cancelación: " + cancelacion.fecha()
+                + "; Motivo: " + cancelacion.motivo()
+                + "; Devolución simulada: " + cancelacion.valorDevolucionSimulada().toPlainString()
+                + "; Estado final: " + cancelacion.estadoFinal();
+
+        serviciosExternos.registrarAuditoria(new EventoAuditoriaDTO(
+                cancelacion.canceladaPor(),
+                "RESERVA",
+                cancelacion.reservaId(),
+                "CANCELAR_RESERVA",
+                "EXITO",
+                detalle));
     }
 
     private CancellationResponseDTO cancelarReservaEnTransaccion(UsuarioIdentidadDTO usuario, Long reservaId,

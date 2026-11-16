@@ -17,7 +17,7 @@ paths:
       - Auditoría y Trazabilidad
       summary: Consultar eventos de auditoría con filtros
       operationId: listAudit
-      description: 'Historias: HU-37, HU-42. Rol requerido: ADMINISTRADOR.'
+      description: 'Historias: HU-37, HU-42, HU-41 (CA-114). Rol requerido: ADMINISTRADOR, se verifica con Identidad (GET /autenticacion/autorizar?roles=ADMINISTRADOR). Devuelve los eventos de auditoría del más reciente al más antiguo (máximo 200), filtrando por usuario, entidad, acción y rango de fechas. Con entidad=REPORTE y accion=EXPORTAR_REPORTE el administrador encuentra el registro de las exportaciones: quién exportó, qué reporte fue y cuándo. 400: una fecha no tiene el formato yyyy-MM-dd o la fecha inicial es posterior a la final. 503: Identidad no responde.'
       parameters:
       - name: usuario
         in: query
@@ -38,12 +38,12 @@ paths:
         in: query
         schema:
           type: string
-        description: Fecha inicial
+        description: Fecha inicial (yyyy-MM-dd)
       - name: hasta
         in: query
         schema:
           type: string
-        description: Fecha final
+        description: Fecha final (yyyy-MM-dd)
       responses:
         '200':
           description: Operación exitosa
@@ -51,10 +51,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuditList'
+        '400':
+          $ref: '#/components/responses/E400'
         '401':
           $ref: '#/components/responses/E401'
         '403':
           $ref: '#/components/responses/E403'
+        '503':
+          $ref: '#/components/responses/E503'
   /internal/audit-events:
     post:
       tags:
@@ -198,6 +202,12 @@ components:
             $ref: '#/components/schemas/Error'
     E500:
       description: Error interno sin exponer detalles sensibles
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    E503:
+      description: Identidad no responde
       content:
         application/json:
           schema:

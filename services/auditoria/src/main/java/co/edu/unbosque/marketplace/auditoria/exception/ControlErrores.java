@@ -12,6 +12,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import co.edu.unbosque.marketplace.auditoria.service.AuditoriaLogger;
 import jakarta.servlet.http.HttpServletRequest;
@@ -56,6 +57,42 @@ public class ControlErrores {
 				HttpStatus.BAD_REQUEST.value());
 
 		return responder(HttpStatus.BAD_REQUEST, List.of(excepcion.getMessage()));
+	}
+
+	@ExceptionHandler(MethodArgumentTypeMismatchException.class)
+	public ResponseEntity<Map<String, List<String>>> tipoInvalido(MethodArgumentTypeMismatchException excepcion,
+			HttpServletRequest solicitud) {
+		registrar("VALIDACION", "Parametro invalido: " + excepcion.getName(),
+				excepcion.getClass().getSimpleName(), solicitud, HttpStatus.BAD_REQUEST.value());
+
+		return responder(HttpStatus.BAD_REQUEST, List.of("El parametro " + excepcion.getName() + " no es valido"));
+	}
+
+	@ExceptionHandler(AutenticacionException.class)
+	public ResponseEntity<Map<String, List<String>>> autenticacion(AutenticacionException excepcion,
+			HttpServletRequest solicitud) {
+		registrar("AUTENTICACION", excepcion.getMessage(), excepcion.getClass().getSimpleName(), solicitud,
+				HttpStatus.UNAUTHORIZED.value());
+
+		return responder(HttpStatus.UNAUTHORIZED, List.of(excepcion.getMessage()));
+	}
+
+	@ExceptionHandler(PermisoException.class)
+	public ResponseEntity<Map<String, List<String>>> permiso(PermisoException excepcion,
+			HttpServletRequest solicitud) {
+		registrar("PERMISO", excepcion.getMessage(), excepcion.getClass().getSimpleName(), solicitud,
+				HttpStatus.FORBIDDEN.value());
+
+		return responder(HttpStatus.FORBIDDEN, List.of(excepcion.getMessage()));
+	}
+
+	@ExceptionHandler(ServicioNoDisponibleException.class)
+	public ResponseEntity<Map<String, List<String>>> servicioNoDisponible(ServicioNoDisponibleException excepcion,
+			HttpServletRequest solicitud) {
+		registrar("SERVICIO_NO_DISPONIBLE", excepcion.getMessage(), excepcion.getClass().getSimpleName(), solicitud,
+				HttpStatus.SERVICE_UNAVAILABLE.value());
+
+		return responder(HttpStatus.SERVICE_UNAVAILABLE, List.of(excepcion.getMessage()));
 	}
 
 	@ExceptionHandler(HttpMessageNotReadableException.class)
