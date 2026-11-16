@@ -1,5 +1,6 @@
 package co.edu.unbosque.marketplace.reservas.client;
 
+import co.edu.unbosque.marketplace.reservas.dto.EventoAuditoriaDTO;
 import co.edu.unbosque.marketplace.reservas.exception.AutenticacionException;
 import co.edu.unbosque.marketplace.reservas.exception.ConflictoReservaException;
 import co.edu.unbosque.marketplace.reservas.exception.NoEncontradoException;
@@ -14,6 +15,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
 
+import java.io.IOException;
 import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -26,6 +28,7 @@ import static org.springframework.test.web.client.match.MockRestRequestMatchers.
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.jsonPath;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withException;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
@@ -36,6 +39,8 @@ class ServiciosExternosTest {
     private static final String URL_COTIZACION = "http://cotizacion";
     private static final String URL_NOTIFICACIONES = "http://notificaciones";
     private static final String URL_ALOJAMIENTOS = "http://alojamientos";
+    private static final String URL_AUDITORIA = "http://auditoria";
+    private static final String URL_EVENTOS = URL_AUDITORIA + "/internal/audit-events";
     private static final String TOKEN = "Bearer token-prueba";
 
     private MockRestServiceServer servidor;
@@ -46,7 +51,7 @@ class ServiciosExternosTest {
         RestClient.Builder constructor = RestClient.builder();
         servidor = MockRestServiceServer.bindTo(constructor).build();
         serviciosExternos = new ServiciosExternos(constructor, URL_IDENTIDAD, URL_DISPONIBILIDAD,
-                URL_COTIZACION, URL_NOTIFICACIONES, URL_ALOJAMIENTOS);
+                URL_COTIZACION, URL_NOTIFICACIONES, URL_ALOJAMIENTOS, URL_AUDITORIA);
     }
 
     @Test
@@ -373,6 +378,46 @@ class ServiciosExternosTest {
                 .andRespond(withStatus(HttpStatus.NOT_FOUND));
 
         assertNull(serviciosExternos.consultarAnfitrion(15L));
+        servidor.verify();
+    }
+
+    @Test
+    @DisplayName("CA-081 registrarAuditoria envía la cancelación a Auditoría")
+    void registrarAuditoriaExitoso() {
+        String detalle = "Fecha de cancelación: 2026-01-01T10:00; Motivo: Viaje cancelado; "
+                + "Devolución simulada: 225000.00; Estado final: CANCELADA";
+        servidor.expect(requestTo(URL_EVENTOS))
+                .andExpect(method(HttpMethod.POST))
+                .andExpect(jsonPath("$.usuarioId").value(25))
+                .andExpect(jsonPath("$.entidad").value("RESERVA"))
+                .andExpect(jsonPath("$.entidadId").value(1))
+                .andExpect(jsonPath("$.accion").value("CANCELAR_RESERVA"))
+                .andExpect(jsonPath("$.resultado").value("EXITO"))
+                .andExpect(jsonPath("$.detalle").value(detalle))
+                .andRespond(withStatus(HttpStatus.CREATED));
+
+        assertTrue(serviciosExternos.registrarAuditoria(new EventoAuditoriaDTO(25L, "RESERVA", 1L,
+                "CANCELAR_RESERVA", "EXITO", detalle)));
+        servidor.verify();
+    }
+
+    @Test
+    @DisplayName("CA-082 si Auditoría no responde no se lanza error, solo se informa")
+    void auditoriaNoDisponible() {
+        servidor.expect(requestTo(URL_EVENTOS)).andRespond(withException(new IOException("Sin conexión")));
+
+        assertFalse(serviciosExternos.registrarAuditoria(new EventoAuditoriaDTO(25L, "RESERVA", 1L,
+                "CANCELAR_RESERVA", "EXITO", "Detalle")));
+        servidor.verify();
+    }
+
+    @Test
+    @DisplayName("CA-082 si Auditoría responde con error no se lanza error, solo se informa")
+    void auditoriaConError() {
+        servidor.expect(requestTo(URL_EVENTOS)).andRespond(withStatus(HttpStatus.INTERNAL_SERVER_ERROR));
+
+        assertFalse(serviciosExternos.registrarAuditoria(new EventoAuditoriaDTO(25L, "RESERVA", 1L,
+                "CANCELAR_RESERVA", "EXITO", "Detalle")));
         servidor.verify();
     }
 }
