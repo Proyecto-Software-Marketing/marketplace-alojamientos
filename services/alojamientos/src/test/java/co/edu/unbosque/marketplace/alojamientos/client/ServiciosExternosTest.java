@@ -65,6 +65,25 @@ class ServiciosExternosTest {
     }
 
     @Test
+    @DisplayName("HU-09: al modificar la publicación, el huésped recibe el mensaje de esa operación")
+    void noEsAnfitrionAlModificar() {
+        servidor.expect(requestTo(URL_AUTORIZAR)).andRespond(withStatus(HttpStatus.FORBIDDEN));
+
+        PermisoException error = assertThrows(PermisoException.class,
+                () -> serviciosExternos.verificarAnfitrion(TOKEN, "Solo el anfitrión puede modificar sus publicaciones"));
+        assertEquals("Solo el anfitrión puede modificar sus publicaciones", error.getMessage());
+    }
+
+    @Test
+    @DisplayName("HU-09: al modificar la publicación, el anfitrión obtiene su id desde el token")
+    void anfitrionAlModificar() {
+        servidor.expect(requestTo(URL_AUTORIZAR))
+                .andRespond(withSuccess("{\"id\":7,\"rol\":\"ANFITRION\"}", MediaType.APPLICATION_JSON));
+
+        assertEquals(7L, serviciosExternos.verificarAnfitrion(TOKEN, "Sin permiso"));
+    }
+
+    @Test
     @DisplayName("Decisión 4: sin sesión o con el token vencido se responde 401")
     void sinSesion() {
         servidor.expect(requestTo(URL_AUTORIZAR)).andRespond(withStatus(HttpStatus.UNAUTHORIZED));
