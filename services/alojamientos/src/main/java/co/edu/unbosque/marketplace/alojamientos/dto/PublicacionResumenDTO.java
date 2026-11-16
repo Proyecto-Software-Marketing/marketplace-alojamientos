@@ -26,6 +26,6 @@ public record PublicacionResumenDTO(
                 publicacion.getCapacidad(),
                 publicacion.getPrecioNoche(),
                 publicacion.getEstado().name(),
-                List.of());
+                publicacion.getServicios());
     }
 }

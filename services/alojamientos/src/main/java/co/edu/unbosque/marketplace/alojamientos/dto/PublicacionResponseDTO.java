@@ -7,8 +7,8 @@ import java.util.List;
 
 // Respuesta pública con una publicación (Listing en el contrato).
 // Decisión 2: usa los nombres del contrato, que son los que espera el frontend.
-// Decisión 3: servicios, reglas e imágenes van como listas vacías hasta la HU-09,
-// y motivoRechazo en null hasta la HU-13
+// Servicios, reglas e imágenes se definen en la HU-09 (vacías al crear la publicación);
+// motivoRechazo va en null hasta la HU-13
 public record PublicacionResponseDTO(
         Long id,
         Long anfitrionId,
@@ -36,9 +36,9 @@ public record PublicacionResponseDTO(
                 publicacion.getTipo().name(),
                 publicacion.getCapacidad(),
                 publicacion.getPrecioNoche(),
-                List.of(),
-                List.of(),
-                List.of(),
+                publicacion.getServicios(),
+                publicacion.getReglas(),
+                publicacion.getImagenes(),
                 publicacion.getEstado().name(),
                 null);
     }

@@ -77,6 +77,12 @@ public class ControlErrores {
         return respuesta(HttpStatus.NOT_FOUND, e.getMessage());
     }
 
+    // 409: el estado de la publicación no permite el cambio (HU-09, decisión 4)
+    @ExceptionHandler(ConflictoException.class)
+    public ResponseEntity<Map<String, List<String>>> manejarConflicto(ConflictoException e) {
+        return respuesta(HttpStatus.CONFLICT, e.getMessage());
+    }
+
     // 503: Identidad no respondió
     @ExceptionHandler(ServicioNoDisponibleException.class)
     public ResponseEntity<Map<String, List<String>>> manejarServicioCaido(ServicioNoDisponibleException e) {
