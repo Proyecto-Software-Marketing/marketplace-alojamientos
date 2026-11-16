@@ -1,0 +1,116 @@
+.encabezado {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+
+/* Filtro por estado */
+.filtros {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.filtros .campo {
+  min-width: 220px;
+}
+
+/* Panel con la tabla de reservas */
+.panel {
+  padding: 0;
+  overflow-x: auto;
+}
+
+.tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.tabla th,
+.tabla td {
+  padding: 14px 20px;
+  text-align: left;
+  border-bottom: 1px solid var(--borde);
+  vertical-align: top;
+}
+
+.tabla th {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--texto-suave);
+}
+
+.tabla tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.codigo {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.pequeno {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--texto-suave);
+}
+
+.acciones {
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* Colores del estado de la reserva */
+.estado {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--blanco);
+  background: var(--texto-suave);
+  white-space: nowrap;
+}
+
+.estado.CONFIRMADA {
+  background: var(--verde);
+}
+
+.estado.COMPLETADA {
+  background: var(--azul);
+}
+
+.estado.CANCELADA {
+  background: var(--rojo);
+}
+
+.estado.EN_REVISION_MANUAL {
+  background: #b45309;
+}
+
+/* Formulario de cancelación */
+.cancelar {
+  margin-top: 24px;
+}
+
+.cancelar .campo textarea {
+  width: 100%;
+  resize: vertical;
+}
+
+.botones {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.vacio {
+  padding: 24px;
+  margin: 0;
+  color: var(--texto-suave);
+  font-size: 14px;
+}
