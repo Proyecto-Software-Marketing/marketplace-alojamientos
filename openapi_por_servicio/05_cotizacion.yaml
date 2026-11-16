@@ -17,7 +17,7 @@ paths:
       - Cotización
       summary: Generar cotización desglosada
       operationId: createQuote
-      description: 'Historias: HU-22. Rol requerido: HUESPED.'
+      description: 'Historias: HU-22 (CA-060 a CA-063), HU-10 (CA-029, CA-030, CA-129). Rol requerido: HUESPED (se verifica con Identidad /autenticacion/autorizar). Toma de Alojamientos (GET /internal/listings/{id}/quote-data) el precio por noche, la capacidad, la limpieza, el descuento y los servicios adicionales, y de /tarifas/servicio el porcentaje vigente. total = precioBase + tarifaLimpieza + servicios adicionales − descuento + tarifaServicio, donde precioBase = noches × precioPorNoche; el descuento es el porcentaje del anfitrión sobre precioBase si noches ≥ nochesMinimasDescuento; tarifaServicio es el porcentaje vigente sobre el subtotal (todo lo anterior). Cada parte se redondea al peso más cercano. La cotización se guarda y se consulta con GET /quotes/{id}. No verifica disponibilidad de fechas (lo hace Reservas al confirmar). 400: falta un dato, fechas con formato inválido, llegada antes de hoy, salida no posterior a la llegada, más de 365 noches o un servicio adicional que la publicación no ofrece. 404: la publicación no existe. 409: la publicación no está ACTIVA. 422: más huéspedes que la capacidad (CA-063). 503: Identidad o Alojamientos no responden.'
       requestBody:
         required: true
         content:
@@ -39,15 +39,20 @@ paths:
           $ref: '#/components/responses/E403'
         '404':
           $ref: '#/components/responses/E404'
+        '409':
+          $ref: '#/components/responses/E409'
         '422':
           $ref: '#/components/responses/E422'
+        '503':
+          $ref: '#/components/responses/E503'
   /quotes/{id}:
     get:
       tags:
       - Cotización
       summary: Consultar una cotización
       operationId: getQuote
-      description: 'Historias: HU-22.'
+      description: 'Historias: HU-22, HU-23. Sin token: la consume Reservas para crear la reserva con el precio cotizado.'
+      security: []
       parameters:
       - name: id
         in: path
@@ -62,8 +67,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Quote'
-        '401':
-          $ref: '#/components/responses/E401'
         '404':
           $ref: '#/components/responses/E404'
   /tarifas/servicio:
@@ -125,12 +128,26 @@ components:
           - El correo ya está en uso
     Quote:
       type: object
+      description: Valores en pesos, sin decimales
       properties:
         id:
           type: string
           format: uuid
+        publicacionId:
+          type: integer
+          format: int64
+        fechaLlegada:
+          type: string
+          format: date
+        fechaSalida:
+          type: string
+          format: date
+        cantidadHuespedes:
+          type: integer
         noches:
           type: integer
+        precioPorNoche:
+          type: number
         precioBase:
           type: number
         tarifaLimpieza:
@@ -144,6 +161,9 @@ components:
                 type: string
               costo:
                 type: number
+        porcentajeDescuento:
+          type: integer
+          description: 0 si la estancia no cumple la condición de estancia larga
         descuento:
           type: number
         porcentajeTarifaServicio:
@@ -152,12 +172,13 @@ components:
           type: number
         total:
           type: number
+          example: 1909000
     QuoteRequest:
       type: object
       properties:
         publicacionId:
-          type: string
-          format: uuid
+          type: integer
+          format: int64
         fechaLlegada:
           type: string
           format: date
@@ -169,8 +190,11 @@ components:
           minimum: 1
         serviciosAdicionales:
           type: array
+          description: Nombres de los servicios adicionales que ofrece la publicación (opcional)
           items:
             type: string
+          example:
+          - Desayuno
       required:
       - publicacionId
       - fechaLlegada
@@ -213,6 +237,18 @@ components:
             $ref: '#/components/schemas/Error'
     E404:
       description: No encontrado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    E409:
+      description: La publicación no está ACTIVA
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    E503:
+      description: Identidad o Alojamientos no responden
       content:
         application/json:
           schema:
