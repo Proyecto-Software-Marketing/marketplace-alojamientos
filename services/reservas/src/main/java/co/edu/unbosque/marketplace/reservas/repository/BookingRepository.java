@@ -27,4 +27,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     // HU-27: reservas en un estado cuya fecha de salida es anterior a la fecha dada
     List<Booking> findByEstadoAndFechaSalidaBefore(BookingStatus estado, LocalDate fecha);
+    
+    // si el huesped tiene reservas en ese estado con llegada despues de la fecha
+    boolean existsByHuespedIdAndEstadoAndFechaLlegadaAfter(Long huespedId, BookingStatus estado, LocalDate fecha);
 }
