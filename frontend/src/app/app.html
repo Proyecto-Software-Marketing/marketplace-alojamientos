@@ -10,6 +10,7 @@
       }
       @case ('ANFITRION') {
         <a routerLink="/mis-publicaciones">Mis publicaciones</a>
+        <a routerLink="/disponibilidad">Disponibilidad</a>
       }
       @case ('ADMINISTRADOR') {
         <a routerLink="/aprobaciones">Aprobaciones</a>
@@ -22,6 +23,7 @@
     }
 
     @if (sesion.usuario()) {
+      <a routerLink="/notificaciones">Notificaciones</a>
       <a routerLink="/perfil">Mi cuenta</a>
       <button class="enlace" (click)="cerrarSesion()">Cerrar sesión</button>
     }
