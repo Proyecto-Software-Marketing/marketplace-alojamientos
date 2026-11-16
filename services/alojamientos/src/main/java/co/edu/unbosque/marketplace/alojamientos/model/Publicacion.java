@@ -1,17 +1,26 @@
 package co.edu.unbosque.marketplace.alojamientos.model;
 
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OrderColumn;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 // HU-07: publicación de un alojamiento. La crea un anfitrión y nace en BORRADOR (CA-020)
 @Entity
@@ -28,6 +37,12 @@ public class Publicacion {
     public static final int CAPACIDAD_MINIMA = 1;
     public static final int CAPACIDAD_MAXIMA = 50;
     public static final int DIGITOS_MAXIMOS_PRECIO = 9;
+
+    // HU-09, decisiones 8 y 10: límites de reglas e imágenes
+    public static final int CANTIDAD_MAXIMA_REGLAS = 20;
+    public static final int LONGITUD_MAXIMA_REGLA = 200;
+    public static final int CANTIDAD_MAXIMA_IMAGENES = 10;
+    public static final int LONGITUD_MAXIMA_IMAGEN = 500;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -67,6 +82,31 @@ public class Publicacion {
     @Column(name = "creada_en", nullable = false)
     private LocalDateTime creadaEn;
 
+    // HU-09 (CA-026): servicios del catálogo, en el orden del catálogo.
+    // Se cargan siempre con la publicación porque todas las respuestas los muestran
+    @ElementCollection(fetch = FetchType.EAGER)
+    @Fetch(FetchMode.SELECT)
+    @CollectionTable(name = "publicacion_servicio", joinColumns = @JoinColumn(name = "id_publicacion"))
+    @OrderColumn(name = "posicion")
+    @Column(name = "servicio", nullable = false, length = 40)
+    private List<String> servicios = new ArrayList<>();
+
+    // HU-09 (CA-027): reglas del alojamiento, en el orden en que las escribió el anfitrión
+    @ElementCollection(fetch = FetchType.EAGER)
+    @Fetch(FetchMode.SELECT)
+    @CollectionTable(name = "publicacion_regla", joinColumns = @JoinColumn(name = "id_publicacion"))
+    @OrderColumn(name = "posicion")
+    @Column(name = "regla", nullable = false, length = LONGITUD_MAXIMA_REGLA)
+    private List<String> reglas = new ArrayList<>();
+
+    // HU-09 (CA-028): rutas o URL de imágenes; la primera es la foto principal
+    @ElementCollection(fetch = FetchType.EAGER)
+    @Fetch(FetchMode.SELECT)
+    @CollectionTable(name = "publicacion_imagen", joinColumns = @JoinColumn(name = "id_publicacion"))
+    @OrderColumn(name = "posicion")
+    @Column(name = "imagen", nullable = false, length = LONGITUD_MAXIMA_IMAGEN)
+    private List<String> imagenes = new ArrayList<>();
+
     public Publicacion() {
     }
 
@@ -95,6 +135,42 @@ public class Publicacion {
         if (estado == EstadoPublicacion.ACTIVA) {
             estado = EstadoPublicacion.PAUSADA;
         }
+    }
+
+    // HU-09, decisión 4: los servicios, reglas e imágenes se pueden cambiar en BORRADOR, ACTIVA y PAUSADA.
+    // En PENDIENTE_REVISION el administrador la está revisando y BLOQUEADA no se puede tocar
+    public boolean permiteEditarContenido() {
+        return estado == EstadoPublicacion.BORRADOR
+                || estado == EstadoPublicacion.ACTIVA
+                || estado == EstadoPublicacion.PAUSADA;
+    }
+
+    // HU-09, decisión 2: cada lista reemplaza por completo a la anterior
+    public void definirServicios(List<String> nuevos) {
+        servicios.clear();
+        servicios.addAll(nuevos);
+    }
+
+    public void definirReglas(List<String> nuevas) {
+        reglas.clear();
+        reglas.addAll(nuevas);
+    }
+
+    public void definirImagenes(List<String> nuevas) {
+        imagenes.clear();
+        imagenes.addAll(nuevas);
+    }
+
+    public List<String> getServicios() {
+        return List.copyOf(servicios);
+    }
+
+    public List<String> getReglas() {
+        return List.copyOf(reglas);
+    }
+
+    public List<String> getImagenes() {
+        return List.copyOf(imagenes);
     }
 
     public Long getId() {

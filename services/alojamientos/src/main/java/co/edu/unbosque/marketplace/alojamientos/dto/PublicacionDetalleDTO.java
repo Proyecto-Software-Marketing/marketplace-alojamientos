@@ -7,7 +7,8 @@ import java.util.List;
 
 // Lo que recibe Búsqueda en GET /interno/publicaciones/{id} (su clase PublicacionDetalle):
 // los datos del resumen más lo que solo se ve en el detalle.
-// Decisión 13: servicios, reglas e imágenes llegan con la HU-09 y politicaCancelacion con la HU-11
+// HU-09 (CA-026 a CA-028): aquí se ven los servicios, las reglas y las imágenes.
+// politicaCancelacion llega con la HU-11
 public record PublicacionDetalleDTO(
         Long id,
         String titulo,
@@ -31,10 +32,10 @@ public record PublicacionDetalleDTO(
                 publicacion.getCapacidad(),
                 publicacion.getPrecioNoche(),
                 publicacion.getEstado().name(),
-                List.of(),
+                publicacion.getServicios(),
                 publicacion.getDescripcion(),
-                List.of(),
-                List.of(),
+                publicacion.getReglas(),
+                publicacion.getImagenes(),
                 null);
     }
 }

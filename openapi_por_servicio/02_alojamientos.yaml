@@ -124,7 +124,7 @@ paths:
       - Alojamientos
       summary: Definir servicios (amenities)
       operationId: setAmenities
-      description: 'Historias: HU-09. Rol requerido: ANFITRION.'
+      description: 'Historias: HU-09 (CA-026). Rol requerido: ANFITRION. Reemplaza la lista completa (una lista vacía quita todo) y responde la publicación. Se puede en BORRADOR, ACTIVA y PAUSADA, sin cambiar el estado; en PENDIENTE_REVISION o BLOQUEADA responde 409. La publicación de otro anfitrión responde 404. Solo servicios del catálogo: Wifi, Cocina, Aire acondicionado, Lavadora, Aparcamiento, Piscina; se aceptan sin distinguir mayúsculas, se guardan con la escritura del catálogo, sin repetidos y en su orden (así funcionan como filtro en Búsqueda). 400: falta la lista o un servicio no está en el catálogo.'
       parameters:
       - name: id
         in: path
@@ -153,13 +153,17 @@ paths:
           $ref: '#/components/responses/E403'
         '404':
           $ref: '#/components/responses/E404'
+        '409':
+          $ref: '#/components/responses/E409'
+        '503':
+          $ref: '#/components/responses/E503'
   /listings/{id}/rules:
     put:
       tags:
       - Alojamientos
       summary: Definir reglas del alojamiento
       operationId: setRules
-      description: 'Historias: HU-09. Rol requerido: ANFITRION.'
+      description: 'Historias: HU-09 (CA-027). Rol requerido: ANFITRION. Reemplaza la lista completa (una lista vacía quita todo) y responde la publicación. Se puede en BORRADOR, ACTIVA y PAUSADA, sin cambiar el estado; en PENDIENTE_REVISION o BLOQUEADA responde 409. La publicación de otro anfitrión responde 404. Máximo 20 reglas de 1 a 200 caracteres, sin espacios sobrantes, en el orden recibido y sin repetidas. 400: falta la lista, una regla vacía o fuera de los límites.'
       parameters:
       - name: id
         in: path
@@ -188,13 +192,17 @@ paths:
           $ref: '#/components/responses/E403'
         '404':
           $ref: '#/components/responses/E404'
+        '409':
+          $ref: '#/components/responses/E409'
+        '503':
+          $ref: '#/components/responses/E503'
   /listings/{id}/images:
     put:
       tags:
       - Alojamientos
       summary: Definir rutas o referencias de imágenes
       operationId: setImages
-      description: 'Historias: HU-09. Rol requerido: ANFITRION.'
+      description: 'Historias: HU-09 (CA-028). Rol requerido: ANFITRION. Reemplaza la lista completa (una lista vacía quita todo) y responde la publicación. Se puede en BORRADOR, ACTIVA y PAUSADA, sin cambiar el estado; en PENDIENTE_REVISION o BLOQUEADA responde 409. La publicación de otro anfitrión responde 404. Solo referencias como texto (no se suben archivos): máximo 10, de hasta 500 caracteres, que empiecen por http://, https:// o / y sin espacios; en el orden recibido (la primera es la foto principal) y sin repetidas. 400: falta la lista o una referencia no cumple el formato.'
       parameters:
       - name: id
         in: path
@@ -223,6 +231,10 @@ paths:
           $ref: '#/components/responses/E403'
         '404':
           $ref: '#/components/responses/E404'
+        '409':
+          $ref: '#/components/responses/E409'
+        '503':
+          $ref: '#/components/responses/E503'
   /listings/{id}/pricing:
     put:
       tags:
@@ -690,6 +702,16 @@ components:
           type: array
           items:
             type: string
+            enum:
+            - Wifi
+            - Cocina
+            - Aire acondicionado
+            - Lavadora
+            - Aparcamiento
+            - Piscina
+          example:
+          - Wifi
+          - Piscina
       required:
       - servicios
     Error:
@@ -707,8 +729,14 @@ components:
       properties:
         imagenes:
           type: array
+          maxItems: 10
           items:
             type: string
+            maxLength: 500
+            pattern: ^(https?://|/)\S+$
+          example:
+          - https://fotos.ejemplo.com/cabana-1.jpg
+          - /imagenes/cabana-2.png
       required:
       - imagenes
     Listing:
@@ -962,8 +990,14 @@ components:
       properties:
         reglas:
           type: array
+          maxItems: 20
           items:
             type: string
+            minLength: 1
+            maxLength: 200
+          example:
+          - No fumar
+          - No se admiten mascotas
       required:
       - reglas
     Stats:

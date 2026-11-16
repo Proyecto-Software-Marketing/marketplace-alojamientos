@@ -34,7 +34,12 @@ public class ServiciosExternos {
     // HU-07 (CA-022, decisión 4): solo un anfitrión puede crear publicaciones.
     // Devuelve el id del anfitrión, que sale del token
     public Long verificarAnfitrion(String autorizacion) {
-        return verificarRol(autorizacion, "ANFITRION", "Solo un anfitrión puede crear publicaciones");
+        return verificarAnfitrion(autorizacion, "Solo un anfitrión puede crear publicaciones");
+    }
+
+    // Igual que el anterior, con el mensaje de la operación (HU-09: modificar la publicación)
+    public Long verificarAnfitrion(String autorizacion, String mensajeSinPermiso) {
+        return verificarRol(autorizacion, "ANFITRION", mensajeSinPermiso);
     }
 
     // Le pregunta a Identidad si el token es del rol y devuelve el id del usuario
