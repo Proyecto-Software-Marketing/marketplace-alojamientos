@@ -4,7 +4,7 @@
 }
 
 @if (!esHuesped()) {
-  <p class="tarjeta nota">Solo los huéspedes pueden cotizar una estancia.</p>
+  <p class="tarjeta nota">Solo los huéspedes pueden cotizar y reservar una estancia.</p>
 } @else {
   <div class="columnas">
     <section class="tarjeta">
@@ -65,6 +65,36 @@
         </dl>
 
         <p class="suave">Cotización n.º {{ c.id }}. Todavía no se ha realizado ningún cobro.</p>
+
+        <!-- HU-23 confirmar la reserva con esta cotización -->
+        <div class="reservar">
+          @if (reserva(); as r) {
+            <h2>¡Reserva confirmada!</h2>
+            <p class="exito">Tu código de reserva es <strong>{{ r.codigoReserva }}</strong>.</p>
+            <a class="boton enlace-boton" routerLink="/mis-reservas">Ver mis reservas</a>
+          } @else {
+            <h2>Confirmar reserva</h2>
+            <label class="campo">Método de pago
+              <select name="metodoPago" [(ngModel)]="metodoPago" [disabled]="reservando()">
+                @for (metodo of metodosPago; track metodo.valor) {
+                  <option [value]="metodo.valor">{{ metodo.texto }}</option>
+                }
+              </select>
+            </label>
+            <p class="suave">Pago simulado, no se hace ningún cobro real.</p>
+
+            @for (mensaje of erroresReserva(); track mensaje) {
+              <p class="error">{{ mensaje }}</p>
+            }
+            @if (periodoOcupado()) {
+              <p><a [routerLink]="['/alojamiento', c.publicacionId]">Volver al alojamiento para elegir otras fechas</a></p>
+            }
+
+            <button class="boton" type="button" (click)="confirmarReserva(c)" [disabled]="reservando()">
+              {{ reservando() ? 'Reservando…' : 'Confirmar reserva' }}
+            </button>
+          }
+        </div>
       } @else if (errores().length === 0) {
         <p class="suave">Elige las fechas y pulsa Recalcular.</p>
       }
