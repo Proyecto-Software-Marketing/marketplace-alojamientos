@@ -26,6 +26,11 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
+import co.edu.unbosque.marketplace.alojamientos.exception.ConflictoException;
+import co.edu.unbosque.marketplace.alojamientos.exception.NoEncontradoException;
+import co.edu.unbosque.marketplace.alojamientos.exception.PermisoException;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import co.edu.unbosque.marketplace.alojamientos.exception.PublicacionIncompletaException;
 
 // Pruebas de la HU-07: crear publicación en borrador
 @SpringBootTest
@@ -190,4 +195,83 @@ class PublicacionServiceTest {
 
         assertEquals(Integer.parseInt(capacidad), publicacion.getCapacidad());
     }
+
+// ---------- HU-12: CA-035 y CA-036 ----------
+
+@Test
+@DisplayName("CA-035: una publicacion completa pasa a PENDIENTE_REVISION")
+void enviaPublicacionCompletaARevision() {
+    Publicacion borrador = publicacionService.crear(
+            ANFITRION, solicitud("4", "250000"));
+
+    Publicacion enviada = publicacionService.enviarARevision(
+            borrador.getId(), ANFITRION);
+
+    assertEquals(EstadoPublicacion.PENDIENTE_REVISION, enviada.getEstado());
+
+    Publicacion guardada = publicacionRepository.findById(
+            borrador.getId()).orElseThrow();
+
+    assertEquals(EstadoPublicacion.PENDIENTE_REVISION, guardada.getEstado());
+}
+
+@Test
+@DisplayName("CA-036: un borrador incompleto indica los datos faltantes")
+void rechazaPublicacionIncompleta() {
+    Publicacion incompleta = new Publicacion(ANFITRION, AHORA);
+    incompleta.definirDatosBasicos(
+            "", "", "Guatavita", "", TipoAlojamiento.CABANA,
+            4, BigDecimal.valueOf(250000));
+
+    incompleta = publicacionRepository.save(incompleta);
+    Long id = incompleta.getId();
+
+    PublicacionIncompletaException error = assertThrows(
+        PublicacionIncompletaException.class,
+        () -> publicacionService.enviarARevision(id, ANFITRION));
+
+    assertTrue(error.getMessage().contains("titulo"));
+    assertTrue(error.getMessage().contains("descripcion"));
+    assertTrue(error.getMessage().contains("ubicacion"));
+
+    assertEquals(EstadoPublicacion.BORRADOR,
+            publicacionRepository.findById(id).orElseThrow().getEstado());
+}
+
+@Test
+@DisplayName("HU-12: otro anfitrion no puede enviar la publicacion")
+void rechazaPublicacionDeOtroAnfitrion() {
+    Publicacion borrador = publicacionService.crear(
+            ANFITRION, solicitud("4", "250000"));
+
+    assertThrows(PermisoException.class,
+            () -> publicacionService.enviarARevision(
+                    borrador.getId(), 99L));
+
+    assertEquals(EstadoPublicacion.BORRADOR,
+            publicacionRepository.findById(
+                    borrador.getId()).orElseThrow().getEstado());
+}
+
+@Test
+@DisplayName("HU-12: no permite enviar dos veces a revision")
+void rechazaSegundoEnvioARevision() {
+    Publicacion borrador = publicacionService.crear(
+            ANFITRION, solicitud("4", "250000"));
+
+    publicacionService.enviarARevision(borrador.getId(), ANFITRION);
+
+    assertThrows(ConflictoException.class,
+            () -> publicacionService.enviarARevision(
+                    borrador.getId(), ANFITRION));
+}
+
+@Test
+@DisplayName("HU-12: una publicacion inexistente devuelve error")
+void rechazaPublicacionInexistente() {
+    assertThrows(NoEncontradoException.class,
+            () -> publicacionService.enviarARevision(
+                    999999L, ANFITRION));
+}
+
 }

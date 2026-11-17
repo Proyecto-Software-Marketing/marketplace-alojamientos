@@ -12,6 +12,14 @@ import java.math.RoundingMode;
 import java.time.Clock;
 import java.time.LocalDateTime;
 
+import co.edu.unbosque.marketplace.alojamientos.exception.ConflictoException;
+import co.edu.unbosque.marketplace.alojamientos.exception.NoEncontradoException;
+import co.edu.unbosque.marketplace.alojamientos.exception.PermisoException;
+import co.edu.unbosque.marketplace.alojamientos.model.EstadoPublicacion;
+import java.util.ArrayList;
+import java.util.List;
+import co.edu.unbosque.marketplace.alojamientos.exception.PublicacionIncompletaException;
+
 // HU-07: crear una publicación en borrador
 @Service
 public class PublicacionService {
@@ -42,6 +50,69 @@ public class PublicacionService {
                 solicitud.precioPorNoche().setScale(0, RoundingMode.UNNECESSARY));
         return publicacionRepository.save(publicacion);
     }
+    // HU-12: enviar una publicacion completa a revision.
+@Transactional
+public Publicacion enviarARevision(Long publicacionId, Long anfitrionId) {
+    Publicacion publicacion = publicacionRepository.findById(publicacionId)
+            .orElseThrow(() -> new NoEncontradoException(
+                    "La publicacion no existe"));
+
+    if (!publicacion.getAnfitrionId().equals(anfitrionId)) {
+        throw new PermisoException(
+                "No puede enviar a revision una publicacion de otro anfitrion");
+    }
+
+    if (publicacion.getEstado() != EstadoPublicacion.BORRADOR) {
+        throw new ConflictoException(
+                "Solo se pueden enviar a revision publicaciones en BORRADOR");
+    }
+
+    List<String> faltantes = new ArrayList<>();
+
+    if (publicacion.getTitulo() == null
+            || publicacion.getTitulo().isBlank()) {
+        faltantes.add("titulo");
+    }
+
+    if (publicacion.getDescripcion() == null
+            || publicacion.getDescripcion().isBlank()) {
+        faltantes.add("descripcion");
+    }
+
+    if (publicacion.getCiudad() == null
+            || publicacion.getCiudad().isBlank()) {
+        faltantes.add("ciudad");
+    }
+
+    if (publicacion.getUbicacionTextual() == null
+            || publicacion.getUbicacionTextual().isBlank()) {
+        faltantes.add("ubicacion");
+    }
+
+    if (publicacion.getTipo() == null) {
+        faltantes.add("tipo de alojamiento");
+    }
+
+    if (publicacion.getCapacidad() < 1
+            || publicacion.getCapacidad() > 50) {
+        faltantes.add("capacidad");
+    }
+
+    if (publicacion.getPrecioNoche() == null
+            || publicacion.getPrecioNoche().signum() <= 0) {
+        faltantes.add("precio por noche");
+    }
+
+if (!faltantes.isEmpty()) {
+    throw new PublicacionIncompletaException(
+            "Falta informacion obligatoria: "
+                    + String.join(", ", faltantes));
+}
+
+    publicacion.enviarARevision();
+
+    return publicacionRepository.save(publicacion);
+}
 
     // CA-021: capacidad menor o igual a cero o precio no positivo → se rechaza
     private void validarCapacidadYPrecio(PublicacionRequestDTO solicitud) {
