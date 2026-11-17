@@ -1,0 +1,24 @@
+.lista {
+  display: grid;
+  gap: 12px;
+}
+
+.fila {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.suave {
+  color: #6b7280;
+}
+
+.precio {
+  font-weight: 600;
+}
+
+.acciones {
+  display: flex;
+  gap: 8px;
+}

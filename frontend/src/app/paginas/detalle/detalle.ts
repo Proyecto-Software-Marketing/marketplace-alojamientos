@@ -6,11 +6,12 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { BusquedaService, PublicacionDetalle } from '../../servicios/busqueda.service';
 import { leerMensajes } from '../../servicios/errores';
 import { ResenasPublicacion } from '../resenas-publicacion/resenas-publicacion';
+import { BotonFavorito } from '../boton-favorito/boton-favorito';
 
 
 @Component({
   selector: 'app-detalle',
-  imports: [FormsModule, RouterLink, DecimalPipe, ResenasPublicacion],
+  imports: [FormsModule, RouterLink, DecimalPipe, ResenasPublicacion, BotonFavorito],
   templateUrl: './detalle.html',
   styleUrl: './detalle.css'
 })
