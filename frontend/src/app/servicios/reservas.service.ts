@@ -55,4 +55,11 @@ export class ReservasService {
   cancelar(id: number, motivo: string) {
     return this.http.post<Cancelacion>(`${this.url}/${id}/cancel`, { motivo });
   }
+
+  // HU-23: confirma la reserva a partir de la cotización. Un reintento con la misma
+  // Idempotency-Key devuelve la misma reserva en lugar de crear otra
+  crearReserva(cotizacionId: string, metodoPago: string, idempotencyKey: string) {
+    return this.http.post<Reserva>(this.url, { cotizacionId, metodoPago },
+      { headers: { 'Idempotency-Key': idempotencyKey } });
+  }
 }
