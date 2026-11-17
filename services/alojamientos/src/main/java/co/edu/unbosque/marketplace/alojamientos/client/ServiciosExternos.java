@@ -42,6 +42,14 @@ public class ServiciosExternos {
         return verificarRol(autorizacion, "ANFITRION", mensajeSinPermiso);
     }
 
+
+    // HU-34 (CA-094): solo un administrador puede bloquear publicaciones.
+    public Long verificarAdministrador(String autorizacion) {
+        return verificarRol(
+                autorizacion,
+                "ADMINISTRADOR",
+                "Solo un administrador puede bloquear publicaciones");
+    }
     // Le pregunta a Identidad si el token es del rol y devuelve el id del usuario
     private Long verificarRol(String autorizacion, String rol, String mensajeSinPermiso) {
         try {

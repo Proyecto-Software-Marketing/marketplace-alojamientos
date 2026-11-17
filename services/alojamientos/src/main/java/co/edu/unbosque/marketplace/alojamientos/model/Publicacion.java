@@ -85,6 +85,10 @@ public class Publicacion {
     @Column(name = "estado", nullable = false, length = 20)
     private EstadoPublicacion estado;
 
+
+    // HU-34: motivo registrado cuando el administrador bloquea la publicacion.
+    @Column(name = "motivo_bloqueo", length = 2000)
+    private String motivoBloqueo;
     @Column(name = "creada_en", nullable = false)
     private LocalDateTime creadaEn;
 
@@ -267,5 +271,19 @@ public class Publicacion {
 
     public LocalDateTime getCreadaEn() {
         return creadaEn;
+    }
+
+    // HU-34 (CA-094): bloquear una publicacion indicando el motivo.
+    public void bloquear(String motivo) {
+        if (estado == EstadoPublicacion.BLOQUEADA) {
+            throw new IllegalStateException("La publicacion ya esta bloqueada");
+        }
+
+        this.motivoBloqueo = motivo;
+        this.estado = EstadoPublicacion.BLOQUEADA;
+    }
+
+    public String getMotivoBloqueo() {
+        return motivoBloqueo;
     }
 }
