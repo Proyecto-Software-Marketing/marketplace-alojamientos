@@ -274,4 +274,56 @@ void rechazaPublicacionInexistente() {
                     999999L, ANFITRION));
 }
 
+@Test
+@DisplayName("HU-12: identifica todos los datos faltantes")
+void identificaTodosLosDatosFaltantes() {
+    Publicacion incompleta = new Publicacion(ANFITRION, AHORA);
+
+    incompleta.definirDatosBasicos(
+        "", "", "", "", TipoAlojamiento.CASA,
+        0, BigDecimal.ZERO);
+
+    Long id = publicacionRepository.save(incompleta).getId();
+
+    PublicacionIncompletaException error = assertThrows(
+            PublicacionIncompletaException.class,
+            () -> publicacionService.enviarARevision(id, ANFITRION));
+
+    assertTrue(error.getMessage().contains("titulo"));
+    assertTrue(error.getMessage().contains("descripcion"));
+    assertTrue(error.getMessage().contains("ciudad"));
+    assertTrue(error.getMessage().contains("ubicacion"));
+    assertTrue(error.getMessage().contains("capacidad"));
+
+    assertEquals(EstadoPublicacion.BORRADOR,
+            publicacionRepository.findById(id).orElseThrow().getEstado());
+}
+
+@Test
+@DisplayName("HU-12: rechaza capacidad superior a 50 y precio negativo")
+void rechazaCapacidadYPrecioInvalidosEnRevision() {
+    Publicacion incompleta = new Publicacion(ANFITRION, AHORA);
+
+    incompleta.definirDatosBasicos(
+            "Casa campestre",
+            "Casa con piscina",
+            "Bogota",
+            "Zona norte",
+            TipoAlojamiento.CASA,
+            51,
+            BigDecimal.valueOf(-1000));
+
+    Long id = publicacionRepository.save(incompleta).getId();
+
+    PublicacionIncompletaException error = assertThrows(
+            PublicacionIncompletaException.class,
+            () -> publicacionService.enviarARevision(id, ANFITRION));
+
+    assertTrue(error.getMessage().contains("capacidad"));
+    assertTrue(error.getMessage().contains("precio por noche"));
+
+    assertEquals(EstadoPublicacion.BORRADOR,
+            publicacionRepository.findById(id).orElseThrow().getEstado());
+}
+
 }
