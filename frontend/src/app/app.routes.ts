@@ -14,22 +14,38 @@ import { MisReservas } from './paginas/mis-reservas/mis-reservas';
 import { ExportarReportes } from './paginas/exportar-reportes/exportar-reportes';
 import { Calificar } from './paginas/calificar/calificar';
 
-// Rutas de las ventanas
+import { anfitrionGuard, editorGuard } from './servicios/anfitrion.guard';
+import { Publicaciones } from './paginas/publicaciones/publicaciones';
+import { FormularioPublicacion } from './paginas/formulario-publicacion/formulario-publicacion';
+import { Aprobaciones } from './paginas/aprobaciones/aprobaciones';
+
 export const routes: Routes = [
   { path: '', component: Inicio },
   { path: 'login', component: Login },
   { path: 'registro', redirectTo: 'login' },
   { path: 'recuperar-contrasena', component: RecuperarContrasena },
   { path: 'alojamiento/:id', component: Detalle },
+
   { path: 'cotizacion', component: Cotizacion, canActivate: [sesionGuard] },
   { path: 'disponibilidad', component: Disponibilidad, canActivate: [sesionGuard] },
   { path: 'disponibilidad/:id', component: Disponibilidad, canActivate: [sesionGuard] },
-  { path: 'publicaciones/nueva', component: NuevaPublicacion, canActivate: [sesionGuard] },
+
   { path: 'perfil', component: Perfil, canActivate: [sesionGuard] },
   { path: 'notificaciones', component: Notificaciones, canActivate: [sesionGuard] },
   { path: 'mis-reservas', component: MisReservas, canActivate: [sesionGuard] },
   { path: 'calificar/:idReserva', component: Calificar, canActivate: [sesionGuard] },
+
+  // HU-07, HU-09 y HU-10: creacion completa por pasos.
+  { path: 'publicaciones/nueva', component: NuevaPublicacion, canActivate: [anfitrionGuard] },
+
+  // HU de publicaciones: consulta y edicion.
+  { path: 'mis-publicaciones', component: Publicaciones, canActivate: [anfitrionGuard] },
+  { path: 'publicaciones/:id/editar', component: FormularioPublicacion, canActivate: [editorGuard] },
+
+  // Administracion.
   { path: 'dashboard', component: Dashboard, canActivate: [adminGuard] },
+  { path: 'aprobaciones', component: Aprobaciones, canActivate: [adminGuard] },
   { path: 'exportar-reportes', component: ExportarReportes, canActivate: [adminGuard] },
+
   { path: '**', redirectTo: '' }
 ];

@@ -1,0 +1,15 @@
+<h1>Mis publicaciones</h1>
+<p class="subtitulo">Administra tus alojamientos y envíalos a revisión.</p>
+<a class="boton boton-enlace" routerLink="/publicaciones/nueva">+ Publicar alojamiento</a>
+@if (mensaje()) { <p class="exito" role="status">{{mensaje()}}</p> }
+@for (error of errores(); track $index) { <p class="error" role="alert">{{error}}</p> }
+@if (cargando()) { <p>Cargando publicaciones...</p> }
+@else if (!items().length && !errores().length) { <section class="tarjeta"><p>Aún no tienes publicaciones.</p></section> }
+@for (item of items(); track item.id) {
+<section class="tarjeta item">
+  <div><h2>{{item.titulo}}</h2><p>{{item.ciudad}} · {{item.tipoAlojamiento}} · {{item.capacidad}} huéspedes</p><p><strong>Estado:</strong> {{item.estado}}</p></div>
+  <div class="acciones"><a [routerLink]="['/publicaciones',item.id,'editar']">Editar</a>
+    @if (item.estado === 'BORRADOR') { <button type="button" [disabled]="procesando() !== null" (click)="enviar(item)">Enviar a revisión</button> }
+  </div>
+</section>
+}
