@@ -1,5 +1,6 @@
 package co.edu.unbosque.marketplace.alojamientos.model;
 
+import co.edu.unbosque.marketplace.alojamientos.exception.SolicitudInvalidaException;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
@@ -21,6 +22,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+
 
 // HU-07: publicación de un alojamiento. La crea un anfitrión y nace en BORRADOR (CA-020)
 @Entity
@@ -84,7 +86,9 @@ public class Publicacion {
     @Enumerated(EnumType.STRING)
     @Column(name = "estado", nullable = false, length = 20)
     private EstadoPublicacion estado;
-
+// HU-13: motivo que indica el administrador al rechazar la publicacion.
+@Column(name = "motivo_rechazo", length = 2000)
+private String motivoRechazo;
     @Column(name = "creada_en", nullable = false)
     private LocalDateTime creadaEn;
 
@@ -277,4 +281,35 @@ public void enviarARevision() {
     public LocalDateTime getCreadaEn() {
         return creadaEn;
     }
+    public String getMotivoRechazo() {
+    return motivoRechazo;
+}
+
+    // HU-13 (CA-037): aprobar una publicacion pendiente de revision.
+    public void aprobar() {
+        if (estado != EstadoPublicacion.PENDIENTE_REVISION) {
+            throw new IllegalStateException(
+                    "Solo se pueden aprobar publicaciones en PENDIENTE_REVISION");
+        }
+
+        estado = EstadoPublicacion.ACTIVA;
+        motivoRechazo = null;
+    }
+// HU-13 (CA-038): rechazar una publicacion indicando el motivo.
+public void rechazar(String motivo) {
+    if (estado != EstadoPublicacion.PENDIENTE_REVISION) {
+        throw new IllegalStateException(
+                "Solo se pueden rechazar publicaciones en PENDIENTE_REVISION");
+    }
+
+    if (motivo == null || motivo.isBlank()
+            || motivo.trim().length() < 3
+            || motivo.trim().length() > 2000) {
+        throw new SolicitudInvalidaException(
+        "El motivo del rechazo debe tener entre 3 y 2000 caracteres");
+    }
+
+    estado = EstadoPublicacion.RECHAZADA;
+    motivoRechazo = motivo.trim();
+}
 }

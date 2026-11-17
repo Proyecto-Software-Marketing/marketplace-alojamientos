@@ -14,6 +14,10 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
+import co.edu.unbosque.marketplace.alojamientos.dto.EventoAuditoriaDTO;
+import co.edu.unbosque.marketplace.alojamientos.dto.RechazarPublicacionRequestDTO;
+import jakarta.validation.Valid;
+import org.springframework.web.bind.annotation.RequestBody;
 
 // HU-07: el anfitrión crea una publicación en borrador
 @RestController
@@ -51,4 +55,60 @@ public ResponseEntity<PublicacionResponseDTO> enviarARevision(
     return ResponseEntity.ok(PublicacionResponseDTO.desde(publicacion));
 }
 
+    // HU-13 (CA-037): el administrador aprueba una publicacion.
+    @PostMapping("/admin/listings/{id}/approve")
+    public ResponseEntity<PublicacionResponseDTO> aprobar(
+            @RequestHeader("Authorization") String autorizacion,
+            @PathVariable Long id) {
+
+Long administradorId = serviciosExternos.verificarAdministrador(autorizacion);
+Publicacion publicacion = publicacionService.aprobar(id);
+
+// Registrar la aprobacion en Auditoria
+serviciosExternos.registrarAuditoria(new EventoAuditoriaDTO(
+        administradorId,
+        "PUBLICACION",
+        publicacion.getId(),
+        "APROBAR_PUBLICACION",
+        "EXITOSO",
+        "El administrador aprobo la publicacion"
+));
+
+// Notificar al anfitrion
+serviciosExternos.notificarPublicacionAprobada(
+        publicacion.getAnfitrionId(),
+        publicacion.getId()
+);
+
+return ResponseEntity.ok(PublicacionResponseDTO.desde(publicacion));
+    }
+// HU-13 (CA-038): el administrador rechaza una publicacion.
+@PostMapping("/admin/listings/{id}/reject")
+public ResponseEntity<PublicacionResponseDTO> rechazar(
+        @RequestHeader("Authorization") String autorizacion,
+        @PathVariable Long id,
+        @Valid @RequestBody RechazarPublicacionRequestDTO solicitud) {
+
+    Long administradorId = serviciosExternos.verificarAdministrador(autorizacion);
+
+    Publicacion publicacion = publicacionService.rechazar(
+            id, solicitud.motivo());
+
+    // Registrar el rechazo en Auditoria
+    serviciosExternos.registrarAuditoria(new EventoAuditoriaDTO(
+            administradorId,
+            "PUBLICACION",
+            publicacion.getId(),
+            "RECHAZAR_PUBLICACION",
+            "EXITOSO",
+            "Motivo: " + publicacion.getMotivoRechazo()
+    ));
+    // HU-13 (CA-039): notificar al anfitrion el motivo del rechazo.
+serviciosExternos.notificarPublicacionRechazada(
+        publicacion.getAnfitrionId(),
+        publicacion.getId(),
+        publicacion.getMotivoRechazo()
+);
+    return ResponseEntity.ok(PublicacionResponseDTO.desde(publicacion));
+}
 }

@@ -35,6 +35,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import co.edu.unbosque.marketplace.alojamientos.model.TipoAlojamiento;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import co.edu.unbosque.marketplace.alojamientos.dto.EventoAuditoriaDTO;
+import static org.mockito.ArgumentMatchers.argThat;
 
 // Pruebas de la API REST de la HU-07, como las haría el frontend.
 // Identidad se simula con ServiciosExternos
@@ -396,4 +398,449 @@ void rechazaEnvioDePublicacionIncompleta() throws Exception {
                     .orElseThrow().getEstado());
 }
 
+    // ---------- HU-13: Aprobar publicaciones ----------
+
+    @Test
+    @DisplayName("CA-037: un administrador aprueba una publicacion pendiente (200)")
+    void administradorApruebaPublicacion() throws Exception {
+        // Crear una publicacion en borrador.
+        crear(cuerpoValido()).andExpect(status().isCreated());
+
+        Long id = publicacionRepository.findAll().get(0).getId();
+
+        // El anfitrion envia la publicacion a revision.
+        mockMvc.perform(post("/listings/{id}/submit", id)
+                        .header("Authorization", TOKEN))
+                .andExpect(status().isOk());
+
+        // Simular que Identidad reconoce al administrador.
+        when(serviciosExternos.verificarAdministrador(TOKEN))
+                .thenReturn(10L);
+
+        // El administrador aprueba la publicacion.
+        mockMvc.perform(post("/admin/listings/{id}/approve", id)
+                        .header("Authorization", TOKEN))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.estado").value("ACTIVA"));
+
+        // Verificar que el nuevo estado quedo guardado.
+        assertEquals(EstadoPublicacion.ACTIVA,
+                publicacionRepository.findById(id)
+                        .orElseThrow().getEstado());
+
+        verify(serviciosExternos).verificarAdministrador(TOKEN);
+        // Comprobar que se solicita registrar la aprobacion.
+verify(serviciosExternos).registrarAuditoria(
+        argThat((EventoAuditoriaDTO evento) ->
+                evento.usuarioId().equals(10L)
+                        && evento.entidad().equals("PUBLICACION")
+                        && evento.entidadId().equals(id)
+                        && evento.accion().equals("APROBAR_PUBLICACION")
+                        && evento.resultado().equals("EXITOSO")
+        )
+);
+
+// Comprobar que se solicita notificar al anfitrion.
+Long anfitrionId = publicacionRepository.findById(id)
+        .orElseThrow()
+        .getAnfitrionId();
+
+verify(serviciosExternos).notificarPublicacionAprobada(
+        anfitrionId,
+        id
+);
+    }
+
+    @Test
+    @DisplayName("HU-13: un usuario sin rol administrador no puede aprobar (403)")
+    void rechazaAprobacionSinPermisos() throws Exception {
+        // Crear una publicacion.
+        crear(cuerpoValido()).andExpect(status().isCreated());
+
+        Long id = publicacionRepository.findAll().get(0).getId();
+
+        // Enviar la publicacion a revision.
+        mockMvc.perform(post("/listings/{id}/submit", id)
+                        .header("Authorization", TOKEN))
+                .andExpect(status().isOk());
+
+        // Simular que Identidad rechaza al usuario.
+        when(serviciosExternos.verificarAdministrador(TOKEN))
+                .thenThrow(new PermisoException(
+                        "Solo un administrador puede aprobar o rechazar publicaciones"));
+
+        // Intentar aprobar sin permisos.
+        mockMvc.perform(post("/admin/listings/{id}/approve", id)
+                        .header("Authorization", TOKEN))
+                .andExpect(status().isForbidden());
+
+        // La publicacion debe continuar pendiente.
+        assertEquals(EstadoPublicacion.PENDIENTE_REVISION,
+                publicacionRepository.findById(id)
+                        .orElseThrow().getEstado());
+    }
+
+    @Test
+    @DisplayName("HU-13: aprobar una publicacion inexistente responde 404")
+    void rechazaAprobacionDePublicacionInexistente() throws Exception {
+        // Simular un administrador autorizado.
+        when(serviciosExternos.verificarAdministrador(TOKEN))
+                .thenReturn(10L);
+
+        // Intentar aprobar una publicacion que no existe.
+        mockMvc.perform(post("/admin/listings/{id}/approve", 999999L)
+                        .header("Authorization", TOKEN))
+                .andExpect(status().isNotFound());
+
+        // Comprobar que se verifico el rol administrador.
+        verify(serviciosExternos).verificarAdministrador(TOKEN);
+
+        // No debe haberse creado ninguna publicacion.
+        assertEquals(0, publicacionRepository.count());
+    }
+
+    @Test
+    @DisplayName("HU-13: no permite aprobar una publicacion en BORRADOR (409)")
+    void rechazaAprobacionDeBorrador() throws Exception {
+        // Crear una publicacion que permanece en BORRADOR.
+        crear(cuerpoValido()).andExpect(status().isCreated());
+
+        Long id = publicacionRepository.findAll().get(0).getId();
+
+        // Simular un administrador autorizado.
+        when(serviciosExternos.verificarAdministrador(TOKEN))
+                .thenReturn(10L);
+
+        // Intentar aprobar sin haber enviado a revision.
+        mockMvc.perform(post("/admin/listings/{id}/approve", id)
+                        .header("Authorization", TOKEN))
+                .andExpect(status().isConflict());
+
+        // Comprobar que la publicacion sigue en BORRADOR.
+        assertEquals(EstadoPublicacion.BORRADOR,
+                publicacionRepository.findById(id)
+                        .orElseThrow().getEstado());
+    }
+
+    @Test
+    @DisplayName("HU-13: no permite aprobar dos veces la misma publicacion (409)")
+    void rechazaSegundaAprobacion() throws Exception {
+        // Crear una publicacion.
+        crear(cuerpoValido()).andExpect(status().isCreated());
+
+        Long id = publicacionRepository.findAll().get(0).getId();
+
+        // Enviar a revision.
+        mockMvc.perform(post("/listings/{id}/submit", id)
+                        .header("Authorization", TOKEN))
+                .andExpect(status().isOk());
+
+        // Autorizar al administrador.
+        when(serviciosExternos.verificarAdministrador(TOKEN))
+                .thenReturn(10L);
+
+        // Primera aprobacion exitosa.
+        mockMvc.perform(post("/admin/listings/{id}/approve", id)
+                        .header("Authorization", TOKEN))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.estado").value("ACTIVA"));
+
+        // Segunda aprobacion rechazada.
+        mockMvc.perform(post("/admin/listings/{id}/approve", id)
+                        .header("Authorization", TOKEN))
+                .andExpect(status().isConflict());
+
+        // El estado permanece ACTIVA.
+        assertEquals(EstadoPublicacion.ACTIVA,
+                publicacionRepository.findById(id)
+                        .orElseThrow().getEstado());
+    }
+// ---------- HU-13: Rechazar publicaciones ----------
+
+@Test
+@DisplayName("CA-038: un administrador rechaza una publicacion con motivo (200)")
+void administradorRechazaPublicacion() throws Exception {
+    // Crear la publicacion.
+    crear(cuerpoValido()).andExpect(status().isCreated());
+
+    Long id = publicacionRepository.findAll().get(0).getId();
+
+    // Enviarla a revision.
+    mockMvc.perform(post("/listings/{id}/submit", id)
+                    .header("Authorization", TOKEN))
+            .andExpect(status().isOk());
+
+    // Autorizar al administrador.
+    when(serviciosExternos.verificarAdministrador(TOKEN))
+            .thenReturn(10L);
+
+    String motivo = "La publicacion no cumple con los requisitos";
+
+    // Rechazar la publicacion.
+    mockMvc.perform(post("/admin/listings/{id}/reject", id)
+                    .header("Authorization", TOKEN)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"motivo\":\"" + motivo + "\"}"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.estado").value("RECHAZADA"))
+            .andExpect(jsonPath("$.motivoRechazo").value(motivo));
+
+    // Verificar que el rechazo quedo guardado.
+    Publicacion guardada = publicacionRepository.findById(id)
+            .orElseThrow();
+
+    assertEquals(EstadoPublicacion.RECHAZADA, guardada.getEstado());
+    assertEquals(motivo, guardada.getMotivoRechazo());
+
+    // Verificar la auditoria.
+    verify(serviciosExternos).registrarAuditoria(
+            argThat((EventoAuditoriaDTO evento) ->
+                    evento.usuarioId().equals(10L)
+                            && evento.entidadId().equals(id)
+                            && evento.accion().equals("RECHAZAR_PUBLICACION")
+                            && evento.resultado().equals("EXITOSO")
+                            && evento.detalle().contains(motivo)
+            )
+    );
+    // Verificar que se solicita notificar al anfitrion.
+verify(serviciosExternos).notificarPublicacionRechazada(
+        ANFITRION,
+        id,
+        motivo
+);
+}
+@Test
+@DisplayName("HU-13: un usuario sin rol administrador no puede rechazar (403)")
+void rechazaPublicacionSinPermisos() throws Exception {
+    crear(cuerpoValido()).andExpect(status().isCreated());
+
+    Long id = publicacionRepository.findAll().get(0).getId();
+
+    mockMvc.perform(post("/listings/{id}/submit", id)
+                    .header("Authorization", TOKEN))
+            .andExpect(status().isOk());
+
+    when(serviciosExternos.verificarAdministrador(TOKEN))
+            .thenThrow(new PermisoException(
+                    "Solo un administrador puede aprobar o rechazar publicaciones"));
+
+    mockMvc.perform(post("/admin/listings/{id}/reject", id)
+                    .header("Authorization", TOKEN)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"motivo\":\"No cumple los requisitos\"}"))
+            .andExpect(status().isForbidden());
+
+    assertEquals(EstadoPublicacion.PENDIENTE_REVISION,
+            publicacionRepository.findById(id)
+                    .orElseThrow().getEstado());
+
+    verify(serviciosExternos, never()).registrarAuditoria(
+            org.mockito.ArgumentMatchers.any(EventoAuditoriaDTO.class));
+}
+@Test
+@DisplayName("HU-13: rechazar una publicacion inexistente responde 404")
+void rechazaPublicacionInexistentePorAdministrador() throws Exception {
+    // Simular un administrador autorizado.
+    when(serviciosExternos.verificarAdministrador(TOKEN))
+            .thenReturn(10L);
+
+    // Intentar rechazar una publicacion que no existe.
+    mockMvc.perform(post("/admin/listings/{id}/reject", 999999L)
+                    .header("Authorization", TOKEN)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"motivo\":\"No cumple los requisitos\"}"))
+            .andExpect(status().isNotFound());
+
+    // Verificar que no se registro una auditoria de rechazo exitoso.
+    verify(serviciosExternos, never()).registrarAuditoria(
+            org.mockito.ArgumentMatchers.any(EventoAuditoriaDTO.class));
+
+    assertEquals(0, publicacionRepository.count());
+}
+@Test
+@DisplayName("HU-13: no permite rechazar una publicacion en BORRADOR (409)")
+void rechazaPublicacionEnBorrador() throws Exception {
+    // Crear una publicacion que permanece en BORRADOR.
+    crear(cuerpoValido()).andExpect(status().isCreated());
+
+    Long id = publicacionRepository.findAll().get(0).getId();
+
+    // Simular un administrador autorizado.
+    when(serviciosExternos.verificarAdministrador(TOKEN))
+            .thenReturn(10L);
+
+    // Intentar rechazar sin haber enviado a revision.
+    mockMvc.perform(post("/admin/listings/{id}/reject", id)
+                    .header("Authorization", TOKEN)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"motivo\":\"No cumple los requisitos\"}"))
+            .andExpect(status().isConflict());
+
+    // La publicacion debe continuar en BORRADOR.
+    Publicacion guardada = publicacionRepository.findById(id)
+            .orElseThrow();
+
+    assertEquals(EstadoPublicacion.BORRADOR, guardada.getEstado());
+    org.junit.jupiter.api.Assertions.assertNull(
+            guardada.getMotivoRechazo());
+
+    // No debe registrarse una auditoria de rechazo exitoso.
+    verify(serviciosExternos, never()).registrarAuditoria(
+            org.mockito.ArgumentMatchers.any(EventoAuditoriaDTO.class));
+}
+@Test
+@DisplayName("CA-038: no permite rechazar sin motivo (400)")
+void rechazaPublicacionSinMotivo() throws Exception {
+    // Crear una publicacion.
+    crear(cuerpoValido()).andExpect(status().isCreated());
+
+    Long id = publicacionRepository.findAll().get(0).getId();
+
+    // Enviar la publicacion a revision.
+    mockMvc.perform(post("/listings/{id}/submit", id)
+                    .header("Authorization", TOKEN))
+            .andExpect(status().isOk());
+
+    // Simular un administrador autorizado.
+    when(serviciosExternos.verificarAdministrador(TOKEN))
+            .thenReturn(10L);
+
+    // Intentar rechazar con el motivo vacio.
+    mockMvc.perform(post("/admin/listings/{id}/reject", id)
+                    .header("Authorization", TOKEN)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"motivo\":\"\"}"))
+            .andExpect(status().isBadRequest());
+
+    // La publicacion debe continuar pendiente de revision.
+    Publicacion guardada = publicacionRepository.findById(id)
+            .orElseThrow();
+
+    assertEquals(EstadoPublicacion.PENDIENTE_REVISION,
+            guardada.getEstado());
+
+    org.junit.jupiter.api.Assertions.assertNull(
+            guardada.getMotivoRechazo());
+
+    // No debe registrarse una auditoria de rechazo exitoso.
+    verify(serviciosExternos, never()).registrarAuditoria(
+            org.mockito.ArgumentMatchers.any(EventoAuditoriaDTO.class));
+}
+@Test
+@DisplayName("HU-13: no permite rechazar dos veces la misma publicacion (409)")
+void rechazaSegundoRechazo() throws Exception {
+    crear(cuerpoValido()).andExpect(status().isCreated());
+
+    Long id = publicacionRepository.findAll().get(0).getId();
+
+    // Enviar a revision.
+    mockMvc.perform(post("/listings/{id}/submit", id)
+                    .header("Authorization", TOKEN))
+            .andExpect(status().isOk());
+
+    when(serviciosExternos.verificarAdministrador(TOKEN))
+            .thenReturn(10L);
+
+    // Primer rechazo exitoso.
+    mockMvc.perform(post("/admin/listings/{id}/reject", id)
+                    .header("Authorization", TOKEN)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"motivo\":\"No cumple los requisitos\"}"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.estado").value("RECHAZADA"));
+
+    // Segundo rechazo: debe responder 409.
+    mockMvc.perform(post("/admin/listings/{id}/reject", id)
+                    .header("Authorization", TOKEN)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"motivo\":\"Otro motivo diferente\"}"))
+            .andExpect(status().isConflict());
+
+    // El primer rechazo debe mantenerse.
+    Publicacion guardada = publicacionRepository.findById(id)
+            .orElseThrow();
+
+    assertEquals(EstadoPublicacion.RECHAZADA, guardada.getEstado());
+    assertEquals("No cumple los requisitos", guardada.getMotivoRechazo());
+}
+@Test
+@DisplayName("CA-038: motivo de rechazo menor a 3 caracteres responde 400")
+void rechazaMotivoDemasiadoCorto() throws Exception {
+    crear(cuerpoValido()).andExpect(status().isCreated());
+
+    Long id = publicacionRepository.findAll().get(0).getId();
+
+    // Enviar a revision.
+    mockMvc.perform(post("/listings/{id}/submit", id)
+                    .header("Authorization", TOKEN))
+            .andExpect(status().isOk());
+
+    when(serviciosExternos.verificarAdministrador(TOKEN))
+            .thenReturn(10L);
+
+    // Intentar rechazar con un motivo de solo 2 caracteres.
+    mockMvc.perform(post("/admin/listings/{id}/reject", id)
+                    .header("Authorization", TOKEN)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"motivo\":\"No\"}"))
+            .andExpect(status().isBadRequest());
+
+    // La publicacion debe continuar pendiente.
+    Publicacion guardada = publicacionRepository.findById(id)
+            .orElseThrow();
+
+    assertEquals(EstadoPublicacion.PENDIENTE_REVISION,
+            guardada.getEstado());
+
+    org.junit.jupiter.api.Assertions.assertNull(
+            guardada.getMotivoRechazo());
+
+    // No debe registrarse un rechazo exitoso.
+    verify(serviciosExternos, never()).registrarAuditoria(
+            org.mockito.ArgumentMatchers.any(EventoAuditoriaDTO.class));
+}
+@Test
+@DisplayName("HU-13: rechaza motivos demasiado cortos aunque tengan espacios")
+void rechazaMotivoCortoConEspacios() throws Exception {
+
+    // Crear una publicacion.
+    crear(cuerpoValido()).andExpect(status().isCreated());
+
+    Long id = publicacionRepository.findAll().get(0).getId();
+
+    // Enviar la publicacion a revision.
+    mockMvc.perform(post("/listings/{id}/submit", id)
+                    .header("Authorization", TOKEN))
+            .andExpect(status().isOk());
+
+    // Simular un administrador autorizado.
+    when(serviciosExternos.verificarAdministrador(TOKEN))
+            .thenReturn(10L);
+
+    // Intentar rechazar con un motivo de un solo caracter y espacios.
+    mockMvc.perform(post("/admin/listings/{id}/reject", id)
+                    .header("Authorization", TOKEN)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"motivo\":\"  a  \"}"))
+            .andExpect(status().isBadRequest());
+
+    // Verificar que la publicacion siga pendiente.
+    Publicacion guardada = publicacionRepository.findById(id)
+            .orElseThrow();
+
+    assertEquals(EstadoPublicacion.PENDIENTE_REVISION,
+            guardada.getEstado());
+
+    org.junit.jupiter.api.Assertions.assertNull(
+            guardada.getMotivoRechazo());
+
+    // No debe registrarse auditoria ni enviarse notificacion.
+    verify(serviciosExternos, never()).registrarAuditoria(
+            org.mockito.ArgumentMatchers.any(EventoAuditoriaDTO.class));
+
+    verify(serviciosExternos, never()).notificarPublicacionRechazada(
+            org.mockito.ArgumentMatchers.any(Long.class),
+            org.mockito.ArgumentMatchers.any(Long.class),
+            org.mockito.ArgumentMatchers.any(String.class));
+}
 }

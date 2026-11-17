@@ -125,4 +125,37 @@ if (!faltantes.isEmpty()) {
             throw new SolicitudInvalidaException(PublicacionRequestDTO.MENSAJE_PRECIO);
         }
     }
+
+    // HU-13 (CA-037): aprobar una publicacion pendiente de revision.
+    @Transactional
+    public Publicacion aprobar(Long publicacionId) {
+        Publicacion publicacion = publicacionRepository.findById(publicacionId)
+                .orElseThrow(() -> new NoEncontradoException(
+                        "La publicacion no existe"));
+
+        if (publicacion.getEstado() != EstadoPublicacion.PENDIENTE_REVISION) {
+            throw new ConflictoException(
+                    "Solo se pueden aprobar publicaciones en PENDIENTE_REVISION");
+        }
+
+        publicacion.aprobar();
+
+        return publicacionRepository.save(publicacion);
+    }
+// HU-13 (CA-038): rechazar una publicacion con motivo obligatorio.
+@Transactional
+public Publicacion rechazar(Long publicacionId, String motivo) {
+    Publicacion publicacion = publicacionRepository.findById(publicacionId)
+            .orElseThrow(() -> new NoEncontradoException(
+                    "La publicacion no existe"));
+
+    if (publicacion.getEstado() != EstadoPublicacion.PENDIENTE_REVISION) {
+        throw new ConflictoException(
+                "Solo se pueden rechazar publicaciones en PENDIENTE_REVISION");
+    }
+
+    publicacion.rechazar(motivo);
+
+    return publicacionRepository.save(publicacion);
+}
 }
