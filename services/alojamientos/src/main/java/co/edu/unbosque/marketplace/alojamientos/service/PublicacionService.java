@@ -11,6 +11,8 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.util.List;
+
 
 // HU-07: crear una publicación en borrador
 @Service
@@ -28,6 +30,7 @@ public class PublicacionService {
     // Decisión 9: no se valida título repetido
     @Transactional
     public Publicacion crear(Long anfitrionId, PublicacionRequestDTO solicitud) {
+   
         validarCapacidadYPrecio(solicitud);
 
         Publicacion publicacion = new Publicacion(anfitrionId, LocalDateTime.now(reloj));
@@ -42,7 +45,12 @@ public class PublicacionService {
                 solicitud.precioPorNoche().setScale(0, RoundingMode.UNNECESSARY));
         return publicacionRepository.save(publicacion);
     }
-
+    
+    // HU-15: consultar todas las publicaciones del anfitrion.
+@Transactional(readOnly = true)
+public List<Publicacion> listarMisPublicaciones(Long anfitrionId) {
+    return publicacionRepository.findByAnfitrionIdOrderByIdAsc(anfitrionId);
+}
     // CA-021: capacidad menor o igual a cero o precio no positivo → se rechaza
     private void validarCapacidadYPrecio(PublicacionRequestDTO solicitud) {
         BigDecimal capacidad = solicitud.capacidad();
