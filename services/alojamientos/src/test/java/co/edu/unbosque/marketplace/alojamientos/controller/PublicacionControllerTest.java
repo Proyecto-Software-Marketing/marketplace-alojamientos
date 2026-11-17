@@ -843,4 +843,79 @@ void rechazaMotivoCortoConEspacios() throws Exception {
             org.mockito.ArgumentMatchers.any(Long.class),
             org.mockito.ArgumentMatchers.any(String.class));
 }
+
+@Test
+@DisplayName("HU-14 CA-040: el anfitrion puede pausar una publicacion activa")
+void pausaPublicacionActivaDesdeController() throws Exception {
+    crear(cuerpoValido()).andExpect(status().isCreated());
+
+    Long id = publicacionRepository.findAll().get(0).getId();
+
+    mockMvc.perform(post("/listings/{id}/submit", id)
+                    .header("Authorization", TOKEN))
+            .andExpect(status().isOk());
+
+    when(serviciosExternos.verificarAdministrador(TOKEN))
+            .thenReturn(10L);
+
+    mockMvc.perform(post("/admin/listings/{id}/approve", id)
+                    .header("Authorization", TOKEN))
+            .andExpect(status().isOk());
+
+    mockMvc.perform(post("/listings/{id}/pause", id)
+                    .header("Authorization", TOKEN))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.estado").value("PAUSADA"));
+
+    assertEquals(EstadoPublicacion.PAUSADA,
+            publicacionRepository.findById(id).orElseThrow().getEstado());
+}
+
+@Test
+@DisplayName("HU-14 CA-041: el anfitrion puede reactivar una publicacion pausada")
+void reactivaPublicacionPausadaDesdeController() throws Exception {
+    crear(cuerpoValido()).andExpect(status().isCreated());
+
+    Long id = publicacionRepository.findAll().get(0).getId();
+
+    mockMvc.perform(post("/listings/{id}/submit", id)
+                    .header("Authorization", TOKEN))
+            .andExpect(status().isOk());
+
+    when(serviciosExternos.verificarAdministrador(TOKEN))
+            .thenReturn(10L);
+
+    mockMvc.perform(post("/admin/listings/{id}/approve", id)
+                    .header("Authorization", TOKEN))
+            .andExpect(status().isOk());
+
+    mockMvc.perform(post("/listings/{id}/pause", id)
+                    .header("Authorization", TOKEN))
+            .andExpect(status().isOk());
+
+    mockMvc.perform(post("/listings/{id}/resume", id)
+                    .header("Authorization", TOKEN))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.estado").value("ACTIVA"));
+
+    assertEquals(EstadoPublicacion.ACTIVA,
+            publicacionRepository.findById(id).orElseThrow().getEstado());
+}
+
+@Test
+@DisplayName("HU-14: no permite pausar una publicacion inexistente")
+void noPausaPublicacionInexistenteDesdeController() throws Exception {
+    mockMvc.perform(post("/listings/{id}/pause", 999999L)
+                    .header("Authorization", TOKEN))
+            .andExpect(status().isNotFound());
+}
+
+@Test
+@DisplayName("HU-14: no permite reactivar una publicacion inexistente")
+void noReactivaPublicacionInexistenteDesdeController() throws Exception {
+    mockMvc.perform(post("/listings/{id}/resume", 999999L)
+                    .header("Authorization", TOKEN))
+            .andExpect(status().isNotFound());
+}
+
 }
