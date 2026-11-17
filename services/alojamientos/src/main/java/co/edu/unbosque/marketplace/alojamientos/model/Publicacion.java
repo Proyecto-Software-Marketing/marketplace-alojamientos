@@ -132,6 +132,19 @@ public class Publicacion {
     @OrderColumn(name = "posicion")
     private List<ServicioAdicional> serviciosAdicionales = new ArrayList<>();
 
+    // HU-11: política de cancelación asociada a la publicación.
+    // Puede ser null mientras la publicación esté en borrador.
+    @jakarta.persistence.ManyToOne
+    @JoinColumn(name = "politica_cancelacion_id")
+    private PoliticaCancelacion politicaCancelacion;
+
+    public PoliticaCancelacion getPoliticaCancelacion() {
+        return politicaCancelacion;
+    }
+
+    public void definirPoliticaCancelacion(PoliticaCancelacion politica) {
+        this.politicaCancelacion = politica;
+    }
     public Publicacion() {
     }
 

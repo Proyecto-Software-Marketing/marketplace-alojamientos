@@ -27,7 +27,8 @@ public record PublicacionResponseDTO(
         List<String> reglas,
         List<String> imagenes,
         String estado,
-        String motivoRechazo) {
+        String motivoRechazo,
+        Long politicaCancelacionId) {
 
     public static PublicacionResponseDTO desde(Publicacion publicacion) {
         return new PublicacionResponseDTO(
@@ -48,6 +49,9 @@ public record PublicacionResponseDTO(
                 publicacion.getReglas(),
                 publicacion.getImagenes(),
                 publicacion.getEstado().name(),
-                null);
+                null,
+                publicacion.getPoliticaCancelacion() == null
+                        ? null
+                        : publicacion.getPoliticaCancelacion().getId());
     }
 }
