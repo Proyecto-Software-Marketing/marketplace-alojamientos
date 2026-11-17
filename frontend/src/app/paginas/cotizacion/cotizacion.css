@@ -52,3 +52,15 @@ h2 {
   font-size: 18px;
   font-weight: 600;
 }
+
+/* HU-23 confirmar reserva, debajo del desglose */
+.reservar {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid var(--borde);
+}
+
+.enlace-boton {
+  text-align: center;
+  text-decoration: none;
+}
