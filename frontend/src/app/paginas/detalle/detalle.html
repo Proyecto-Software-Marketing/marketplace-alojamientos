@@ -62,6 +62,7 @@
          [queryParams]="{ idPublicacion: p.id, llegada: llegada, salida: salida, huespedes: huespedes }">
         Ver cotización
       </a>
+      <app-boton-favorito [idPublicacion]="p.id" />
       <p class="suave nota-pie">El desglose incluirá limpieza y tarifa de servicio. Todavía no se realizará ningún cobro.</p>
     </aside>
   </div>

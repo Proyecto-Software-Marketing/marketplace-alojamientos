@@ -13,6 +13,7 @@ import { Notificaciones } from './paginas/notificaciones/notificaciones';
 import { MisReservas } from './paginas/mis-reservas/mis-reservas';
 import { ExportarReportes } from './paginas/exportar-reportes/exportar-reportes';
 import { Calificar } from './paginas/calificar/calificar';
+import { Favoritos } from './paginas/favoritos/favoritos';
 
 // Rutas de las ventanas
 export const routes: Routes = [
@@ -31,5 +32,6 @@ export const routes: Routes = [
   { path: 'calificar/:idReserva', component: Calificar, canActivate: [sesionGuard] },
   { path: 'dashboard', component: Dashboard, canActivate: [adminGuard] },
   { path: 'exportar-reportes', component: ExportarReportes, canActivate: [adminGuard] },
+  { path: 'favoritos', component: Favoritos, canActivate: [sesionGuard] },
   { path: '**', redirectTo: '' }
 ];
