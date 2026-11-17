@@ -1,5 +1,8 @@
 package co.edu.unbosque.marketplace.alojamientos.controller;
 
+import co.edu.unbosque.marketplace.alojamientos.dto.UsuarioIdentidadDTO;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import co.edu.unbosque.marketplace.alojamientos.client.ServiciosExternos;
 import co.edu.unbosque.marketplace.alojamientos.dto.PublicacionRequestDTO;
 import co.edu.unbosque.marketplace.alojamientos.dto.PublicacionResponseDTO;
@@ -34,4 +37,28 @@ public class PublicacionController {
         Publicacion publicacion = publicacionService.crear(idAnfitrion, solicitud);
         return ResponseEntity.status(HttpStatus.CREATED).body(PublicacionResponseDTO.desde(publicacion));
     }
+
+    // HU-08: CA-023, CA-024 y CA-025.
+    @PutMapping("/listings/{id}")
+    public ResponseEntity<PublicacionResponseDTO> editar(
+            @RequestHeader("Authorization") String autorizacion,
+            @PathVariable Long id,
+            @Valid @RequestBody PublicacionRequestDTO solicitud) {
+
+        UsuarioIdentidadDTO usuario = serviciosExternos.verificarEditor(autorizacion);
+
+        boolean esAdministrador = "ADMINISTRADOR".equals(usuario.rol());
+
+Publicacion publicacion = publicacionService.editar(
+        id, usuario.id(), esAdministrador, solicitud);
+
+// CA-024: registrar la edicion realizada por un administrador.
+if (esAdministrador) {
+    serviciosExternos.registrarAuditoriaEdicion(
+            usuario.id(), publicacion.getId());
+}
+
+return ResponseEntity.ok(PublicacionResponseDTO.desde(publicacion));
+    }
+
 }

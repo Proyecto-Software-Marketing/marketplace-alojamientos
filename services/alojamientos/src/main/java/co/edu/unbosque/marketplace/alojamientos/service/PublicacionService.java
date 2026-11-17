@@ -1,12 +1,14 @@
 package co.edu.unbosque.marketplace.alojamientos.service;
 
+import co.edu.unbosque.marketplace.alojamientos.exception.NoEncontradoException;
+import co.edu.unbosque.marketplace.alojamientos.exception.ConflictoException;
 import co.edu.unbosque.marketplace.alojamientos.dto.PublicacionRequestDTO;
 import co.edu.unbosque.marketplace.alojamientos.exception.SolicitudInvalidaException;
 import co.edu.unbosque.marketplace.alojamientos.model.Publicacion;
 import co.edu.unbosque.marketplace.alojamientos.repository.PublicacionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import co.edu.unbosque.marketplace.alojamientos.exception.PermisoException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Clock;
@@ -42,6 +44,45 @@ public class PublicacionService {
                 solicitud.precioPorNoche().setScale(0, RoundingMode.UNNECESSARY));
         return publicacionRepository.save(publicacion);
     }
+
+    // HU-08: CA-023 y CA-024.
+    // Actualiza los datos basicos de una publicacion existente.
+    // HU-08: CA-023, CA-024 y CA-025.
+    @Transactional
+    public Publicacion editar(Long publicacionId, Long usuarioId,
+            boolean esAdministrador, PublicacionRequestDTO solicitud) {
+
+        Publicacion publicacion = publicacionRepository.findById(publicacionId)
+                .orElseThrow(() -> new NoEncontradoException(
+                        "La publicacion no existe"));
+
+        // CA-025: el anfitrion solo puede editar sus publicaciones.
+        if (!esAdministrador && !publicacion.getAnfitrionId().equals(usuarioId)) {
+            throw new PermisoException(
+                    "No puede editar una publicacion que no le pertenece");
+        }
+
+        // No se permite editar en estados restringidos.
+        if (!publicacion.permiteEditarContenido()) {
+            throw new ConflictoException(
+                    "La publicacion no permite editar su contenido en este estado");
+        }
+
+        validarCapacidadYPrecio(solicitud);
+
+        publicacion.definirDatosBasicos(
+                solicitud.titulo().trim(),
+                solicitud.descripcion().trim(),
+                solicitud.ciudad().trim(),
+                solicitud.ubicacionTextual().trim(),
+                solicitud.tipo(),
+                solicitud.capacidad().intValueExact(),
+                solicitud.precioPorNoche().setScale(
+                        0, RoundingMode.UNNECESSARY));
+
+        return publicacionRepository.save(publicacion);
+    }
+
 
     // CA-021: capacidad menor o igual a cero o precio no positivo → se rechaza
     private void validarCapacidadYPrecio(PublicacionRequestDTO solicitud) {
