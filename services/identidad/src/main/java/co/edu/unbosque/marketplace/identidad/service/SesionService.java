@@ -72,7 +72,13 @@ public class SesionService {
     public UsuarioResponse validarSesion(String token) {
         Sesion sesion = sesionRepository.findByTokenAndActivaTrue(token)
                 .orElseThrow(() -> new AutenticacionException(SESION_NO_VALIDA));
-        return new UsuarioResponse(sesion.getUsuario());
+        Usuario usuario = sesion.getUsuario();
+
+        if (usuario.getEstado() != EstadoUsuario.ACTIVO) {
+            throw new AutenticacionException("La cuenta no está activa");
+        }
+
+        return new UsuarioResponse(usuario);
     }
 
     // Revisa si el usuario puede hacer algo segun su rol y si es el dueño

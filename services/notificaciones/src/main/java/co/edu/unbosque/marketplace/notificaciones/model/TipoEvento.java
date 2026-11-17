@@ -12,6 +12,7 @@ public enum TipoEvento {
     RESERVA_CANCELADA(TipoEntidad.RESERVA, "Se canceló una reserva"),
     PUBLICACION_BLOQUEADA(TipoEntidad.PUBLICACION, "Tu publicación fue bloqueada por un administrador"),
     USUARIO_RESTRINGIDO(TipoEntidad.USUARIO, "Tu cuenta fue restringida por un administrador"),
+    USUARIO_REACTIVADO(TipoEntidad.USUARIO, "Tu cuenta fue reactivada por un administrador"),
     // HU-04: Identidad envía el token en el mensaje; entidadId es el id de la solicitud de recuperación
     RECUPERACION_CONTRASENA(TipoEntidad.USUARIO, "Se solicitó recuperar la contraseña de tu cuenta");
 

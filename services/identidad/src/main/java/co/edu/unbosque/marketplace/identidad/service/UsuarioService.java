@@ -106,6 +106,67 @@ public class UsuarioService {
             serviciosExternos.pausarPublicaciones(idUsuario);
         }
     }
+    // HU-35: restriccion administrativa de usuarios
+    public UsuarioResponse restringirUsuario(Long idUsuario, Long administradorId) {
+
+Usuario usuario = usuarioRepository.findById(idUsuario)
+                .orElseThrow(() -> new CuentaException("El usuario no existe"));
+
+if (usuario.getRol() == Rol.ADMINISTRADOR) {
+            throw new CuentaException("No se puede restringir una cuenta administradora");
+        }
+
+if (usuario.getEstado() == EstadoUsuario.RESTRINGIDO) {
+            throw new CuentaException("El usuario ya se encuentra restringido");
+        }
+
+usuario.setEstado(EstadoUsuario.RESTRINGIDO);
+        Usuario guardado = usuarioRepository.save(usuario);
+
+List<Sesion> sesiones = sesionRepository.findByUsuarioIdAndActivaTrue(idUsuario);
+        for (Sesion sesion : sesiones) {
+            sesion.setActiva(false);
+        }
+        sesionRepository.saveAll(sesiones);
+
+if (usuario.getRol() == Rol.ANFITRION) {
+            serviciosExternos.pausarPublicaciones(idUsuario);
+        }
+
+serviciosExternos.registrarAuditoria(
+                administradorId,
+                idUsuario,
+                "USUARIO_RESTRINGIDO",
+                "El administrador restringio la cuenta del usuario");
+
+        serviciosExternos.notificarRestriccion(idUsuario);
+
+return new UsuarioResponse(guardado);
+    }
+
+// HU-35: reactivacion administrativa de usuarios restringidos
+    public UsuarioResponse reactivarUsuario(Long idUsuario, Long administradorId) {
+
+Usuario usuario = usuarioRepository.findById(idUsuario)
+                .orElseThrow(() -> new CuentaException("El usuario no existe"));
+
+if (usuario.getEstado() != EstadoUsuario.RESTRINGIDO) {
+            throw new CuentaException("El usuario no se encuentra restringido");
+        }
+
+usuario.setEstado(EstadoUsuario.ACTIVO);
+        Usuario guardado = usuarioRepository.save(usuario);
+
+serviciosExternos.registrarAuditoria(
+                administradorId,
+                idUsuario,
+                "USUARIO_REACTIVADO",
+                "El administrador reactivo la cuenta del usuario");
+
+        serviciosExternos.notificarReactivacion(idUsuario);
+
+return new UsuarioResponse(guardado);
+    }
      //cuantos usuarios hay en total y por rol
     public EstadisticasUsuariosResponse estadisticas() {
         return new EstadisticasUsuariosResponse(

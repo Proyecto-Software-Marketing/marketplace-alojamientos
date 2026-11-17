@@ -7,13 +7,11 @@ import org.springframework.web.client.RestClient;
 
 import java.util.Map;
 
-//Preguntas que este servicio le hace a los otros servicios
 @Component
 public class ServiciosExternos {
 
     private final RestClient cliente = RestClient.create();
 
-    // Direcciones de los otros servicios, se ponen en application.properties
     @Value("${servicios.reservas.url}")
     private String urlReservas;
 
@@ -23,9 +21,10 @@ public class ServiciosExternos {
     @Value("${servicios.notificaciones.url}")
     private String urlNotificaciones;
 
-    // CA-017 le pregunta a Reservas si el usuario tiene reservas futuras confirmadas
+    @Value("${servicios.auditoria.url}")
+    private String urlAuditoria;
+
     public boolean tieneReservasFuturas(Long idUsuario) {
-        // Si todavía no está el servicio de Reservas no se pregunta
         if (urlReservas.isBlank()) {
             return false;
         }
@@ -36,9 +35,7 @@ public class ServiciosExternos {
         return Boolean.TRUE.equals(respuesta);
     }
 
-    // CA-018 le pide a Alojamientos que pause las publicaciones del anfitrión
     public void pausarPublicaciones(Long idAnfitrion) {
-        // Si todavía no está el servicio de Alojamientos no se hace nada
         if (urlAlojamientos.isBlank()) {
             return;
         }
@@ -48,10 +45,7 @@ public class ServiciosExternos {
                 .toBodilessEntity();
     }
 
-    // HU-04 CA-010 le pide a Notificaciones que muestre el token en una notificación interna.
-    // El id de la solicitud va como entidadId para que cada solicitud sea una notificación nueva
     public void notificarRecuperacion(Long idUsuario, Long idRecuperacion, String mensaje) {
-        // Si todavía no está el servicio de Notificaciones no se hace nada
         if (urlNotificaciones.isBlank()) {
             return;
         }
@@ -64,6 +58,59 @@ public class ServiciosExternos {
                         "entidadTipo", "USUARIO",
                         "entidadId", idRecuperacion,
                         "mensaje", mensaje))
+                .retrieve()
+                .toBodilessEntity();
+    }
+
+    public void notificarRestriccion(Long idUsuario) {
+        if (urlNotificaciones.isBlank()) {
+            return;
+        }
+        cliente.post()
+                .uri(urlNotificaciones + "/internal/notifications")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of(
+                        "usuarioId", idUsuario,
+                        "tipoEvento", "USUARIO_RESTRINGIDO",
+                        "entidadTipo", "USUARIO",
+                        "entidadId", idUsuario,
+                        "mensaje", "Tu cuenta ha sido restringida por un administrador"))
+                .retrieve()
+                .toBodilessEntity();
+    }
+
+    public void notificarReactivacion(Long idUsuario) {
+        if (urlNotificaciones.isBlank()) {
+            return;
+        }
+        cliente.post()
+                .uri(urlNotificaciones + "/internal/notifications")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of(
+                        "usuarioId", idUsuario,
+                        "tipoEvento", "USUARIO_REACTIVADO",
+                        "entidadTipo", "USUARIO",
+                        "entidadId", idUsuario,
+                        "mensaje", "Tu cuenta ha sido reactivada"))
+                .retrieve()
+                .toBodilessEntity();
+    }
+
+    public void registrarAuditoria(Long administradorId, Long idUsuario,
+            String accion, String detalle) {
+        if (urlAuditoria.isBlank()) {
+            return;
+        }
+        cliente.post()
+                .uri(urlAuditoria + "/internal/audit-events")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of(
+                        "usuarioId", administradorId,
+                        "entidad", "USUARIO",
+                        "entidadId", idUsuario,
+                        "accion", accion,
+                        "resultado", "EXITOSO",
+                        "detalle", detalle))
                 .retrieve()
                 .toBodilessEntity();
     }
