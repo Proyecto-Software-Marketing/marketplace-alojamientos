@@ -114,6 +114,13 @@ if (!faltantes.isEmpty()) {
     return publicacionRepository.save(publicacion);
 }
 
+    // HU-08: consultar una publicacion por su identificador.
+    @Transactional(readOnly = true)
+    public Publicacion consultarPorId(Long id) {
+        return publicacionRepository.findById(id)
+                .orElseThrow(() -> new NoEncontradoException(
+                        "La publicacion no existe"));
+    }
     // HU-13: consultar publicaciones por estado.
     @Transactional(readOnly = true)
     public List<Publicacion> listarPorEstado(EstadoPublicacion estado) {

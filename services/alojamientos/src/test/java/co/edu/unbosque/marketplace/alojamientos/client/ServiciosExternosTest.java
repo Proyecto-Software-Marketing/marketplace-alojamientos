@@ -227,4 +227,80 @@ void notificacionesNoDisponible() {
 
     servidor.verify();
 }
+
+    // HU-08: autorizacion para consultar una publicacion.
+
+    @Test
+    @DisplayName("HU-08: administrador puede consultar cualquier publicacion")
+    void administradorPuedeConsultarPublicacion() {
+        servidor.expect(requestTo(URL_IDENTIDAD + "/autenticacion/autorizar?roles=ADMINISTRADOR"))
+                .andExpect(method(HttpMethod.GET))
+                .andExpect(header("Authorization", TOKEN))
+                .andRespond(withSuccess(
+                        "{\"id\":10,\"rol\":\"ADMINISTRADOR\"}",
+                        MediaType.APPLICATION_JSON));
+
+        assertEquals(10L,
+                serviciosExternos.verificarAdministradorOAnfitrion(TOKEN, 7L));
+
+        servidor.verify();
+    }
+
+    @Test
+    @DisplayName("HU-08: anfitrion propietario puede consultar su publicacion")
+    void propietarioPuedeConsultarPublicacion() {
+        servidor.expect(requestTo(URL_IDENTIDAD + "/autenticacion/autorizar?roles=ADMINISTRADOR"))
+                .andRespond(withStatus(HttpStatus.FORBIDDEN));
+
+        servidor.expect(requestTo(URL_AUTORIZAR))
+                .andRespond(withSuccess(
+                        "{\"id\":7,\"rol\":\"ANFITRION\"}",
+                        MediaType.APPLICATION_JSON));
+
+        assertEquals(7L,
+                serviciosExternos.verificarAdministradorOAnfitrion(TOKEN, 7L));
+
+        servidor.verify();
+    }
+
+    @Test
+    @DisplayName("HU-08: otro anfitrion no puede consultar la publicacion")
+    void otroAnfitrionNoPuedeConsultarPublicacion() {
+        servidor.expect(requestTo(URL_IDENTIDAD + "/autenticacion/autorizar?roles=ADMINISTRADOR"))
+                .andRespond(withStatus(HttpStatus.FORBIDDEN));
+
+        servidor.expect(requestTo(URL_AUTORIZAR))
+                .andRespond(withSuccess(
+                        "{\"id\":99,\"rol\":\"ANFITRION\"}",
+                        MediaType.APPLICATION_JSON));
+
+        assertThrows(PermisoException.class,
+                () -> serviciosExternos.verificarAdministradorOAnfitrion(TOKEN, 7L));
+
+        servidor.verify();
+    }
+
+    @Test
+    @DisplayName("HU-08: token invalido devuelve error de autenticacion")
+    void tokenInvalidoAlConsultarPublicacion() {
+        servidor.expect(requestTo(URL_IDENTIDAD + "/autenticacion/autorizar?roles=ADMINISTRADOR"))
+                .andRespond(withStatus(HttpStatus.UNAUTHORIZED));
+
+        assertThrows(AutenticacionException.class,
+                () -> serviciosExternos.verificarAdministradorOAnfitrion(TOKEN, 7L));
+
+        servidor.verify();
+    }
+
+    @Test
+    @DisplayName("HU-08: Identidad no disponible devuelve error de servicio")
+    void identidadNoDisponibleAlConsultarPublicacion() {
+        servidor.expect(requestTo(URL_IDENTIDAD + "/autenticacion/autorizar?roles=ADMINISTRADOR"))
+                .andRespond(withStatus(HttpStatus.INTERNAL_SERVER_ERROR));
+
+        assertThrows(ServicioNoDisponibleException.class,
+                () -> serviciosExternos.verificarAdministradorOAnfitrion(TOKEN, 7L));
+
+        servidor.verify();
+    }
 }

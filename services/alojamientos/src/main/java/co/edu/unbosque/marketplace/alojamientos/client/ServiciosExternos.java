@@ -63,6 +63,24 @@ ServiciosExternos(
         return verificarRol(autorizacion, "ANFITRION", mensajeSinPermiso);
     }
 
+
+    // HU-08: permite consultar publicaciones al administrador o al anfitrion propietario.
+    public Long verificarAdministradorOAnfitrion(String autorizacion, Long propietarioId) {
+        try {
+            return verificarAdministrador(autorizacion);
+        } catch (PermisoException e) {
+            Long anfitrionId = verificarAnfitrion(
+                    autorizacion,
+                    "No tiene permisos para consultar esta publicacion");
+
+            if (!anfitrionId.equals(propietarioId)) {
+                throw new PermisoException(
+                        "No puede consultar una publicacion de otro anfitrion");
+            }
+
+            return anfitrionId;
+        }
+    }
     // HU-13: solo un administrador puede aprobar o rechazar publicaciones.
     public Long verificarAdministrador(String autorizacion) {
         return verificarRol(

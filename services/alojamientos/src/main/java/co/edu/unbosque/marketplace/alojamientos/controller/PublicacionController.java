@@ -59,6 +59,19 @@ public ResponseEntity<PublicacionResponseDTO> enviarARevision(
     return ResponseEntity.ok(PublicacionResponseDTO.desde(publicacion));
 }
 
+    // HU-08: consultar una publicacion (propietario o administrador).
+    @GetMapping("/listings/{id}")
+    public ResponseEntity<PublicacionResponseDTO> consultarPorId(
+            @RequestHeader("Authorization") String autorizacion,
+            @PathVariable Long id) {
+
+        Publicacion publicacion = publicacionService.consultarPorId(id);
+
+        serviciosExternos.verificarAdministradorOAnfitrion(
+                autorizacion, publicacion.getAnfitrionId());
+
+        return ResponseEntity.ok(PublicacionResponseDTO.desde(publicacion));
+    }
     // HU-13: listar publicaciones por estado.
     @GetMapping("/admin/listings")
     public ResponseEntity<PublicacionListaResponseDTO> listarAdministracion(

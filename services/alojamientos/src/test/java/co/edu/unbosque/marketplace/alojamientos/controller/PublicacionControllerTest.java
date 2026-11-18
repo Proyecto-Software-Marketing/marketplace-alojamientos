@@ -909,4 +909,70 @@ void rechazaMotivoCortoConEspacios() throws Exception {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items.length()").value(0));
     }
+
+    // ---------- HU-08: Consultar publicacion por ID ----------
+
+    @Test
+    @DisplayName("HU-08: propietario consulta su publicacion (200)")
+    void propietarioConsultaSuPublicacion() throws Exception {
+        crear(cuerpoValido()).andExpect(status().isCreated());
+        Long id = publicacionRepository.findAll().get(0).getId();
+
+        when(serviciosExternos.verificarAdministradorOAnfitrion(TOKEN, ANFITRION))
+                .thenReturn(ANFITRION);
+
+        mockMvc.perform(get("/listings/{id}", id)
+                .header("Authorization", TOKEN))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(id))
+                .andExpect(jsonPath("$.anfitrionId").value(ANFITRION))
+                .andExpect(jsonPath("$.estado").value("BORRADOR"));
+    }
+
+    @Test
+    @DisplayName("HU-08: administrador consulta una publicacion (200)")
+    void administradorConsultaPublicacion() throws Exception {
+        crear(cuerpoValido()).andExpect(status().isCreated());
+        Long id = publicacionRepository.findAll().get(0).getId();
+
+        when(serviciosExternos.verificarAdministradorOAnfitrion(TOKEN, ANFITRION))
+                .thenReturn(10L);
+
+        mockMvc.perform(get("/listings/{id}", id)
+                .header("Authorization", TOKEN))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(id));
+    }
+
+    @Test
+    @DisplayName("HU-08: otro anfitrion no puede consultar la publicacion (403)")
+    void otroAnfitrionNoPuedeConsultar() throws Exception {
+        crear(cuerpoValido()).andExpect(status().isCreated());
+        Long id = publicacionRepository.findAll().get(0).getId();
+
+        when(serviciosExternos.verificarAdministradorOAnfitrion(TOKEN, ANFITRION))
+                .thenThrow(new PermisoException("No puede consultar una publicacion de otro anfitrion"));
+
+        mockMvc.perform(get("/listings/{id}", id)
+                .header("Authorization", TOKEN))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("HU-08: publicacion inexistente devuelve 404")
+    void consultaPublicacionInexistente() throws Exception {
+        mockMvc.perform(get("/listings/{id}", 999999L)
+                .header("Authorization", TOKEN))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("HU-08: consultar sin token devuelve 401")
+    void consultaPublicacionSinToken() throws Exception {
+        crear(cuerpoValido()).andExpect(status().isCreated());
+        Long id = publicacionRepository.findAll().get(0).getId();
+
+        mockMvc.perform(get("/listings/{id}", id))
+                .andExpect(status().isUnauthorized());
+    }
 }
