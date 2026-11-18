@@ -1,0 +1,75 @@
+.cuadro {
+  max-width: 720px;
+}
+
+.dos {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.botones {
+  display: flex;
+  gap: 12px;
+}
+
+.botones .boton {
+  width: auto;
+}
+
+.volver {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.detalles {
+  margin-top: 24px;
+}
+
+.detalles h3 {
+  font-size: 15px;
+  margin: 20px 0 10px;
+}
+
+.suave {
+  color: var(--texto-suave);
+  font-size: 14px;
+}
+
+.servicios {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  font-size: 14px;
+}
+
+.agregar {
+  display: flex;
+  gap: 8px;
+}
+
+.agregar input {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  font: inherit;
+}
+
+.lista {
+  padding-left: 18px;
+  font-size: 14px;
+}
+
+.quitar {
+  border: none;
+  background: none;
+  color: var(--rojo);
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.guardar-detalles {
+  width: auto;
+  margin-top: 12px;
+}

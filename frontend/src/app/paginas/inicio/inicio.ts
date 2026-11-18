@@ -34,6 +34,14 @@ export class Inicio {
   mensaje = signal('');
   errores = signal<string[]>([]);
   ultimaBusqueda = signal<FiltrosBusqueda | null>(null);
+    destacadas = signal<PublicacionResumen[]>([]);
+
+  constructor() {
+    this.busqueda.destacadas().subscribe({
+      next: (lista) => this.destacadas.set(lista),
+      error: () => this.destacadas.set([])
+    });
+  }
 
 
   cambiarServicio(servicio: string, marcado: boolean): void {
@@ -52,7 +60,7 @@ export class Inicio {
       llegada: this.llegada,
       salida: this.salida,
       huespedes: this.huespedes,
-      tipo: this.tipo,
+      tipo: this.tipo.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase(),
       precioMinimo: this.precioMinimo,
       precioMaximo: this.precioMaximo,
       servicios: [...this.serviciosElegidos]

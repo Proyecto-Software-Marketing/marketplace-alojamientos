@@ -1,0 +1,82 @@
+.encabezado {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.nueva {
+  width: auto;
+  text-decoration: none;
+  padding: 12px 20px;
+}
+
+.lista {
+  display: grid;
+  gap: 12px;
+}
+
+.fila {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.fila h2 {
+  margin: 0 0 4px;
+}
+
+.suave {
+  color: var(--texto-suave);
+  margin: 0 0 10px;
+}
+
+.acciones {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.acciones a {
+  text-decoration: none;
+}
+
+.acciones .boton {
+  width: auto;
+}
+
+/* Color de cada estado */
+.estado {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  background: var(--fondo-suave);
+  color: var(--azul);
+}
+
+.estado.ACTIVA {
+  background: #dcfce7;
+  color: var(--verde);
+}
+
+.estado.PENDIENTE_REVISION {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.estado.BLOQUEADA {
+  background: #fee2e2;
+  color: var(--rojo);
+}
+
+.rechazo {
+  margin: 10px 0 0;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #fee2e2;
+  color: var(--rojo);
+  font-size: 14px;
+}
