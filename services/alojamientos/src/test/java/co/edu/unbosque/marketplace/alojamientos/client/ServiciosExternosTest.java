@@ -127,7 +127,7 @@ void registraAuditoriaDeAprobacion() {
             "PUBLICACION",
             25L,
             "APROBAR_PUBLICACION",
-            "EXITOSO",
+            "EXITO",
             "El administrador aprobo la publicacion"
     );
 
@@ -204,7 +204,7 @@ void auditoriaNoDisponible() {
             "PUBLICACION",
             25L,
             "APROBAR_PUBLICACION",
-            "EXITOSO",
+            "EXITO",
             "El administrador aprobo la publicacion"
     );
 

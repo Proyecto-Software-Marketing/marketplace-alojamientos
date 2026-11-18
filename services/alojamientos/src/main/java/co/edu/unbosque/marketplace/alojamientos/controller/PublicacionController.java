@@ -24,7 +24,7 @@ import co.edu.unbosque.marketplace.alojamientos.dto.RechazarPublicacionRequestDT
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.RequestBody;
 
-// HU-07: el anfitriÔö£├óÔö¼Ôöén crea una publicaciÔö£├óÔö¼Ôöén en borrador
+
 @RestController
 public class PublicacionController {
 
@@ -104,7 +104,7 @@ serviciosExternos.registrarAuditoria(new EventoAuditoriaDTO(
         "PUBLICACION",
         publicacion.getId(),
         "APROBAR_PUBLICACION",
-        "EXITOSO",
+        "EXITO",
         "El administrador aprobo la publicacion"
 ));
 
@@ -134,8 +134,8 @@ public ResponseEntity<PublicacionResponseDTO> rechazar(
             "PUBLICACION",
             publicacion.getId(),
             "RECHAZAR_PUBLICACION",
-            "EXITOSO",
-            "Motivo: " + publicacion.getMotivoRechazo()
+            "EXITO",
+                "Motivo: " + ServiciosExternos.recortar(publicacion.getMotivoRechazo(), 1900)
     ));
     // HU-13 (CA-039): notificar al anfitrion el motivo del rechazo.
 serviciosExternos.notificarPublicacionRechazada(

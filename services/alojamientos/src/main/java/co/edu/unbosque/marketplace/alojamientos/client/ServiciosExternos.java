@@ -16,11 +16,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import co.edu.unbosque.marketplace.alojamientos.dto.NotificacionRequestDTO;
 
-// Lo que Alojamientos necesita de otros servicios
+
 @Component
 public class ServiciosExternos {
 
-    private static final String DEBE_INICIAR_SESION = "Debe iniciar sesi├│n";
+    private static final String DEBE_INICIAR_SESION = "Debe iniciar sesión";
     private static final Logger log = LoggerFactory.getLogger(ServiciosExternos.class);
 
     private final RestClient cliente;
@@ -36,7 +36,7 @@ public ServiciosExternos(
     this(RestClient.builder(), urlIdentidad, urlAuditoria, urlNotificaciones);
 }
 
-// Conservamos este constructor para las pruebas existentes
+
 ServiciosExternos(
         RestClient.Builder constructor,
         String urlIdentidad,
@@ -58,19 +58,18 @@ ServiciosExternos(
     this.urlNotificaciones = urlNotificaciones;
 }
 
-    // HU-07 (CA-022, decisi├│n 4): solo un anfitri├│n puede crear publicaciones.
-    // Devuelve el id del anfitri├│n, que sale del token
+    
     public Long verificarAnfitrion(String autorizacion) {
         return verificarAnfitrion(autorizacion, "Solo un anfitrión puede crear publicaciones");
     }
 
-    // Igual que el anterior, con el mensaje de la operaci├│n (HU-09: modificar la publicaci├│n)
+   
     public Long verificarAnfitrion(String autorizacion, String mensajeSinPermiso) {
         return verificarRol(autorizacion, "ANFITRION", mensajeSinPermiso);
     }
 
 
-    // HU-08: permite consultar publicaciones al administrador o al anfitrion propietario.
+  
     public Long verificarAdministradorOAnfitrion(String autorizacion, Long propietarioId) {
         try {
             return verificarAdministrador(autorizacion);
@@ -87,7 +86,7 @@ ServiciosExternos(
             return anfitrionId;
         }
     }
-    // HU-13: solo un administrador puede aprobar o rechazar publicaciones.
+   
     public Long verificarAdministrador(String autorizacion) {
         return verificarRol(
                 autorizacion,
@@ -95,7 +94,7 @@ ServiciosExternos(
                 "Solo un administrador puede aprobar o rechazar publicaciones");
     }
 
-    // Le pregunta a Identidad si el token es del rol y devuelve el id del usuario
+   
     private Long verificarRol(String autorizacion, String rol, String mensajeSinPermiso) {
         try {
             UsuarioIdentidadDTO usuario = cliente.get()
@@ -114,10 +113,10 @@ ServiciosExternos(
         } catch (HttpClientErrorException.Forbidden e) {
             throw new PermisoException(mensajeSinPermiso);
         } catch (RestClientException e) {
-            throw new ServicioNoDisponibleException("No fue posible validar la sesi├│n. Intente m├ís tarde");
+            throw new ServicioNoDisponibleException("No fue posible validar la sesión. Intente más tarde");
         }
     }
-    // HU-13 (CA-039): registra las decisiones del administrador.
+  
 public boolean registrarAuditoria(EventoAuditoriaDTO evento) {
     try {
         cliente.post()
@@ -135,7 +134,7 @@ public boolean registrarAuditoria(EventoAuditoriaDTO evento) {
         return false;
     }
 }
-// HU-13 (CA-039): notifica al anfitrion cuando aprueban su publicacion.
+
 public boolean notificarPublicacionAprobada(Long anfitrionId, Long publicacionId) {
     try {
         NotificacionRequestDTO notificacion = new NotificacionRequestDTO(
@@ -161,7 +160,7 @@ public boolean notificarPublicacionAprobada(Long anfitrionId, Long publicacionId
         return false;
     }
 }
-// HU-13 (CA-039): notifica al anfitrion cuando rechazan su publicacion.
+
 public boolean notificarPublicacionRechazada(
         Long anfitrionId, Long publicacionId, String motivo) {
     try {
@@ -170,7 +169,7 @@ public boolean notificarPublicacionRechazada(
                 "PUBLICACION_RECHAZADA",
                 "PUBLICACION",
                 publicacionId,
-                "Tu publicacion fue rechazada. Motivo: " + motivo
+                "Tu publicacion fue rechazada. Motivo: " + recortar(motivo, 400)
         );
 
         cliente.post()
@@ -189,7 +188,7 @@ public boolean notificarPublicacionRechazada(
     }
 }
 
-    // HU-08: autoriza a un anfitrion o administrador para editar.
+    
     public UsuarioIdentidadDTO verificarEditor(String autorizacion) {
         try {
             UsuarioIdentidadDTO usuario = cliente.get()
@@ -216,7 +215,6 @@ public boolean notificarPublicacionRechazada(
         }
     }
 
-    // HU-08: registra las ediciones realizadas por administradores.
     public boolean registrarAuditoriaEdicion(Long administradorId, Long publicacionId) {
 
         EventoAuditoriaDTO evento = new EventoAuditoriaDTO(
@@ -228,5 +226,11 @@ public boolean notificarPublicacionRechazada(
                 "El administrador actualizo los datos de la publicacion");
 
         return registrarAuditoria(evento);
+    }
+        public static String recortar(String texto, int maximo) {
+        if (texto == null || texto.length() <= maximo) {
+            return texto;
+        }
+        return texto.substring(0, maximo) + "...";
     }
 }

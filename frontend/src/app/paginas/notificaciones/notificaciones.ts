@@ -6,6 +6,7 @@ import { Notificacion, NotificacionesService } from '../../servicios/notificacio
 // Título que se muestra para cada tipo de evento
 const TITULOS: Record<string, string> = {
   PUBLICACION_APROBADA: 'Publicación aprobada',
+  PUBLICACION_RECHAZADA: 'Publicación rechazada',
   RESERVA_CONFIRMADA: 'Reserva confirmada',
   RESERVA_CANCELADA: 'Reserva cancelada',
   PUBLICACION_BLOQUEADA: 'Publicación bloqueada',

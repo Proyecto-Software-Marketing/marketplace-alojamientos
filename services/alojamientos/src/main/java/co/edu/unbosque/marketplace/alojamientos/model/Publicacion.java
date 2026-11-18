@@ -273,6 +273,7 @@ public void enviarARevision() {
     }
 
     estado = EstadoPublicacion.PENDIENTE_REVISION;
+    motivoRechazo = null;
 }
     public EstadoPublicacion getEstado() {
         return estado;

@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.List;
 import co.edu.unbosque.marketplace.alojamientos.exception.PublicacionIncompletaException;
 
-// HU-07: crear una publicaciÔö£├óÔö¼Ôöén en borrador
 @Service
 public class PublicacionService {
 
@@ -32,8 +31,7 @@ public class PublicacionService {
         this.reloj = reloj;
     }
 
-    // CA-020: la publicaciÔö£├óÔö¼Ôöén queda en BORRADOR asociada al anfitriÔö£├óÔö¼Ôöén (su id sale del token, decisiÔö£├óÔö¼Ôöén 5).
-    // DecisiÔö£├óÔö¼Ôöén 9: no se valida tÔö£├óÔö¼┬ítulo repetido
+
     @Transactional
     public Publicacion crear(Long anfitrionId, PublicacionRequestDTO solicitud) {
         validarCapacidadYPrecio(solicitud);
@@ -102,6 +100,17 @@ public Publicacion enviarARevision(Long publicacionId, Long anfitrionId) {
             || publicacion.getPrecioNoche().signum() <= 0) {
         faltantes.add("precio por noche");
     }
+    if (publicacion.getServicios().isEmpty()) {
+        faltantes.add("servicios");
+    }
+
+    if (publicacion.getReglas().isEmpty()) {
+        faltantes.add("reglas");
+    }
+
+    if (publicacion.getImagenes().isEmpty()) {
+        faltantes.add("imagenes");
+    }
 
 if (!faltantes.isEmpty()) {
     throw new PublicacionIncompletaException(
@@ -129,7 +138,7 @@ if (!faltantes.isEmpty()) {
         }
         return publicacionRepository.findByEstadoOrderByIdAsc(estado);
     }
-    // CA-021: capacidad menor o igual a cero o precio no positivo Ôö£├│├ö├ç├í├ö├ç├û se rechaza
+    
     private void validarCapacidadYPrecio(PublicacionRequestDTO solicitud) {
         BigDecimal capacidad = solicitud.capacidad();
         if (capacidad == null || capacidad.signum() <= 0) {
