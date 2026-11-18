@@ -132,4 +132,11 @@ export class AlojamientosService {
   asociarPolitica(id: number, politicaId: number) {
     return this.http.put<Publicacion>(`${this.url}/${id}/cancellation-policy`, { politicaId });
   }
+    pausar(id: number) {
+    return this.http.post<Publicacion>(`${this.url}/${id}/pause`, {});
+  }
+
+  reactivar(id: number) {
+    return this.http.post<Publicacion>(`${this.url}/${id}/resume`, {});
+  }
 }

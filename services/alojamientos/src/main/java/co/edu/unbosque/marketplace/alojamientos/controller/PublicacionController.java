@@ -145,6 +145,34 @@ serviciosExternos.notificarPublicacionRechazada(
 );
     return ResponseEntity.ok(PublicacionResponseDTO.desde(publicacion));
 }
+// HU-14 (CA-040): pausar una publicacion activa.
+// Rol requerido: ANFITRION.
+@PostMapping("/listings/{id}/pause")
+public ResponseEntity<PublicacionResponseDTO> pausar(
+        @RequestHeader("Authorization") String autorizacion,
+        @PathVariable Long id) {
+
+    Long anfitrionId = serviciosExternos.verificarAnfitrion(autorizacion);
+
+    Publicacion publicacion = publicacionService.pausar(id, anfitrionId);
+
+    return ResponseEntity.ok(PublicacionResponseDTO.desde(publicacion));
+}
+
+// HU-14 (CA-041 y CA-042): reactivar una publicacion pausada.
+// No se permite reactivar publicaciones BLOQUEADA.
+@PostMapping("/listings/{id}/resume")
+public ResponseEntity<PublicacionResponseDTO> reactivar(
+        @RequestHeader("Authorization") String autorizacion,
+        @PathVariable Long id) {
+
+    Long anfitrionId = serviciosExternos.verificarAnfitrion(autorizacion);
+
+    Publicacion publicacion = publicacionService.reactivar(id, anfitrionId);
+
+    return ResponseEntity.ok(PublicacionResponseDTO.desde(publicacion));
+}
+
 
     // HU-15: consultar las publicaciones del anfitrion autenticado.
     @GetMapping("/listings/mine")

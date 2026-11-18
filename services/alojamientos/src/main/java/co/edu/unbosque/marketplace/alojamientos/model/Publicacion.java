@@ -205,7 +205,16 @@ private String motivoRechazo;
             estado = EstadoPublicacion.PAUSADA;
         }
     }
+// HU-14 (CA-041 y CA-042): reactivar una publicacion pausada.
+// Las publicaciones bloqueadas no pueden ser reactivadas.
+public void reactivar() {
+    if (estado != EstadoPublicacion.PAUSADA) {
+        throw new IllegalStateException(
+                "Solo se pueden reactivar publicaciones en estado PAUSADA");
+    }
 
+    estado = EstadoPublicacion.ACTIVA;
+}
     // HU-09, decisión 4: los servicios, reglas e imágenes se pueden cambiar en BORRADOR, ACTIVA y PAUSADA.
     // En PENDIENTE_REVISION el administrador la está revisando y BLOQUEADA no se puede tocar
     public boolean permiteEditarContenido() {

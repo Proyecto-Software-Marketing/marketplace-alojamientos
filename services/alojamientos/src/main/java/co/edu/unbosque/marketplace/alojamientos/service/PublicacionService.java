@@ -189,6 +189,49 @@ public Publicacion rechazar(Long publicacionId, String motivo) {
 
     return publicacionRepository.save(publicacion);
 }
+// HU-14 (CA-040): pausar una publicacion activa.
+@Transactional
+public Publicacion pausar(Long publicacionId, Long anfitrionId) {
+    Publicacion publicacion = publicacionRepository.findById(publicacionId)
+            .orElseThrow(() -> new NoEncontradoException(
+                    "La publicacion no existe"));
+
+    if (!publicacion.getAnfitrionId().equals(anfitrionId)) {
+        throw new PermisoException(
+                "No puede pausar una publicacion de otro anfitrion");
+    }
+
+    if (publicacion.getEstado() != EstadoPublicacion.ACTIVA) {
+        throw new ConflictoException(
+                "Solo se pueden pausar publicaciones en estado ACTIVA");
+    }
+
+    publicacion.pausar();
+
+    return publicacionRepository.save(publicacion);
+}
+
+// HU-14 (CA-041 y CA-042): reactivar una publicacion pausada.
+@Transactional
+public Publicacion reactivar(Long publicacionId, Long anfitrionId) {
+    Publicacion publicacion = publicacionRepository.findById(publicacionId)
+            .orElseThrow(() -> new NoEncontradoException(
+                    "La publicacion no existe"));
+
+    if (!publicacion.getAnfitrionId().equals(anfitrionId)) {
+        throw new PermisoException(
+                "No puede reactivar una publicacion de otro anfitrion");
+    }
+
+    if (publicacion.getEstado() != EstadoPublicacion.PAUSADA) {
+        throw new ConflictoException(
+                "Solo se pueden reactivar publicaciones en estado PAUSADA");
+    }
+
+    publicacion.reactivar();
+
+    return publicacionRepository.save(publicacion);
+}
 
     // HU-15: listar publicaciones del anfitrion.
     @Transactional(readOnly = true)

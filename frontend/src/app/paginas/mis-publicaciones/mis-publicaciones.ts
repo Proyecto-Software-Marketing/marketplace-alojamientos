@@ -2,6 +2,7 @@ import { DecimalPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { Observable } from 'rxjs';
 import { AlojamientosService, Publicacion } from '../../servicios/alojamientos.service';
 import { leerMensajes } from '../../servicios/errores';
 
@@ -67,7 +68,31 @@ export class MisPublicaciones {
       }
     });
   }
+  pausar(publicacion: Publicacion): void {
+    this.cambiarEstado(publicacion, this.alojamientos.pausar(publicacion.id), 'quedó pausada');
+  }
 
+  // HU-14 reactivar: vuelve a salir en las búsquedas
+  reactivar(publicacion: Publicacion): void {
+    this.cambiarEstado(publicacion, this.alojamientos.reactivar(publicacion.id), 'quedó activa otra vez');
+  }
+
+  private cambiarEstado(publicacion: Publicacion, peticion: Observable<Publicacion>, texto: string): void {
+    this.enviando.set(publicacion.id);
+    this.errores.set([]);
+    this.mensaje.set('');
+    peticion.subscribe({
+      next: () => {
+        this.enviando.set(null);
+        this.mensaje.set(`"${publicacion.titulo}" ${texto}.`);
+        this.cargar();
+      },
+      error: (error: HttpErrorResponse) => {
+        this.enviando.set(null);
+        this.errores.set(leerMensajes(error));
+      }
+    });
+  }
   textoEstado(estado: string): string {
     return ESTADOS[estado] ?? estado;
   }

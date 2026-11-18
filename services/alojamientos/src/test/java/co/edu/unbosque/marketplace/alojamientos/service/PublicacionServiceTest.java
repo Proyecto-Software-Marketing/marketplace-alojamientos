@@ -31,6 +31,7 @@ import co.edu.unbosque.marketplace.alojamientos.exception.NoEncontradoException;
 import co.edu.unbosque.marketplace.alojamientos.exception.PermisoException;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import co.edu.unbosque.marketplace.alojamientos.exception.PublicacionIncompletaException;
+import org.springframework.test.util.ReflectionTestUtils;
 
 // Pruebas de la HU-07: crear publicación en borrador
 @SpringBootTest
@@ -329,6 +330,164 @@ void rechazaCapacidadYPrecioInvalidosEnRevision() {
 
     assertTrue(error.getMessage().contains("capacidad"));
     assertTrue(error.getMessage().contains("precio por noche"));
+
+    assertEquals(EstadoPublicacion.BORRADOR,
+            publicacionRepository.findById(id).orElseThrow().getEstado());
+}
+// HU-14 (CA-040): pausar una publicacion activa.
+@Test
+@DisplayName("CA-040: una publicacion ACTIVA pasa a PAUSADA")
+void pausaPublicacionActiva() {
+    Publicacion publicacion = new Publicacion(ANFITRION, AHORA);
+    publicacion.definirDatosBasicos(
+        "Casa campestre",
+        "Casa con piscina",
+        "Bogota",
+        "Zona norte",
+        TipoAlojamiento.CASA,
+        4,
+        BigDecimal.valueOf(250000));
+
+    publicacion.enviarARevision();
+    publicacion.aprobar();
+
+    Long id = publicacionRepository.save(publicacion).getId();
+
+    Publicacion pausada = publicacionService.pausar(id, ANFITRION);
+
+    assertEquals(EstadoPublicacion.PAUSADA, pausada.getEstado());
+
+    assertEquals(EstadoPublicacion.PAUSADA,
+            publicacionRepository.findById(id).orElseThrow().getEstado());
+}
+
+// HU-14 (CA-041): reactivar una publicacion pausada.
+// HU-14 (CA-041): reactivar una publicacion pausada.
+@Test
+@DisplayName("CA-041: una publicacion PAUSADA vuelve a ACTIVA")
+void reactivaPublicacionPausada() {
+    Publicacion publicacion = new Publicacion(ANFITRION, AHORA);
+
+    publicacion.definirDatosBasicos(
+            "Casa campestre",
+            "Casa con piscina",
+            "Bogota",
+            "Zona norte",
+            TipoAlojamiento.CASA,
+            4,
+            BigDecimal.valueOf(250000));
+
+    publicacion.enviarARevision();
+    publicacion.aprobar();
+    publicacion.pausar();
+
+    Long id = publicacionRepository.save(publicacion).getId();
+
+    Publicacion reactivada = publicacionService.reactivar(id, ANFITRION);
+
+    assertEquals(EstadoPublicacion.ACTIVA, reactivada.getEstado());
+
+    assertEquals(EstadoPublicacion.ACTIVA,
+            publicacionRepository.findById(id).orElseThrow().getEstado());
+}
+// HU-14 (CA-042): una publicacion bloqueada no puede reactivarse.
+@Test
+@DisplayName("CA-042: no permite reactivar una publicacion BLOQUEADA")
+void noReactivaPublicacionBloqueada() {
+    Publicacion publicacion = new Publicacion(ANFITRION, AHORA);
+
+    publicacion.definirDatosBasicos(
+            "Casa campestre",
+            "Casa con piscina",
+            "Bogota",
+            "Zona norte",
+            TipoAlojamiento.CASA,
+            4,
+            BigDecimal.valueOf(250000));
+
+    ReflectionTestUtils.setField(
+            publicacion, "estado", EstadoPublicacion.BLOQUEADA);
+
+    Long id = publicacionRepository.save(publicacion).getId();
+
+    assertThrows(ConflictoException.class,
+            () -> publicacionService.reactivar(id, ANFITRION));
+
+    assertEquals(EstadoPublicacion.BLOQUEADA,
+            publicacionRepository.findById(id).orElseThrow().getEstado());
+}
+
+@Test
+@DisplayName("HU-14: otro anfitrion no puede pausar una publicacion")
+void noPermitePausarPublicacionDeOtroAnfitrion() {
+    Publicacion publicacion = new Publicacion(ANFITRION, AHORA);
+
+    publicacion.definirDatosBasicos(
+            "Casa campestre",
+            "Casa con piscina",
+            "Bogota",
+            "Zona norte",
+            TipoAlojamiento.CASA,
+            4,
+            BigDecimal.valueOf(250000));
+
+    publicacion.enviarARevision();
+    publicacion.aprobar();
+
+    Long id = publicacionRepository.save(publicacion).getId();
+
+    assertThrows(PermisoException.class,
+            () -> publicacionService.pausar(id, 99L));
+
+    assertEquals(EstadoPublicacion.ACTIVA,
+            publicacionRepository.findById(id).orElseThrow().getEstado());
+}
+
+@Test
+@DisplayName("HU-14: otro anfitrion no puede reactivar una publicacion")
+void noPermiteReactivarPublicacionDeOtroAnfitrion() {
+    Publicacion publicacion = new Publicacion(ANFITRION, AHORA);
+
+    publicacion.definirDatosBasicos(
+            "Casa campestre",
+            "Casa con piscina",
+            "Bogota",
+            "Zona norte",
+            TipoAlojamiento.CASA,
+            4,
+            BigDecimal.valueOf(250000));
+
+    publicacion.enviarARevision();
+    publicacion.aprobar();
+    publicacion.pausar();
+
+    Long id = publicacionRepository.save(publicacion).getId();
+
+    assertThrows(PermisoException.class,
+            () -> publicacionService.reactivar(id, 99L));
+
+    assertEquals(EstadoPublicacion.PAUSADA,
+            publicacionRepository.findById(id).orElseThrow().getEstado());
+}
+
+@Test
+@DisplayName("HU-14: no permite pausar una publicacion en BORRADOR")
+void noPermitePausarPublicacionEnBorrador() {
+    Publicacion publicacion = new Publicacion(ANFITRION, AHORA);
+
+    publicacion.definirDatosBasicos(
+            "Casa campestre",
+            "Casa con piscina",
+            "Bogota",
+            "Zona norte",
+            TipoAlojamiento.CASA,
+            4,
+            BigDecimal.valueOf(250000));
+
+    Long id = publicacionRepository.save(publicacion).getId();
+
+    assertThrows(ConflictoException.class,
+            () -> publicacionService.pausar(id, ANFITRION));
 
     assertEquals(EstadoPublicacion.BORRADOR,
             publicacionRepository.findById(id).orElseThrow().getEstado());
