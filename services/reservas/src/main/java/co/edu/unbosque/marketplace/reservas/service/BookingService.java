@@ -1,6 +1,9 @@
 package co.edu.unbosque.marketplace.reservas.service;
 
 import co.edu.unbosque.marketplace.reservas.client.CotizacionDTO;
+import co.edu.unbosque.marketplace.reservas.client.PagoClient;
+import co.edu.unbosque.marketplace.reservas.client.PagoRespuestaDTO;
+import co.edu.unbosque.marketplace.reservas.client.PagoNoDisponibleReservaException;
 import co.edu.unbosque.marketplace.reservas.client.PoliticaCancelacionDTO;
 import co.edu.unbosque.marketplace.reservas.client.ServiciosExternos;
 import co.edu.unbosque.marketplace.reservas.client.UsuarioIdentidadDTO;
@@ -32,9 +35,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-// HU-23: reserva inmediata sin aprobación del anfitrión.
-// HU-24: un reintento (incluso simultáneo) nunca crea dos reservas ni dos pagos.
-// HU-26: historial y estado de reservas para huésped y anfitrión.
+// HU-23: reserva inmediata sin aprobaciÃ³n del anfitriÃ³n.
+// HU-24: un reintento (incluso simultÃ¡neo) nunca crea dos reservas ni dos pagos.
+// HU-26: historial y estado de reservas para huÃ©sped y anfitriÃ³n.
 @Service
 public class BookingService {
 
@@ -42,19 +45,23 @@ public class BookingService {
             "El alojamiento ya no está disponible para las fechas seleccionadas";
 
     private final BookingRepository bookingRepository;
+    private final PagoClient pagoClient;
     private final ServiciosExternos serviciosExternos;
     private final TransactionTemplate transaccion;
 
-    public BookingService(BookingRepository bookingRepository, ServiciosExternos serviciosExternos,
-            PlatformTransactionManager gestorTransacciones) {
+    public BookingService(BookingRepository bookingRepository,
+            ServiciosExternos serviciosExternos,
+            PlatformTransactionManager gestorTransacciones,
+            PagoClient pagoClient) {
         this.bookingRepository = bookingRepository;
         this.serviciosExternos = serviciosExternos;
         this.transaccion = new TransactionTemplate(gestorTransacciones);
+        this.pagoClient = pagoClient;
     }
 
     // CA-064, CA-065, CA-066 (HU-23) y CA-067 (HU-24)
     public BookingResponseDTO crearReserva(String autorizacion, String idempotencyKey, BookingRequestDTO solicitud) {
-        // 1. Solo el huésped puede reservar
+        // 1. Solo el huÃ©sped puede reservar
         Long huespedId = serviciosExternos.verificarRolHuesped(autorizacion);
 
         // 2. RF-026 y RN-015: un reintento con la misma clave devuelve la misma reserva
@@ -66,9 +73,12 @@ public class BookingService {
             return devolverExistente(existente.get(), huespedId);
         }
 
-        // 3. Datos de la reserva: snapshot del request o consulta a Cotización
+        // 3. Datos de la reserva: snapshot del request o consulta a CotizaciÃ³n
         DatosReserva datos = resolverDatos(solicitud);
         validarDatos(datos);
+
+        // MKT-41: validar cotizacion oficial antes del pago.
+        validarCotizacionParaPago(solicitud, datos);
 
         // 4. CA-064 y CA-065: volver a verificar la disponibilidad justo antes de confirmar
         if (!serviciosExternos.verificarDisponibilidad(datos.publicacionId(), datos.fechaLlegada(),
@@ -76,19 +86,31 @@ public class BookingService {
             throw new ConflictoReservaException(MENSAJE_NO_DISPONIBLE);
         }
 
-        // 5. CA-064: se confirma la reserva sin aprobación del anfitrión
+        // 5. CA-064: se confirma la reserva sin aprobaciÃ³n del anfitriÃ³n
         try {
-            return transaccion.execute(estado -> confirmarReserva(huespedId, idempotencyKey, solicitud, datos));
+            PagoRespuestaDTO pago = pagoClient.cobrar(
+                    huespedId,
+                    idempotencyKey,
+                    datos.montoTotal(),
+                    solicitud.metodoPago());
+
+            if (pago == null || !"APROBADO".equals(pago.estado())) {
+                throw new PagoNoDisponibleReservaException(
+                        "El pago no tiene confirmacion de aprobacion.",
+                        null);
+            }
+
+            return transaccion.execute(estado -> confirmarReserva(huespedId, idempotencyKey, solicitud, datos, pago));
         } catch (DataIntegrityViolationException e) {
-            // CA-067: dos clics simultáneos con la misma clave. La otra transacción
-            // ya hizo commit (el insert único espera su turno) y se devuelve su reserva.
+            // CA-067: dos clics simultÃ¡neos con la misma clave. La otra transacciÃ³n
+            // ya hizo commit (el insert Ãºnico espera su turno) y se devuelve su reserva.
             return bookingRepository.findByIdempotencyKey(idempotencyKey)
                     .map(ganadora -> devolverExistente(ganadora, huespedId))
                     .orElseThrow(() -> e);
         }
     }
 
-    // CA-068 (HU-24) y HU-26: el huésped ve sus reservas y el anfitrión las de sus publicaciones
+    // CA-068 (HU-24) y HU-26: el huÃ©sped ve sus reservas y el anfitriÃ³n las de sus publicaciones
     public BookingListDTO listarReservas(String autorizacion, BookingStatus estado) {
         UsuarioIdentidadDTO usuario = serviciosExternos.verificarSesion(autorizacion);
 
@@ -106,7 +128,7 @@ public class BookingService {
         return new BookingListDTO(reservas.stream().map(BookingResponseDTO::desde).toList());
     }
 
-    // HU-26: detalle de una reserva; solo su huésped o el anfitrión de la publicación
+    // HU-26: detalle de una reserva; solo su huÃ©sped o el anfitriÃ³n de la publicaciÃ³n
     public BookingResponseDTO consultarReserva(String autorizacion, Long reservaId) {
         UsuarioIdentidadDTO usuario = serviciosExternos.verificarSesion(autorizacion);
 
@@ -123,11 +145,11 @@ public class BookingService {
         return BookingResponseDTO.desde(reserva);
     }
 
-    // HU-28: el huésped cancela su reserva o el administrador cancela cualquiera.
-    // CA-077/CA-078: devolución simulada según la política de la publicación.
-    // CA-079: el anfitrión no puede cancelar (Identidad solo autoriza HUESPED/ADMINISTRADOR).
-    // CA-080: si la política lo permite, se libera el periodo reservado.
-    // CA-128: se notifica al huésped y al anfitrión.
+    // HU-28: el huÃ©sped cancela su reserva o el administrador cancela cualquiera.
+    // CA-077/CA-078: devoluciÃ³n simulada segÃºn la polÃ­tica de la publicaciÃ³n.
+    // CA-079: el anfitriÃ³n no puede cancelar (Identidad solo autoriza HUESPED/ADMINISTRADOR).
+    // CA-080: si la polÃ­tica lo permite, se libera el periodo reservado.
+    // CA-128: se notifica al huÃ©sped y al anfitriÃ³n.
     public CancellationResponseDTO cancelarReserva(String autorizacion, Long reservaId, CancelRequestDTO solicitud) {
         UsuarioIdentidadDTO usuario = serviciosExternos.verificarSesionCancelacion(autorizacion);
         CancellationResponseDTO cancelacion = transaccion
@@ -171,7 +193,7 @@ public class BookingService {
         reserva.cancelar(usuario.id(), solicitud.motivo(), LocalDateTime.now(), devolucion);
         Booking cancelada = bookingRepository.saveAndFlush(reserva);
 
-        // Si no se puede liberar el periodo, la transacción revierte la cancelación.
+        // Si no se puede liberar el periodo, la transacciÃ³n revierte la cancelación.
         if (Boolean.TRUE.equals(politica.permiteLiberacionPeriodo())) {
             serviciosExternos.liberarPeriodo(cancelada.getPublicacionId(), cancelada.getId(),
                     cancelada.getFechaLlegada(), cancelada.getFechaSalida());
@@ -193,7 +215,7 @@ public class BookingService {
                 || politica.porcentajeDevolucion().compareTo(BigDecimal.ZERO) < 0
                 || politica.porcentajeDevolucion().compareTo(BigDecimal.valueOf(100)) > 0) {
             throw new ServicioNoDisponibleException(
-                    "La política de cancelación de la publicación no es válida");
+                    "La polÃ­tica de cancelación de la publicaciÃ³n no es vÃ¡lida");
         }
         return montoTotal.multiply(politica.porcentajeDevolucion())
                 .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
@@ -216,14 +238,18 @@ public class BookingService {
                     anfitrionId,
                     reserva.getId(),
                     reserva.getCodigoReserva(),
-                    "La reserva " + reserva.getCodigoReserva() + " de tu publicación fue cancelada");
+                    "La reserva " + reserva.getCodigoReserva() + " de tu publicaciÃ³n fue cancelada");
         }
     }
 
-    // CA-067: una única ejecución confirma la reserva y sus efectos externos
-    private BookingResponseDTO confirmarReserva(Long huespedId, String idempotencyKey,
-            BookingRequestDTO solicitud, DatosReserva datos) {
-        // HU-26: se guarda el anfitrión para que pueda consultar el historial
+    // CA-067: una Ãºnica ejecuciÃ³n confirma la reserva y sus efectos externos
+    private BookingResponseDTO confirmarReserva(
+            Long huespedId,
+            String idempotencyKey,
+            BookingRequestDTO solicitud,
+            DatosReserva datos,
+            PagoRespuestaDTO pago) {
+        // HU-26: se guarda el anfitriÃ³n para que pueda consultar el historial
         Long anfitrionId = serviciosExternos.consultarAnfitrion(datos.publicacionId());
 
         Booking reserva = new Booking(
@@ -241,21 +267,25 @@ public class BookingService {
                 BookingStatus.CONFIRMADA,
                 LocalDateTime.now());
 
-        // El flush fuerza la clave única antes del bloqueo y las notificaciones:
-        // si otro clic ganó la carrera, aquí se lanza DataIntegrityViolationException.
+        // El flush fuerza la clave Ãºnica antes del bloqueo y las notificaciones:
+        // si otro clic ganÃ³ la carrera, aquÃ­ se lanza DataIntegrityViolationException.
+        reserva.registrarPago(
+                pago.id().toString(),
+                pago.stripePaymentIntentId());
+
         reserva = bookingRepository.saveAndFlush(reserva);
 
-        // CA-066: el periodo queda bloqueado. Un 409 aquí revierte la reserva (carrera real).
+        // CA-066: el periodo queda bloqueado. Un 409 aquÃ­ revierte la reserva (carrera real).
         serviciosExternos.bloquearPeriodo(datos.publicacionId(), reserva.getId(),
                 datos.fechaLlegada(), datos.fechaSalida());
 
-        // CA-066: notificaciones al huésped y, best-effort, al anfitrión
+        // CA-066: notificaciones al huÃ©sped y, best-effort, al anfitriÃ³n
         notificar(huespedId, reserva,
                 "Tu reserva " + reserva.getCodigoReserva() + " fue confirmada del "
                         + datos.fechaLlegada() + " al " + datos.fechaSalida());
         if (anfitrionId != null && !anfitrionId.equals(huespedId)) {
             notificar(anfitrionId, reserva,
-                    "Se confirmó la reserva " + reserva.getCodigoReserva() + " en tu publicación del "
+                    "Se confirmÃ³ la reserva " + reserva.getCodigoReserva() + " en tu publicaciÃ³n del "
                             + datos.fechaLlegada() + " al " + datos.fechaSalida());
         }
 
@@ -299,6 +329,43 @@ public class BookingService {
         return new DatosReserva(publicacionId, fechaLlegada, fechaSalida, cantidadHuespedes, montoTotal);
     }
 
+    // MKT-41: validar la cotizacion oficial antes de cobrar.
+    private void validarCotizacionParaPago(
+            BookingRequestDTO solicitud,
+            DatosReserva datos) {
+
+        CotizacionDTO cotizacion =
+                serviciosExternos.consultarCotizacion(solicitud.cotizacionId());
+
+        if (cotizacion == null
+                || cotizacion.total() == null
+                || cotizacion.publicacionId() == null
+                || cotizacion.fechaLlegada() == null
+                || cotizacion.fechaSalida() == null
+                || cotizacion.cantidadHuespedes() == null) {
+
+            throw new SolicitudInvalidaException(
+                    "La cotizacion no contiene datos validos."
+            );
+        }
+
+        if (!cotizacion.publicacionId().equals(datos.publicacionId())
+                || !cotizacion.fechaLlegada().equals(datos.fechaLlegada())
+                || !cotizacion.fechaSalida().equals(datos.fechaSalida())
+                || !cotizacion.cantidadHuespedes().equals(datos.cantidadHuespedes())
+                || cotizacion.total().compareTo(datos.montoTotal()) != 0) {
+
+            throw new SolicitudInvalidaException(
+                    "Los datos de la reserva no coinciden con la cotizacion."
+            );
+        }
+
+        if (cotizacion.total().signum() <= 0) {
+            throw new SolicitudInvalidaException(
+                    "El monto a pagar debe ser mayor a cero."
+            );
+        }
+    }
     private void notificar(Long usuarioId, Booking reserva, String mensaje) {
         serviciosExternos.notificarReservaConfirmada(
                 usuarioId, reserva.getId(), reserva.getCodigoReserva(), mensaje);
@@ -306,7 +373,7 @@ public class BookingService {
 
     private static void validarDatos(DatosReserva datos) {
         if (datos.publicacionId() == null) {
-            throw new SolicitudInvalidaException("La publicación es obligatoria");
+            throw new SolicitudInvalidaException("La publicaciÃ³n es obligatoria");
         }
         if (datos.fechaLlegada() == null || datos.fechaSalida() == null) {
             throw new FechasInvalidasException("Las fechas de llegada y salida son obligatorias");
@@ -315,7 +382,7 @@ public class BookingService {
             throw new FechasInvalidasException("La fecha de llegada debe ser anterior a la de salida");
         }
         if (datos.cantidadHuespedes() == null || datos.cantidadHuespedes() <= 0) {
-            throw new SolicitudInvalidaException("La cantidad de huéspedes debe ser mayor a 0");
+            throw new SolicitudInvalidaException("La cantidad de huÃ©spedes debe ser mayor a 0");
         }
         if (datos.montoTotal() == null || datos.montoTotal().signum() < 0) {
             throw new SolicitudInvalidaException("El monto total es obligatorio y no puede ser negativo");
