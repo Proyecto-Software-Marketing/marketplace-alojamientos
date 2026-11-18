@@ -19,6 +19,16 @@
         <label class="campo">Nº huéspedes
           <input type="number" name="huespedes" min="1" step="1" [(ngModel)]="huespedes">
         </label>
+                @if (adicionalesDisponibles().length > 0) {
+          <p class="titulo-adicionales">Servicios adicionales (se cobran una vez por estancia)</p>
+          @for (adicional of adicionalesDisponibles(); track adicional.nombre) {
+            <label class="adicional">
+              <input type="checkbox" [checked]="elegidos.includes(adicional.nombre)"
+                     (change)="cambiarAdicional(adicional.nombre, $any($event.target).checked)">
+              {{ adicional.nombre }} · $ {{ adicional.costo | number: '1.0-0' }}
+            </label>
+          }
+        }
         <button class="boton" type="submit" [disabled]="cargando()">Recalcular</button>
       </form>
     </section>

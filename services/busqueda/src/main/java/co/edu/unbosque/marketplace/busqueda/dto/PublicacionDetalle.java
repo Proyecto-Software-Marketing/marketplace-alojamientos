@@ -1,16 +1,15 @@
 package co.edu.unbosque.marketplace.busqueda.dto;
 
 import java.util.List;
+import java.util.Map;
 
-// Detalle completo de una publicacion que nos manda Alojamientos
-// Hereda de PublicacionResumen los datos basicos (id, titulo, ciudad, tipo, capacidad, precio, estado y servicios)
-// y agrega lo que solo se ve en el detalle
 public class PublicacionDetalle extends PublicacionResumen {
 
     private String descripcion;
     private List<String> reglas;
     private List<String> imagenes;
     private String politicaCancelacion;
+    private List<Map<String, Object>> serviciosAdicionales;
 
     public PublicacionDetalle() {
     }
@@ -26,4 +25,6 @@ public class PublicacionDetalle extends PublicacionResumen {
 
     public String getPoliticaCancelacion() { return politicaCancelacion; }
     public void setPoliticaCancelacion(String politicaCancelacion) { this.politicaCancelacion = politicaCancelacion; }
+  public List<Map<String, Object>> getServiciosAdicionales() { return serviciosAdicionales; }
+    public void setServiciosAdicionales(List<Map<String, Object>> serviciosAdicionales) { this.serviciosAdicionales = serviciosAdicionales; }
 }

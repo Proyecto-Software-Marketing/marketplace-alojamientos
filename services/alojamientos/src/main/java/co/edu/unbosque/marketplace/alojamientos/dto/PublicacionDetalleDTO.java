@@ -5,10 +5,7 @@ import co.edu.unbosque.marketplace.alojamientos.model.Publicacion;
 import java.math.BigDecimal;
 import java.util.List;
 
-// Lo que recibe Búsqueda en GET /interno/publicaciones/{id} (su clase PublicacionDetalle):
-// los datos del resumen más lo que solo se ve en el detalle.
-// HU-09 (CA-026 a CA-028): aquí se ven los servicios, las reglas y las imágenes.
-// politicaCancelacion llega con la HU-11
+
 public record PublicacionDetalleDTO(
         Long id,
         String titulo,
@@ -21,7 +18,8 @@ public record PublicacionDetalleDTO(
         String descripcion,
         List<String> reglas,
         List<String> imagenes,
-        String politicaCancelacion) {
+         String politicaCancelacion,
+        List<ServicioAdicionalDTO> serviciosAdicionales) {
 
     public static PublicacionDetalleDTO desde(Publicacion publicacion) {
         return new PublicacionDetalleDTO(
@@ -36,6 +34,7 @@ public record PublicacionDetalleDTO(
                 publicacion.getDescripcion(),
                 publicacion.getReglas(),
                 publicacion.getImagenes(),
-                publicacion.getPoliticaCancelacion() == null ? null : publicacion.getPoliticaCancelacion().getNombre());
+                publicacion.getPoliticaCancelacion() == null ? null : publicacion.getPoliticaCancelacion().getNombre(),
+                publicacion.getServiciosAdicionales().stream().map(ServicioAdicionalDTO::desde).toList());
     }
 }

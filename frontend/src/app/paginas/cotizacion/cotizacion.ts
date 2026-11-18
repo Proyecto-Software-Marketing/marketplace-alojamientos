@@ -7,6 +7,7 @@ import { Cotizacion as CotizacionDesglosada, CotizacionService } from '../../ser
 import { leerMensajes } from '../../servicios/errores';
 import { Reserva, ReservasService } from '../../servicios/reservas.service';
 import { SesionService } from '../../servicios/sesion.service';
+import { BusquedaService } from '../../servicios/busqueda.service';
 
 // HU-22 cotización desglosada; la abre "Ver cotización" del detalle con
 // ?idPublicacion=1&llegada=2026-12-01&salida=2026-12-04&huespedes=2
@@ -23,6 +24,9 @@ export class Cotizacion {
   private reservas = inject(ReservasService);
   private sesion = inject(SesionService);
   private ruta = inject(ActivatedRoute);
+  private busqueda = inject(BusquedaService);
+  adicionalesDisponibles = signal<{ nombre: string; costo: number }[]>([]);
+  elegidos: string[] = [];
 
   esHuesped = computed(() => this.sesion.usuario()?.rol === 'HUESPED');
 
@@ -51,6 +55,12 @@ export class Cotizacion {
   private claveIdempotencia: string | null = null;
 
   constructor() {
+        if (this.idPublicacion) {
+      this.busqueda.detalle(this.idPublicacion, '', '', '').subscribe({
+        next: (respuesta) => this.adicionalesDisponibles.set(respuesta.publicacion.serviciosAdicionales ?? []),
+        error: () => this.adicionalesDisponibles.set([])
+      });
+    }
     // si el detalle mandó todos los datos se cotiza de una vez
     if (this.esHuesped() && this.idPublicacion && this.llegada && this.salida && this.huespedes) {
       this.cotizar();
@@ -75,7 +85,8 @@ export class Cotizacion {
       publicacionId: this.idPublicacion,
       fechaLlegada: this.llegada,
       fechaSalida: this.salida,
-      cantidadHuespedes: this.huespedes
+       cantidadHuespedes: this.huespedes,
+      serviciosAdicionales: [...this.elegidos]
     }).subscribe({
       next: (cotizacion) => {
         this.cotizacion.set(cotizacion);
@@ -88,6 +99,14 @@ export class Cotizacion {
     });
   }
 
+  cambiarAdicional(nombre: string, marcado: boolean): void {
+    if (marcado) {
+      this.elegidos = [...this.elegidos, nombre];
+    } else {
+      this.elegidos = this.elegidos.filter((n) => n !== nombre);
+    }
+    this.cotizar();
+  }
   // Suma de los servicios adicionales para la línea del desglose
   totalAdicionales(cotizacion: CotizacionDesglosada): number {
     return cotizacion.serviciosAdicionales.reduce((suma, servicio) => suma + servicio.costo, 0);

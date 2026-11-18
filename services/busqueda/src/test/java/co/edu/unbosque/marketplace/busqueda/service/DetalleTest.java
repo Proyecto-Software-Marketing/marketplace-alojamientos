@@ -8,6 +8,7 @@ import static org.mockito.Mockito.when;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -111,5 +112,12 @@ class DetalleTest {
 
         assertThrows(PublicacionNoEncontradaException.class,
                 () -> busquedaService.detalle(99L, llegada, salida, 2));
+    }
+    @Test
+    void guardaLosServiciosAdicionales() {
+        PublicacionDetalle detalle = crearDetalle(5L, "ACTIVA");
+        detalle.setServiciosAdicionales(List.of(Map.of("nombre", "Desayuno", "costo", 30000)));
+
+        assertEquals(1, detalle.getServiciosAdicionales().size());
     }
 }
