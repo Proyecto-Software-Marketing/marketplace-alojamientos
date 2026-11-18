@@ -14,6 +14,7 @@ public class PublicacionResumen {
     private BigDecimal precioNoche;
     private String estado;
     private List<String> servicios;
+    private String imagenPrincipal;
 
     public PublicacionResumen() {
     }
@@ -53,4 +54,7 @@ public class PublicacionResumen {
 
     public List<String> getServicios() { return servicios; }
     public void setServicios(List<String> servicios) { this.servicios = servicios; }
+
+    public String getImagenPrincipal() { return imagenPrincipal; }
+    public void setImagenPrincipal(String imagenPrincipal) { this.imagenPrincipal = imagenPrincipal; }
 }

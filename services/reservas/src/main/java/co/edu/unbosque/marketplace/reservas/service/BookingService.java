@@ -1,6 +1,9 @@
 package co.edu.unbosque.marketplace.reservas.service;
 
 import co.edu.unbosque.marketplace.reservas.client.CotizacionDTO;
+import co.edu.unbosque.marketplace.reservas.client.PagoClient;
+import co.edu.unbosque.marketplace.reservas.client.PagoRespuestaDTO;
+import co.edu.unbosque.marketplace.reservas.client.PagoNoDisponibleReservaException;
 import co.edu.unbosque.marketplace.reservas.client.PoliticaCancelacionDTO;
 import co.edu.unbosque.marketplace.reservas.client.ServiciosExternos;
 import co.edu.unbosque.marketplace.reservas.client.UsuarioIdentidadDTO;
@@ -42,14 +45,18 @@ public class BookingService {
             "El alojamiento ya no está disponible para las fechas seleccionadas";
 
     private final BookingRepository bookingRepository;
+    private final PagoClient pagoClient;
     private final ServiciosExternos serviciosExternos;
     private final TransactionTemplate transaccion;
 
-    public BookingService(BookingRepository bookingRepository, ServiciosExternos serviciosExternos,
-            PlatformTransactionManager gestorTransacciones) {
+    public BookingService(BookingRepository bookingRepository,
+            ServiciosExternos serviciosExternos,
+            PlatformTransactionManager gestorTransacciones,
+            PagoClient pagoClient) {
         this.bookingRepository = bookingRepository;
         this.serviciosExternos = serviciosExternos;
         this.transaccion = new TransactionTemplate(gestorTransacciones);
+        this.pagoClient = pagoClient;
     }
 
     // CA-064, CA-065, CA-066 (HU-23) y CA-067 (HU-24)
@@ -70,6 +77,9 @@ public class BookingService {
         DatosReserva datos = resolverDatos(solicitud);
         validarDatos(datos);
 
+        // MKT-41: validar cotizacion oficial antes del pago.
+        validarCotizacionParaPago(solicitud, datos);
+
         // 4. CA-064 y CA-065: volver a verificar la disponibilidad justo antes de confirmar
         if (!serviciosExternos.verificarDisponibilidad(datos.publicacionId(), datos.fechaLlegada(),
                 datos.fechaSalida())) {
@@ -78,7 +88,19 @@ public class BookingService {
 
         // 5. CA-064: se confirma la reserva sin aprobación del anfitrión
         try {
-            return transaccion.execute(estado -> confirmarReserva(huespedId, idempotencyKey, solicitud, datos));
+            PagoRespuestaDTO pago = pagoClient.cobrar(
+                    huespedId,
+                    idempotencyKey,
+                    datos.montoTotal(),
+                    solicitud.metodoPago());
+
+            if (pago == null || !"APROBADO".equals(pago.estado())) {
+                throw new PagoNoDisponibleReservaException(
+                        "El pago no tiene confirmacion de aprobacion.",
+                        null);
+            }
+
+            return transaccion.execute(estado -> confirmarReserva(huespedId, idempotencyKey, solicitud, datos, pago));
         } catch (DataIntegrityViolationException e) {
             // CA-067: dos clics simultáneos con la misma clave. La otra transacción
             // ya hizo commit (el insert único espera su turno) y se devuelve su reserva.
@@ -221,8 +243,12 @@ public class BookingService {
     }
 
     // CA-067: una única ejecución confirma la reserva y sus efectos externos
-    private BookingResponseDTO confirmarReserva(Long huespedId, String idempotencyKey,
-            BookingRequestDTO solicitud, DatosReserva datos) {
+    private BookingResponseDTO confirmarReserva(
+            Long huespedId,
+            String idempotencyKey,
+            BookingRequestDTO solicitud,
+            DatosReserva datos,
+            PagoRespuestaDTO pago) {
         // HU-26: se guarda el anfitrión para que pueda consultar el historial
         Long anfitrionId = serviciosExternos.consultarAnfitrion(datos.publicacionId());
 
@@ -243,6 +269,10 @@ public class BookingService {
 
         // El flush fuerza la clave única antes del bloqueo y las notificaciones:
         // si otro clic ganó la carrera, aquí se lanza DataIntegrityViolationException.
+        reserva.registrarPago(
+                pago.id().toString(),
+                pago.stripePaymentIntentId());
+
         reserva = bookingRepository.saveAndFlush(reserva);
 
         // CA-066: el periodo queda bloqueado. Un 409 aquí revierte la reserva (carrera real).
@@ -299,6 +329,43 @@ public class BookingService {
         return new DatosReserva(publicacionId, fechaLlegada, fechaSalida, cantidadHuespedes, montoTotal);
     }
 
+    // MKT-41: validar la cotizacion oficial antes de cobrar.
+    private void validarCotizacionParaPago(
+            BookingRequestDTO solicitud,
+            DatosReserva datos) {
+
+        CotizacionDTO cotizacion =
+                serviciosExternos.consultarCotizacion(solicitud.cotizacionId());
+
+        if (cotizacion == null
+                || cotizacion.total() == null
+                || cotizacion.publicacionId() == null
+                || cotizacion.fechaLlegada() == null
+                || cotizacion.fechaSalida() == null
+                || cotizacion.cantidadHuespedes() == null) {
+
+            throw new SolicitudInvalidaException(
+                    "La cotizacion no contiene datos validos."
+            );
+        }
+
+        if (!cotizacion.publicacionId().equals(datos.publicacionId())
+                || !cotizacion.fechaLlegada().equals(datos.fechaLlegada())
+                || !cotizacion.fechaSalida().equals(datos.fechaSalida())
+                || !cotizacion.cantidadHuespedes().equals(datos.cantidadHuespedes())
+                || cotizacion.total().compareTo(datos.montoTotal()) != 0) {
+
+            throw new SolicitudInvalidaException(
+                    "Los datos de la reserva no coinciden con la cotizacion."
+            );
+        }
+
+        if (cotizacion.total().signum() <= 0) {
+            throw new SolicitudInvalidaException(
+                    "El monto a pagar debe ser mayor a cero."
+            );
+        }
+    }
     private void notificar(Long usuarioId, Booking reserva, String mensaje) {
         serviciosExternos.notificarReservaConfirmada(
                 usuarioId, reserva.getId(), reserva.getCodigoReserva(), mensaje);

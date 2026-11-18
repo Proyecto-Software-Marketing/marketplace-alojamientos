@@ -1,0 +1,28 @@
+<h1>Mis favoritos</h1>
+<p class="subtitulo">Alojamientos que guardaste para ver después</p>
+
+@for (error of errores(); track error) {
+  <p class="tarjeta error">{{ error }}</p>
+}
+
+@if (cargando()) {
+  <p class="nota">Cargando...</p>
+} @else if (publicaciones().length === 0) {
+  <p class="tarjeta nota">Todavía no tienes favoritos. Búscalos en <a routerLink="/">Buscar alojamiento</a>.</p>
+}
+
+<div class="lista">
+  @for (p of publicaciones(); track p.id) {
+    <div class="tarjeta fila">
+      <div>
+        <h2>{{ p.titulo }}</h2>
+        <p class="suave">{{ p.ciudad }} · {{ p.tipo }} · {{ p.capacidad }} huéspedes</p>
+        <p class="precio">$ {{ p.precioNoche | number: '1.0-0' }} / noche</p>
+      </div>
+      <div class="acciones">
+        <a class="boton" [routerLink]="['/alojamiento', p.id]">Ver detalle</a>
+        <button type="button" class="boton-secundario" (click)="quitar(p.id)">Quitar</button>
+      </div>
+    </div>
+  }
+</div>

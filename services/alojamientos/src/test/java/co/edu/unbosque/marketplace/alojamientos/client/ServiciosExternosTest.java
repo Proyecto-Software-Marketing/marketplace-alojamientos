@@ -22,6 +22,11 @@ import static org.springframework.test.web.client.match.MockRestRequestMatchers.
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withException;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
+import co.edu.unbosque.marketplace.alojamientos.dto.EventoAuditoriaDTO;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.content;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 // Pruebas de la HU-07 con Identidad simulada
 class ServiciosExternosTest {
@@ -113,5 +118,189 @@ class ServiciosExternosTest {
         servidor.expect(requestTo(URL_AUTORIZAR)).andRespond(withStatus(HttpStatus.INTERNAL_SERVER_ERROR));
 
         assertThrows(ServicioNoDisponibleException.class, () -> serviciosExternos.verificarAnfitrion(TOKEN));
+    }
+    @Test
+@DisplayName("CA-039: registra la aprobacion en el microservicio de Auditoria")
+void registraAuditoriaDeAprobacion() {
+    EventoAuditoriaDTO evento = new EventoAuditoriaDTO(
+            10L,
+            "PUBLICACION",
+            25L,
+            "APROBAR_PUBLICACION",
+            "EXITO",
+            "El administrador aprobo la publicacion"
+    );
+
+    servidor.expect(requestTo("http://localhost:8090/internal/audit-events"))
+            .andExpect(method(HttpMethod.POST))
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+            .andExpect(content().string(containsString("\"usuarioId\":10")))
+            .andExpect(content().string(containsString("\"entidadId\":25")))
+            .andExpect(content().string(containsString("\"accion\":\"APROBAR_PUBLICACION\"")))
+            .andRespond(withStatus(HttpStatus.CREATED));
+
+    assertTrue(serviciosExternos.registrarAuditoria(evento));
+
+    servidor.verify();
+}
+@Test
+@DisplayName("CA-039: notifica al anfitrion cuando aprueban su publicacion")
+void notificaPublicacionAprobada() {
+    Long anfitrionId = 7L;
+    Long publicacionId = 25L;
+
+    servidor.expect(requestTo("http://localhost:8088/internal/notifications"))
+            .andExpect(method(HttpMethod.POST))
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+            .andExpect(content().json("""
+                    {
+                      "usuarioId": 7,
+                      "tipoEvento": "PUBLICACION_APROBADA",
+                      "entidadTipo": "PUBLICACION",
+                      "entidadId": 25,
+                      "mensaje": "Tu publicacion ha sido aprobada y ahora esta activa."
+                    }
+                    """))
+            .andRespond(withStatus(HttpStatus.CREATED));
+
+    assertTrue(serviciosExternos.notificarPublicacionAprobada(
+            anfitrionId, publicacionId));
+
+        servidor.verify();
+}
+
+@Test
+@DisplayName("CA-039: notifica al anfitrion cuando rechazan su publicacion")
+void notificaPublicacionRechazada() {
+    Long anfitrionId = 7L;
+    Long publicacionId = 25L;
+    String motivo = "La publicacion no cumple con los requisitos";
+
+    servidor.expect(requestTo("http://localhost:8088/internal/notifications"))
+            .andExpect(method(HttpMethod.POST))
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+            .andExpect(content().json("""
+                    {
+                      "usuarioId": 7,
+                      "tipoEvento": "PUBLICACION_RECHAZADA",
+                      "entidadTipo": "PUBLICACION",
+                      "entidadId": 25,
+                      "mensaje": "Tu publicacion fue rechazada. Motivo: La publicacion no cumple con los requisitos"
+                    }
+                    """))
+            .andRespond(withStatus(HttpStatus.CREATED));
+
+    assertTrue(serviciosExternos.notificarPublicacionRechazada(
+            anfitrionId, publicacionId, motivo));
+
+        servidor.verify();
+}
+
+@Test
+@DisplayName("CA-039: maneja el error cuando Auditoria no esta disponible")
+void auditoriaNoDisponible() {
+    EventoAuditoriaDTO evento = new EventoAuditoriaDTO(
+            10L,
+            "PUBLICACION",
+            25L,
+            "APROBAR_PUBLICACION",
+            "EXITO",
+            "El administrador aprobo la publicacion"
+    );
+
+    servidor.expect(requestTo("http://localhost:8090/internal/audit-events"))
+            .andExpect(method(HttpMethod.POST))
+            .andRespond(withStatus(HttpStatus.INTERNAL_SERVER_ERROR));
+
+    assertFalse(serviciosExternos.registrarAuditoria(evento));
+
+    servidor.verify();
+}
+@Test
+@DisplayName("CA-039: maneja el error cuando Notificaciones no esta disponible")
+void notificacionesNoDisponible() {
+    servidor.expect(requestTo("http://localhost:8088/internal/notifications"))
+            .andExpect(method(HttpMethod.POST))
+            .andRespond(withStatus(HttpStatus.INTERNAL_SERVER_ERROR));
+
+    assertFalse(serviciosExternos.notificarPublicacionAprobada(7L, 25L));
+
+    servidor.verify();
+}
+
+    // HU-08: autorizacion para consultar una publicacion.
+
+    @Test
+    @DisplayName("HU-08: administrador puede consultar cualquier publicacion")
+    void administradorPuedeConsultarPublicacion() {
+        servidor.expect(requestTo(URL_IDENTIDAD + "/autenticacion/autorizar?roles=ADMINISTRADOR"))
+                .andExpect(method(HttpMethod.GET))
+                .andExpect(header("Authorization", TOKEN))
+                .andRespond(withSuccess(
+                        "{\"id\":10,\"rol\":\"ADMINISTRADOR\"}",
+                        MediaType.APPLICATION_JSON));
+
+        assertEquals(10L,
+                serviciosExternos.verificarAdministradorOAnfitrion(TOKEN, 7L));
+
+        servidor.verify();
+    }
+
+    @Test
+    @DisplayName("HU-08: anfitrion propietario puede consultar su publicacion")
+    void propietarioPuedeConsultarPublicacion() {
+        servidor.expect(requestTo(URL_IDENTIDAD + "/autenticacion/autorizar?roles=ADMINISTRADOR"))
+                .andRespond(withStatus(HttpStatus.FORBIDDEN));
+
+        servidor.expect(requestTo(URL_AUTORIZAR))
+                .andRespond(withSuccess(
+                        "{\"id\":7,\"rol\":\"ANFITRION\"}",
+                        MediaType.APPLICATION_JSON));
+
+        assertEquals(7L,
+                serviciosExternos.verificarAdministradorOAnfitrion(TOKEN, 7L));
+
+        servidor.verify();
+    }
+
+    @Test
+    @DisplayName("HU-08: otro anfitrion no puede consultar la publicacion")
+    void otroAnfitrionNoPuedeConsultarPublicacion() {
+        servidor.expect(requestTo(URL_IDENTIDAD + "/autenticacion/autorizar?roles=ADMINISTRADOR"))
+                .andRespond(withStatus(HttpStatus.FORBIDDEN));
+
+        servidor.expect(requestTo(URL_AUTORIZAR))
+                .andRespond(withSuccess(
+                        "{\"id\":99,\"rol\":\"ANFITRION\"}",
+                        MediaType.APPLICATION_JSON));
+
+        assertThrows(PermisoException.class,
+                () -> serviciosExternos.verificarAdministradorOAnfitrion(TOKEN, 7L));
+
+        servidor.verify();
+    }
+
+    @Test
+    @DisplayName("HU-08: token invalido devuelve error de autenticacion")
+    void tokenInvalidoAlConsultarPublicacion() {
+        servidor.expect(requestTo(URL_IDENTIDAD + "/autenticacion/autorizar?roles=ADMINISTRADOR"))
+                .andRespond(withStatus(HttpStatus.UNAUTHORIZED));
+
+        assertThrows(AutenticacionException.class,
+                () -> serviciosExternos.verificarAdministradorOAnfitrion(TOKEN, 7L));
+
+        servidor.verify();
+    }
+
+    @Test
+    @DisplayName("HU-08: Identidad no disponible devuelve error de servicio")
+    void identidadNoDisponibleAlConsultarPublicacion() {
+        servidor.expect(requestTo(URL_IDENTIDAD + "/autenticacion/autorizar?roles=ADMINISTRADOR"))
+                .andRespond(withStatus(HttpStatus.INTERNAL_SERVER_ERROR));
+
+        assertThrows(ServicioNoDisponibleException.class,
+                () -> serviciosExternos.verificarAdministradorOAnfitrion(TOKEN, 7L));
+
+        servidor.verify();
     }
 }

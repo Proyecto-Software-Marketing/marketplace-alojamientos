@@ -102,4 +102,19 @@ public class BusquedaService {
         }
         return true;
     }
+    
+  
+    public List<PublicacionResumen> destacadas() {
+        List<PublicacionResumen> lista = new ArrayList<>();
+        
+        for (PublicacionResumen publicacion : serviciosExternos.buscarPublicacionesActivas("")) {
+            if ("ACTIVA".equals(publicacion.getEstado())) {
+                lista.add(publicacion);
+            }
+            if (lista.size() == 6) {
+                break;
+            }
+        }
+        return lista;
+    }
 }

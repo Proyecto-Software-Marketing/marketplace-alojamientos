@@ -30,4 +30,8 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     
     // si el huesped tiene reservas en ese estado con llegada despues de la fecha
     boolean existsByHuespedIdAndEstadoAndFechaLlegadaAfter(Long huespedId, BookingStatus estado, LocalDate fecha);
+    List<Booking> findByPublicacionIdAndEstadoAndFechaSalidaAfter(
+            Long publicacionId,
+            BookingStatus estado,
+            LocalDate fecha);
 }

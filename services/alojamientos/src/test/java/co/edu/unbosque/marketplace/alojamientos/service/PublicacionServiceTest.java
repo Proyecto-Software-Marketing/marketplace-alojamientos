@@ -26,6 +26,12 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
+import co.edu.unbosque.marketplace.alojamientos.exception.ConflictoException;
+import co.edu.unbosque.marketplace.alojamientos.exception.NoEncontradoException;
+import co.edu.unbosque.marketplace.alojamientos.exception.PermisoException;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import co.edu.unbosque.marketplace.alojamientos.exception.PublicacionIncompletaException;
+import org.springframework.test.util.ReflectionTestUtils;
 
 // Pruebas de la HU-07: crear publicación en borrador
 @SpringBootTest
@@ -50,6 +56,12 @@ class PublicacionServiceTest {
         publicacionRepository.deleteAll();
         when(reloj.getZone()).thenReturn(BOGOTA);
         when(reloj.instant()).thenReturn(AHORA.atZone(BOGOTA).toInstant());
+    }
+    private void completar(Publicacion publicacion) {
+        publicacion.definirServicios(java.util.List.of("Wifi"));
+        publicacion.definirReglas(java.util.List.of("No fumar"));
+        publicacion.definirImagenes(java.util.List.of("https://ejemplo.com/foto.jpg"));
+        publicacionRepository.save(publicacion);
     }
 
     // Solicitud válida a la que cada prueba le cambia la capacidad y el precio
@@ -190,4 +202,310 @@ class PublicacionServiceTest {
 
         assertEquals(Integer.parseInt(capacidad), publicacion.getCapacidad());
     }
+
+// ---------- HU-12: CA-035 y CA-036 ----------
+
+@Test
+@DisplayName("CA-035: una publicacion completa pasa a PENDIENTE_REVISION")
+void enviaPublicacionCompletaARevision() {
+    Publicacion borrador = publicacionService.crear(
+            ANFITRION, solicitud("4", "250000"));
+            completar(borrador);
+
+    Publicacion enviada = publicacionService.enviarARevision(
+            borrador.getId(), ANFITRION);
+
+    assertEquals(EstadoPublicacion.PENDIENTE_REVISION, enviada.getEstado());
+
+    Publicacion guardada = publicacionRepository.findById(
+            borrador.getId()).orElseThrow();
+
+    assertEquals(EstadoPublicacion.PENDIENTE_REVISION, guardada.getEstado());
+}
+
+@Test
+@DisplayName("CA-036: un borrador incompleto indica los datos faltantes")
+void rechazaPublicacionIncompleta() {
+    Publicacion incompleta = new Publicacion(ANFITRION, AHORA);
+    incompleta.definirDatosBasicos(
+            "", "", "Guatavita", "", TipoAlojamiento.CABANA,
+            4, BigDecimal.valueOf(250000));
+
+    incompleta = publicacionRepository.save(incompleta);
+    Long id = incompleta.getId();
+
+    PublicacionIncompletaException error = assertThrows(
+        PublicacionIncompletaException.class,
+        () -> publicacionService.enviarARevision(id, ANFITRION));
+
+    assertTrue(error.getMessage().contains("titulo"));
+    assertTrue(error.getMessage().contains("descripcion"));
+    assertTrue(error.getMessage().contains("ubicacion"));
+
+    assertEquals(EstadoPublicacion.BORRADOR,
+            publicacionRepository.findById(id).orElseThrow().getEstado());
+}
+
+@Test
+@DisplayName("HU-12: otro anfitrion no puede enviar la publicacion")
+void rechazaPublicacionDeOtroAnfitrion() {
+    Publicacion borrador = publicacionService.crear(
+            ANFITRION, solicitud("4", "250000"));
+
+    assertThrows(PermisoException.class,
+            () -> publicacionService.enviarARevision(
+                    borrador.getId(), 99L));
+
+    assertEquals(EstadoPublicacion.BORRADOR,
+            publicacionRepository.findById(
+                    borrador.getId()).orElseThrow().getEstado());
+}
+
+@Test
+@DisplayName("HU-12: no permite enviar dos veces a revision")
+void rechazaSegundoEnvioARevision() {
+    Publicacion borrador = publicacionService.crear(
+            ANFITRION, solicitud("4", "250000"));
+            completar(borrador);
+
+    publicacionService.enviarARevision(borrador.getId(), ANFITRION);
+
+    assertThrows(ConflictoException.class,
+            () -> publicacionService.enviarARevision(
+                    borrador.getId(), ANFITRION));
+}
+
+@Test
+@DisplayName("HU-12: una publicacion inexistente devuelve error")
+void rechazaPublicacionInexistente() {
+    assertThrows(NoEncontradoException.class,
+            () -> publicacionService.enviarARevision(
+                    999999L, ANFITRION));
+}
+
+@Test
+@DisplayName("HU-12: identifica todos los datos faltantes")
+void identificaTodosLosDatosFaltantes() {
+    Publicacion incompleta = new Publicacion(ANFITRION, AHORA);
+
+    incompleta.definirDatosBasicos(
+        "", "", "", "", TipoAlojamiento.CASA,
+        0, BigDecimal.ZERO);
+
+    Long id = publicacionRepository.save(incompleta).getId();
+
+    PublicacionIncompletaException error = assertThrows(
+            PublicacionIncompletaException.class,
+            () -> publicacionService.enviarARevision(id, ANFITRION));
+
+    assertTrue(error.getMessage().contains("titulo"));
+    assertTrue(error.getMessage().contains("descripcion"));
+    assertTrue(error.getMessage().contains("ciudad"));
+    assertTrue(error.getMessage().contains("ubicacion"));
+    assertTrue(error.getMessage().contains("capacidad"));
+
+    assertEquals(EstadoPublicacion.BORRADOR,
+            publicacionRepository.findById(id).orElseThrow().getEstado());
+}
+
+@Test
+@DisplayName("HU-12: rechaza capacidad superior a 50 y precio negativo")
+void rechazaCapacidadYPrecioInvalidosEnRevision() {
+    Publicacion incompleta = new Publicacion(ANFITRION, AHORA);
+
+    incompleta.definirDatosBasicos(
+            "Casa campestre",
+            "Casa con piscina",
+            "Bogota",
+            "Zona norte",
+            TipoAlojamiento.CASA,
+            51,
+            BigDecimal.valueOf(-1000));
+
+    Long id = publicacionRepository.save(incompleta).getId();
+
+    PublicacionIncompletaException error = assertThrows(
+            PublicacionIncompletaException.class,
+            () -> publicacionService.enviarARevision(id, ANFITRION));
+
+    assertTrue(error.getMessage().contains("capacidad"));
+    assertTrue(error.getMessage().contains("precio por noche"));
+
+    assertEquals(EstadoPublicacion.BORRADOR,
+            publicacionRepository.findById(id).orElseThrow().getEstado());
+}
+// HU-14 (CA-040): pausar una publicacion activa.
+@Test
+@DisplayName("CA-040: una publicacion ACTIVA pasa a PAUSADA")
+void pausaPublicacionActiva() {
+    Publicacion publicacion = new Publicacion(ANFITRION, AHORA);
+    publicacion.definirDatosBasicos(
+        "Casa campestre",
+        "Casa con piscina",
+        "Bogota",
+        "Zona norte",
+        TipoAlojamiento.CASA,
+        4,
+        BigDecimal.valueOf(250000));
+
+    publicacion.enviarARevision();
+    publicacion.aprobar();
+
+    Long id = publicacionRepository.save(publicacion).getId();
+
+    Publicacion pausada = publicacionService.pausar(id, ANFITRION);
+
+    assertEquals(EstadoPublicacion.PAUSADA, pausada.getEstado());
+
+    assertEquals(EstadoPublicacion.PAUSADA,
+            publicacionRepository.findById(id).orElseThrow().getEstado());
+}
+
+// HU-14 (CA-041): reactivar una publicacion pausada.
+// HU-14 (CA-041): reactivar una publicacion pausada.
+@Test
+@DisplayName("CA-041: una publicacion PAUSADA vuelve a ACTIVA")
+void reactivaPublicacionPausada() {
+    Publicacion publicacion = new Publicacion(ANFITRION, AHORA);
+
+    publicacion.definirDatosBasicos(
+            "Casa campestre",
+            "Casa con piscina",
+            "Bogota",
+            "Zona norte",
+            TipoAlojamiento.CASA,
+            4,
+            BigDecimal.valueOf(250000));
+
+    publicacion.enviarARevision();
+    publicacion.aprobar();
+    publicacion.pausar();
+
+    Long id = publicacionRepository.save(publicacion).getId();
+
+    Publicacion reactivada = publicacionService.reactivar(id, ANFITRION);
+
+    assertEquals(EstadoPublicacion.ACTIVA, reactivada.getEstado());
+
+    assertEquals(EstadoPublicacion.ACTIVA,
+            publicacionRepository.findById(id).orElseThrow().getEstado());
+}
+// HU-14 (CA-042): una publicacion bloqueada no puede reactivarse.
+@Test
+@DisplayName("CA-042: no permite reactivar una publicacion BLOQUEADA")
+void noReactivaPublicacionBloqueada() {
+    Publicacion publicacion = new Publicacion(ANFITRION, AHORA);
+
+    publicacion.definirDatosBasicos(
+            "Casa campestre",
+            "Casa con piscina",
+            "Bogota",
+            "Zona norte",
+            TipoAlojamiento.CASA,
+            4,
+            BigDecimal.valueOf(250000));
+
+    ReflectionTestUtils.setField(
+            publicacion, "estado", EstadoPublicacion.BLOQUEADA);
+
+    Long id = publicacionRepository.save(publicacion).getId();
+
+    assertThrows(ConflictoException.class,
+            () -> publicacionService.reactivar(id, ANFITRION));
+
+    assertEquals(EstadoPublicacion.BLOQUEADA,
+            publicacionRepository.findById(id).orElseThrow().getEstado());
+}
+
+@Test
+@DisplayName("HU-14: otro anfitrion no puede pausar una publicacion")
+void noPermitePausarPublicacionDeOtroAnfitrion() {
+    Publicacion publicacion = new Publicacion(ANFITRION, AHORA);
+
+    publicacion.definirDatosBasicos(
+            "Casa campestre",
+            "Casa con piscina",
+            "Bogota",
+            "Zona norte",
+            TipoAlojamiento.CASA,
+            4,
+            BigDecimal.valueOf(250000));
+
+    publicacion.enviarARevision();
+    publicacion.aprobar();
+
+    Long id = publicacionRepository.save(publicacion).getId();
+
+    assertThrows(PermisoException.class,
+            () -> publicacionService.pausar(id, 99L));
+
+    assertEquals(EstadoPublicacion.ACTIVA,
+            publicacionRepository.findById(id).orElseThrow().getEstado());
+}
+
+@Test
+@DisplayName("HU-14: otro anfitrion no puede reactivar una publicacion")
+void noPermiteReactivarPublicacionDeOtroAnfitrion() {
+    Publicacion publicacion = new Publicacion(ANFITRION, AHORA);
+
+    publicacion.definirDatosBasicos(
+            "Casa campestre",
+            "Casa con piscina",
+            "Bogota",
+            "Zona norte",
+            TipoAlojamiento.CASA,
+            4,
+            BigDecimal.valueOf(250000));
+
+    publicacion.enviarARevision();
+    publicacion.aprobar();
+    publicacion.pausar();
+
+    Long id = publicacionRepository.save(publicacion).getId();
+
+    assertThrows(PermisoException.class,
+            () -> publicacionService.reactivar(id, 99L));
+
+    assertEquals(EstadoPublicacion.PAUSADA,
+            publicacionRepository.findById(id).orElseThrow().getEstado());
+}
+
+@Test
+@DisplayName("HU-14: no permite pausar una publicacion en BORRADOR")
+void noPermitePausarPublicacionEnBorrador() {
+    Publicacion publicacion = new Publicacion(ANFITRION, AHORA);
+
+    publicacion.definirDatosBasicos(
+            "Casa campestre",
+            "Casa con piscina",
+            "Bogota",
+            "Zona norte",
+            TipoAlojamiento.CASA,
+            4,
+            BigDecimal.valueOf(250000));
+
+    Long id = publicacionRepository.save(publicacion).getId();
+
+    assertThrows(ConflictoException.class,
+            () -> publicacionService.pausar(id, ANFITRION));
+
+    assertEquals(EstadoPublicacion.BORRADOR,
+            publicacionRepository.findById(id).orElseThrow().getEstado());
+}
+
+@Test
+@DisplayName("HU-12: sin servicios, reglas ni imagenes no se puede enviar a revision")
+void exigeServiciosReglasEImagenes() {
+    Publicacion borrador = publicacionService.crear(
+            ANFITRION, solicitud("4", "250000"));
+    Long id = borrador.getId();
+
+    PublicacionIncompletaException error = assertThrows(
+            PublicacionIncompletaException.class,
+            () -> publicacionService.enviarARevision(id, ANFITRION));
+
+    assertTrue(error.getMessage().contains("servicios"));
+    assertTrue(error.getMessage().contains("reglas"));
+    assertTrue(error.getMessage().contains("imagenes"));
+}
 }

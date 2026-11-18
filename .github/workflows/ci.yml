@@ -15,7 +15,7 @@ jobs:
       fail-fast: false
       matrix:
         # Cada servicio nuevo se debe agregar a esta lista
-        service: [ identidad, alojamientos, cotizacion, disponibilidad, busqueda, reservas, notificaciones, reportes, resenas, auditoria ]
+        service: [ identidad, alojamientos, cotizacion, disponibilidad, busqueda, reservas, pagos, notificaciones, reportes, resenas, auditoria ]
     steps:
       - name: Descargar el código
         uses: actions/checkout@v4

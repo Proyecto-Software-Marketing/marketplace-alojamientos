@@ -17,3 +17,7 @@ frontend/.angular/
 # Sistema operativo
 .DS_Store
 Thumbs.db
+logs/
+
+# Base local del servicio de pagos
+data/

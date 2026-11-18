@@ -1,0 +1,45 @@
+.encabezado {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.lista {
+  display: grid;
+  gap: 16px;
+}
+
+.lista h2 {
+  margin: 0 0 6px;
+}
+
+.suave {
+  color: var(--texto-suave);
+  font-size: 14px;
+}
+
+.botones {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.botones .boton {
+  width: auto;
+}
+
+.botones a {
+  text-decoration: none;
+}
+
+.boton-peligro {
+  background: var(--rojo);
+}
+
+.boton-peligro:hover {
+  background: #991b1b;
+}
+.seccion {
+  margin: 32px 0 12px;
+}
