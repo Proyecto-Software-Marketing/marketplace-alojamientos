@@ -139,8 +139,9 @@ export class MisReservas {
   }
 
   // Las fechas de la reserva vienen en yyyy-MM-dd
-  fecha(iso: string): string {
-    return new Date(iso).toLocaleDateString('es-CO', { dateStyle: 'medium' });
+    fecha(iso: string): string {
+    const [anio, mes, dia] = iso.split('-').map(Number);
+    return new Date(anio, mes - 1, dia).toLocaleDateString('es-CO', { dateStyle: 'medium' });
   }
 
   fechaHora(iso: string): string {

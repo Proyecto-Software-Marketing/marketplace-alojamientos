@@ -99,7 +99,26 @@
 
     <button type="button" class="boton guardar-detalles" [disabled]="guardandoDetalles()" (click)="guardarDetalles()">
       {{ guardandoDetalles() ? 'Guardando...' : 'Guardar servicios, reglas e imágenes' }}
-    </button>
+     </button>
   </section>
 
+  <!-- HU-11 política de cancelación -->
+  <section class="tarjeta cuadro detalles">
+    <h2>Política de cancelación</h2>
+    <p class="suave">Se aplica cuando un huésped cancela una reserva.</p>
+    <label class="campo">Política
+      <select name="politica" [(ngModel)]="politicaId">
+        @for (politica of politicas(); track politica.id) {
+          <option [ngValue]="politica.id">{{ politica.nombre }}</option>
+        }
+      </select>
+    </label>
+    @if (politicaGuardada()) {
+      <p class="exito">La política quedó guardada.</p>
+    }
+    @for (error of erroresPolitica(); track error) {
+      <p class="error">{{ error }}</p>
+    }
+    <button type="button" class="boton guardar-detalles" (click)="guardarPolitica()">Guardar política</button>
+  </section>
 }
