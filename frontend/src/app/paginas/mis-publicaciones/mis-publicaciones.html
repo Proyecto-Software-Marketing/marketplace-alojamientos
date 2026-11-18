@@ -43,6 +43,12 @@
             {{ enviando() === p.id ? 'Enviando...' : 'Enviar a revisión' }}
           </button>
         }
+        @if (p.estado === 'ACTIVA') {
+          <button type="button" class="boton-secundario" [disabled]="enviando() === p.id" (click)="pausar(p)">Pausar</button>
+        }
+        @if (p.estado === 'PAUSADA') {
+          <button type="button" class="boton" [disabled]="enviando() === p.id" (click)="reactivar(p)">Reactivar</button>
+        }
       </div>
     </div>
   }
