@@ -152,4 +152,27 @@ class BusquedaTest {
         assertEquals(2, lista.size());
         assertEquals(1L, lista.get(0).getId());
     }
+    
+    @Test
+    void lasDestacadasSonMaximoSeis() {
+        when(serviciosExternos.buscarPublicacionesActivas("")).thenReturn(List.of(
+                crearPublicacion(1L, "ACTIVA", 4),
+                crearPublicacion(2L, "ACTIVA", 4),
+                crearPublicacion(3L, "ACTIVA", 4),
+                crearPublicacion(4L, "ACTIVA", 4),
+                crearPublicacion(5L, "ACTIVA", 4),
+                crearPublicacion(6L, "ACTIVA", 4),
+                crearPublicacion(7L, "ACTIVA", 4)));
+
+        assertEquals(6, busquedaService.destacadas().size());
+    }
+
+
+    @Test
+    void guardaLaImagenPrincipal() {
+        PublicacionResumen publicacion = crearPublicacion(1L, "ACTIVA", 4);
+        publicacion.setImagenPrincipal("/imagenes/cartagena.jpg");
+
+        assertEquals("/imagenes/cartagena.jpg", publicacion.getImagenPrincipal());
+    }
 }
