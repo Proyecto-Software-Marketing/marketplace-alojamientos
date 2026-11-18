@@ -45,3 +45,30 @@
     </section>
   }
 </div>
+<!-- HU-34 bloquear publicaciones activas -->
+<h2 class="seccion">Publicaciones activas</h2>
+@if (activas().length === 0) {
+  <p class="tarjeta nota">No hay publicaciones activas.</p>
+}
+<div class="lista">
+  @for (p of activas(); track p.id) {
+    <section class="tarjeta">
+      <h2>{{ p.titulo }}</h2>
+      <p class="suave">{{ p.ciudad }} · {{ p.tipoAlojamiento }} · Anfitrión {{ p.anfitrionId }}</p>
+
+      @if (bloqueando() === p.id) {
+        <label class="campo">Motivo del bloqueo (entre 3 y 2000 caracteres)
+          <textarea name="motivoBloqueo" [(ngModel)]="motivoBloqueo" rows="3"></textarea>
+        </label>
+        <div class="botones">
+          <button type="button" class="boton boton-peligro" [disabled]="procesando()" (click)="bloquear(p)">Confirmar bloqueo</button>
+          <button type="button" class="boton-secundario" (click)="bloqueando.set(null)">Volver</button>
+        </div>
+      } @else {
+        <div class="botones">
+          <button type="button" class="boton-secundario" [disabled]="procesando()" (click)="abrirBloqueo(p.id)">Bloquear</button>
+        </div>
+      }
+    </section>
+  }
+</div>

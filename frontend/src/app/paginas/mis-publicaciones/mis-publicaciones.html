@@ -31,6 +31,9 @@
         @if (p.motivoRechazo) {
           <p class="rechazo"><strong>Motivo del rechazo:</strong> {{ p.motivoRechazo }}</p>
         }
+        @if (p.motivoBloqueo) {
+          <p class="rechazo"><strong>Bloqueada por el administrador:</strong> {{ p.motivoBloqueo }}</p>
+        }
       </div>
 
       <div class="acciones">
