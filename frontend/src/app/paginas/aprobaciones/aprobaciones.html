@@ -1,0 +1,47 @@
+<div class="encabezado">
+  <div>
+    <h1>Aprobaciones</h1>
+    <p class="subtitulo">Publicaciones pendientes de revisión.</p>
+  </div>
+  <button type="button" class="boton-secundario" (click)="cargar()">Actualizar</button>
+</div>
+
+@if (mensaje()) {
+  <p class="tarjeta exito">{{ mensaje() }}</p>
+}
+@for (error of errores(); track error) {
+  <p class="tarjeta error">{{ error }}</p>
+}
+
+@if (cargando()) {
+  <p class="nota">Cargando publicaciones...</p>
+} @else if (pendientes().length === 0) {
+  <p class="tarjeta nota">No hay publicaciones pendientes de revisión.</p>
+}
+
+<div class="lista">
+  @for (p of pendientes(); track p.id) {
+    <section class="tarjeta">
+      <h2>{{ p.titulo }}</h2>
+      <p class="suave">{{ p.ciudad }} · {{ p.ubicacionTextual }} · {{ p.tipoAlojamiento }} · {{ p.capacidad }} huéspedes · $ {{ p.precioPorNoche | number: '1.0-0' }} / noche</p>
+      <p>{{ p.descripcion }}</p>
+      <p class="suave">Servicios: {{ p.servicios.join(', ') }} · Reglas: {{ p.reglas.length }} · Imágenes: {{ p.imagenes.length }}</p>
+
+      @if (rechazando() === p.id) {
+        <label class="campo">Motivo del rechazo (entre 3 y 2000 caracteres)
+          <textarea name="motivo" [(ngModel)]="motivo" rows="3"></textarea>
+        </label>
+        <div class="botones">
+          <button type="button" class="boton boton-peligro" [disabled]="procesando()" (click)="rechazar(p)">Confirmar rechazo</button>
+          <button type="button" class="boton-secundario" (click)="rechazando.set(null)">Volver</button>
+        </div>
+      } @else {
+        <div class="botones">
+          <button type="button" class="boton" [disabled]="procesando()" (click)="aprobar(p)">Aprobar</button>
+          <button type="button" class="boton-secundario" [disabled]="procesando()" (click)="abrirRechazo(p.id)">Rechazar</button>
+          <a class="boton-secundario" [routerLink]="['/publicaciones', p.id, 'editar']">Editar</a>
+        </div>
+      }
+    </section>
+  }
+</div>

@@ -28,6 +28,7 @@ export interface Publicacion {
   reglas: string[];
   imagenes: string[];
   estado: string;
+  motivoRechazo: string | null;
 }
 
 // HU-07 datos básicos para crear el borrador
@@ -55,6 +56,7 @@ export class AlojamientosService {
 
   private http = inject(HttpClient);
   private url = '/api/alojamientos/listings';
+  private urlAdmin = '/api/alojamientos/admin/listings';
 
   // HU-07 la publicación queda en BORRADOR
   crear(datos: DatosPublicacion) {
@@ -77,5 +79,41 @@ export class AlojamientosService {
   // HU-10 tarifas, descuento por estancia larga y servicios adicionales
   guardarTarifas(id: number, datos: DatosTarifas) {
     return this.http.put<Publicacion>(`${this.url}/${id}/pricing`, datos);
+  }
+  // HU-15 las publicaciones del anfitrión que inició sesión
+  misPublicaciones() {
+    return this.http.get<{ items: Publicacion[] }>(`${this.url}/mine`);
+  }
+
+  // HU-08 una publicación (la ve el dueño o el administrador)
+  consultar(id: number) {
+    return this.http.get<Publicacion>(`${this.url}/${id}`);
+  }
+
+  // HU-08 editar los datos básicos
+  editar(id: number, datos: DatosPublicacion) {
+    return this.http.put<Publicacion>(`${this.url}/${id}`, datos);
+  }
+
+  // HU-12 pasar de BORRADOR a PENDIENTE_REVISION
+  enviarARevision(id: number) {
+    return this.http.post<Publicacion>(`${this.url}/${id}/submit`, {});
+  }
+
+  // HU-13 el administrador ve las pendientes de revisión
+  pendientes() {
+    return this.http.get<{ items: Publicacion[] }>(`${this.urlAdmin}`, {
+      params: { estado: 'PENDIENTE_REVISION' }
+    });
+  }
+
+  // HU-13 aprobar: queda ACTIVA
+  aprobar(id: number) {
+    return this.http.post<Publicacion>(`${this.urlAdmin}/${id}/approve`, {});
+  }
+
+  // HU-13 rechazar con motivo: vuelve a BORRADOR
+  rechazar(id: number, motivo: string) {
+    return this.http.post<Publicacion>(`${this.urlAdmin}/${id}/reject`, { motivo });
   }
 }
