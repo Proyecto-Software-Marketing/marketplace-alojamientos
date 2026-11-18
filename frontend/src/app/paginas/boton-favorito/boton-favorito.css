@@ -1,0 +1,13 @@
+.favorito {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  margin-top: 10px;
+}
+
+.lleno {
+  color: #dc2626;
+  font-variation-settings: 'FILL' 1;
+}

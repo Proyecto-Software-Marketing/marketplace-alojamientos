@@ -1,0 +1,6 @@
+@if (sesion.usuario()?.rol === 'HUESPED') {
+  <button type="button" class="boton-secundario favorito" (click)="cambiar()">
+    <span class="material-symbols-outlined" [class.lleno]="guardado()">favorite</span>
+    {{ guardado() ? 'Quitar de favoritos' : 'Guardar en favoritos' }}
+  </button>
+}
