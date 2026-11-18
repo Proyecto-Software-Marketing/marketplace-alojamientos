@@ -19,4 +19,7 @@ public interface PublicacionRepository extends JpaRepository<Publicacion, Long> 
 
     // Decisión 15: publicaciones de un anfitrión en un estado
     List<Publicacion> findByAnfitrionIdAndEstado(Long anfitrionId, EstadoPublicacion estado);
+
+    // HU-15: consultar todas las publicaciones de un anfitrion.
+    List<Publicacion> findByAnfitrionIdOrderByIdAsc(Long anfitrionId);
 }
