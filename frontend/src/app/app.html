@@ -21,8 +21,14 @@
         <a routerLink="/exportar-reportes" routerLinkActive="activo">Exportar reportes</a>
       }
       @default {
-        <a routerLink="/login" routerLinkActive="activo">Iniciar sesión</a>
-        <a routerLink="/login" [queryParams]="{ modo: 'registro' }">Registrarse</a>
+        <a routerLink="/login" routerLinkActive="activo"
+           [routerLinkActiveOptions]="{ paths: 'exact', queryParams: 'exact', fragment: 'ignored', matrixParams: 'ignored' }">
+          Iniciar sesión
+        </a>
+        <a routerLink="/login" [queryParams]="{ modo: 'registro' }" routerLinkActive="activo"
+           [routerLinkActiveOptions]="{ paths: 'exact', queryParams: 'exact', fragment: 'ignored', matrixParams: 'ignored' }">
+          Registrarse
+        </a>
       }
     }
 
