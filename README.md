@@ -1,69 +1,118 @@
 # Marketplace de Alojamientos - Inversiones LR
 
-Marketplace web de alojamientos temporales que conecta anfitriones con huéspedes: publicación, búsqueda, disponibilidad, cotización, reservas con pago simulado, cancelaciones, reseñas, auditoría y reportes. Proyecto del curso Ingeniería de Software 1, Universidad El Bosque.
+Proyecto de Ingeniería de Software 1 - Universidad El Bosque.
 
-## Equipo
+Es una página donde los anfitriones publican alojamientos y los huéspedes los buscan, cotizan y reservan. También tiene pagos de prueba con Stripe, cancelaciones, reseñas, notificaciones, auditoría, dashboard y reportes.
 
-| Integrante | Bloque |
+## Integrantes
+
+- Jenny Alejandra Gómez López
+- Brian Steban Rodríguez Ortiz
+- Nicole Diane Cruz García
+- Tomás Álzate Yepes
+
+## Cómo está organizado
+
+El back son 11 servicios hechos en Spring Boot con Java 21, cada uno en su carpeta dentro de `services/` y con su propio puerto. El front está en Angular en la carpeta `frontend/`.
+
+| Servicio | Puerto |
 |---|---|
-| Jenny Alejandra Gómez López | Gestión del proyecto, Jira e historias de usuario |
-| Brian Steban Rodríguez Ortiz | Negocio y requerimientos |
-| Nicole Diane Cruz García | Procesos, casos de uso y dominio |
-| Tomás Álzate Yepes | Arquitectura y diseño técnico |
+| Front (Angular) | 4200 |
+| identidad | 8081 |
+| alojamientos | 8082 |
+| disponibilidad | 8083 |
+| busqueda | 8084 |
+| cotizacion | 8085 |
+| reservas | 8086 |
+| pagos | 8087 |
+| notificaciones | 8088 |
+| resenas | 8089 |
+| auditoria | 8090 |
+| reportes | 8091 |
 
-## Arquitectura
+Cada servicio usa una base de datos H2, entonces no hay que instalar nada de base de datos.
 
-Arquitectura orientada a servicios: 11 servicios independientes (Spring Boot 3, Java 21), cada uno con su API REST y su base de datos PostgreSQL, un API Gateway como única entrada del front y un frontend en Angular. Pagos simulados con Stripe en modo prueba.
+## Qué hay que tener instalado
 
-| Componente | Carpeta | Puerto |
-|---|---|---|
-| Frontend (Angular) | `frontend/` | 4200 |
-| API Gateway | `api-gateway/` | 8080 |
-| Identidad y Usuarios | `services/identidad` | 8081 |
-| Alojamientos | `services/alojamientos` | 8082 |
-| Disponibilidad | `services/disponibilidad` | 8083 |
-| Búsqueda | `services/busqueda` | 8084 |
-| Cotización | `services/cotizacion` | 8085 |
-| Reservas y Cancelaciones | `services/reservas` | 8086 |
-| Pagos | `services/pagos` | 8087 |
-| Notificaciones | `services/notificaciones` | 8088 |
-| Reseñas | `services/resenas` | 8089 |
-| Auditoría y Trazabilidad | `services/auditoria` | 8090 |
-| Reportes y Dashboard | `services/reportes` | 8091 |
+- Java 21
+- Node.js 24
+- Git Bash (En Windows)
 
-## Estructura del repositorio
+## Cómo correrlo
 
-```
-.
-├── api-gateway/          API Gateway (Spring Cloud Gateway)
-├── services/             Los 11 servicios (un módulo Maven cada uno)
-├── frontend/             Aplicación Angular
-├── openapi.yaml          Contrato consolidado (API pública)
-├── openapi_por_servicio/ Un contrato OpenAPI por servicio
-├── docker/               Scripts de apoyo (bases de datos)
-├── docker-compose.yml    Entorno local
-├── docs/                 Plan del pipeline de CI
-└── .github/              Plantilla de Pull Request
+1. Clonar el repositorio:
+```bash
+git clone https://github.com/Proyecto-Software-Marketing/marketplace-alojamientos.git
+cd marketplace-alojamientos
 ```
 
-## Cómo ejecutar
+2. Copiar `.env` y poner la clave de Stripe:
+```
+STRIPE_SECRET_KEY=sk_test_tu_clave
+STRIPE_CURRENCY=cop
+```
+El `.env` no se sube a GitHub.
 
-El entorno completo se levanta con Docker Compose (se completa en la Entrega 2).
+3. Prender el back (en Git Bash):
+```bash
+./iniciar-back.sh
+```
+Esto prende los 11 servicios. Hay que esperar como 1 o 2 minutos. Para ver si ya prendieron todos:
+```bash
+grep -l "Started" logs/*.log
+```
+Tienen que salir los 11. Si falta alguno se puede mirar su log, por ejemplo `tail -30 logs/pagos.log`.
 
-1. Copiar `.env.example` como `.env` y completar los valores (solo claves de prueba de Stripe).
-2. Ejecutar `docker compose up --build -d`.
-3. Abrir `http://localhost:4200`.
 
-## Flujo de trabajo Git
+4. Prender el front (en otra terminal):
+```bash
+cd frontend
+npm install
+npx ng serve
+```
+Y abrir http://localhost:4200
 
-Historia Jira, branch, commits, Pull Request, GitHub Actions, pruebas, SonarCloud Quality Gate, revisión y merge.
+5. Para apagar todo:
+```bash
+./detener-back.sh
+```
+Si hay que reiniciar, primero se apaga y después se prende. Si se prende dos veces salen los puertos ocupados.
 
-- La rama `main` está protegida: solo se integra mediante Pull Request con al menos una revisión de otro integrante.
-- Ramas: `feature/MKT-XX-descripcion`, `fix/MKT-XX-descripcion`, `chore/MKT-XX-descripcion`.
-- Commits: `MKT-XX: descripción del cambio`.
-- Merge: Squash and merge.
+## Usuarios
+
+- Administrador: `admin@gmail.com` / `Admin1234` (se crea solo al prender el back).
+- Anfitrión y huésped: se crean en Registrarse.
+
+## Para probarlo
+
+1. Con el anfitrión crear una publicación con servicios, reglas, imagen y tarifas, y enviarla a revisión.
+2. Agregarle un periodo en Disponibilidad.
+3. Con el admin aprobarla en Aprobaciones.
+4. Con el huésped buscarla, ver la cotización y reservar. El pago se ve en Stripe en modo prueba.
+5. En Mis reservas se puede cancelar y se aplica la política de cancelación.
+6. Con el admin se puede ver el dashboard, la auditoría, los reportes, los usuarios y bloquear publicaciones.
+
+Para dejar una reseña la reserva tiene que estar completada (que ya haya pasado la fecha de salida).
+
+## Pruebas
+
+Dentro de cada servicio:
+```bash
+./mvnw test
+```
+Y el front se revisa con `npx ng build` dentro de `frontend`.
+
+En cada Pull Request GitHub Actions corre las pruebas de los 11 servicios, SonarCloud revisa el código y se compila el front. A `main` solo se sube por Pull Request.
+
+## Cómo trabajamos con Git
+
+Historia en Jira → rama → commits → Pull Request → GitHub Actions y SonarCloud → revisión → merge.
+
+- Ramas: `feature/MKT-XX-descripcion`
+- Commits: `MKT-XX: lo que se hizo`
 
 ## Documentación
 
 - Confluence: https://alejagomez026.atlassian.net/wiki/spaces/PMA
-- Jira: proyecto MKT (Proyecto marketplace de alojamientos)
+- Jira: proyecto MKT
+- Contratos de la API: `openapi.yaml` y la carpeta `openapi_por_servicio/`
