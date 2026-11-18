@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import co.edu.unbosque.marketplace.alojamientos.exception.PublicacionIncompletaException;
 
-// HU-07: crear una publicaciÃ³n en borrador
+// HU-07: crear una publicaci├â┬│n en borrador
 @Service
 public class PublicacionService {
 
@@ -32,8 +32,8 @@ public class PublicacionService {
         this.reloj = reloj;
     }
 
-    // CA-020: la publicaciÃ³n queda en BORRADOR asociada al anfitriÃ³n (su id sale del token, decisiÃ³n 5).
-    // DecisiÃ³n 9: no se valida tÃ­tulo repetido
+    // CA-020: la publicaci├â┬│n queda en BORRADOR asociada al anfitri├â┬│n (su id sale del token, decisi├â┬│n 5).
+    // Decisi├â┬│n 9: no se valida t├â┬¡tulo repetido
     @Transactional
     public Publicacion crear(Long anfitrionId, PublicacionRequestDTO solicitud) {
         validarCapacidadYPrecio(solicitud);
@@ -129,7 +129,7 @@ if (!faltantes.isEmpty()) {
         }
         return publicacionRepository.findByEstadoOrderByIdAsc(estado);
     }
-    // CA-021: capacidad menor o igual a cero o precio no positivo â†’ se rechaza
+    // CA-021: capacidad menor o igual a cero o precio no positivo ├óÔÇáÔÇÖ se rechaza
     private void validarCapacidadYPrecio(PublicacionRequestDTO solicitud) {
         BigDecimal capacidad = solicitud.capacidad();
         if (capacidad == null || capacidad.signum() <= 0) {
@@ -173,4 +173,10 @@ public Publicacion rechazar(Long publicacionId, String motivo) {
 
     return publicacionRepository.save(publicacion);
 }
+
+    // HU-15: listar publicaciones del anfitrion.
+    @Transactional(readOnly = true)
+    public List<Publicacion> listarMisPublicaciones(Long anfitrionId) {
+        return publicacionRepository.findByAnfitrionIdOrderByIdAsc(anfitrionId);
+    }
 }

@@ -23,7 +23,7 @@ import co.edu.unbosque.marketplace.alojamientos.dto.RechazarPublicacionRequestDT
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.RequestBody;
 
-// HU-07: el anfitriÃ³n crea una publicaciÃ³n en borrador
+// HU-07: el anfitri├â┬│n crea una publicaci├â┬│n en borrador
 @RestController
 public class PublicacionController {
 
@@ -144,4 +144,20 @@ serviciosExternos.notificarPublicacionRechazada(
 );
     return ResponseEntity.ok(PublicacionResponseDTO.desde(publicacion));
 }
+
+    // HU-15: consultar las publicaciones del anfitrion autenticado.
+    @GetMapping("/listings/mine")
+    public ResponseEntity<PublicacionListaResponseDTO> listarMisPublicaciones(
+            @RequestHeader("Authorization") String autorizacion) {
+
+        Long anfitrionId = serviciosExternos.verificarAnfitrion(autorizacion);
+
+        var publicaciones = publicacionService.listarMisPublicaciones(anfitrionId)
+                .stream()
+                .map(PublicacionResponseDTO::desde)
+                .toList();
+
+        return ResponseEntity.ok(
+                new PublicacionListaResponseDTO(publicaciones));
+    }
 }
