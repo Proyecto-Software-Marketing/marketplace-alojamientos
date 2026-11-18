@@ -138,4 +138,18 @@ class BusquedaTest {
 
         assertEquals(1, respuesta.getResultados().size());
     }
+    
+
+    @Test
+    void lasDestacadasSoloTraenActivas() {
+        when(serviciosExternos.buscarPublicacionesActivas("")).thenReturn(List.of(
+                crearPublicacion(1L, "ACTIVA", 4),
+                crearPublicacion(2L, "PAUSADA", 4),
+                crearPublicacion(3L, "ACTIVA", 2)));
+
+        List<PublicacionResumen> lista = busquedaController.destacadas();
+
+        assertEquals(2, lista.size());
+        assertEquals(1L, lista.get(0).getId());
+    }
 }

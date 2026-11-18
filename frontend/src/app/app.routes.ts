@@ -15,6 +15,9 @@ import { MisReservas } from './paginas/mis-reservas/mis-reservas';
 import { ExportarReportes } from './paginas/exportar-reportes/exportar-reportes';
 import { Calificar } from './paginas/calificar/calificar';
 import { Favoritos } from './paginas/favoritos/favoritos';
+import { MisPublicaciones } from './paginas/mis-publicaciones/mis-publicaciones';
+import { EditarPublicacion } from './paginas/editar-publicacion/editar-publicacion';
+import { Aprobaciones } from './paginas/aprobaciones/aprobaciones';
 
 // Rutas de las ventanas
 export const routes: Routes = [
@@ -27,6 +30,9 @@ export const routes: Routes = [
   { path: 'disponibilidad', component: Disponibilidad, canActivate: [sesionGuard] },
   { path: 'disponibilidad/:id', component: Disponibilidad, canActivate: [sesionGuard] },
   { path: 'publicaciones/nueva', component: NuevaPublicacion, canActivate: [sesionGuard] },
+  { path: 'mis-publicaciones', component: MisPublicaciones, canActivate: [sesionGuard] },
+  { path: 'publicaciones/:id/editar', component: EditarPublicacion, canActivate: [sesionGuard] },
+  { path: 'aprobaciones', component: Aprobaciones, canActivate: [adminGuard] },
   { path: 'perfil', component: Perfil, canActivate: [sesionGuard] },
   { path: 'notificaciones', component: Notificaciones, canActivate: [sesionGuard] },
   { path: 'mis-reservas', component: MisReservas, canActivate: [sesionGuard] },
