@@ -1,0 +1,53 @@
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v4.0.9)
+
+2026-11-17T23:47:37.020-05:00  INFO 34712 --- [notificaciones] [           main] c.e.u.m.n.NotificacionesApplication      : Starting NotificacionesApplication using Java 21.0.13 with PID 34712 (C:\Users\aleja\Proyectos\marketplace-alojamientos\services\notificaciones\target\classes started by aleja in C:\Users\aleja\Proyectos\marketplace-alojamientos\services\notificaciones)
+2026-11-17T23:47:37.025-05:00  INFO 34712 --- [notificaciones] [           main] c.e.u.m.n.NotificacionesApplication      : No active profile set, falling back to 1 default profile: "default"
+2026-11-17T23:47:38.527-05:00  INFO 34712 --- [notificaciones] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-11-17T23:47:38.640-05:00  INFO 34712 --- [notificaciones] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 98 ms. Found 1 JPA repository interface.
+2026-11-17T23:47:39.756-05:00  INFO 34712 --- [notificaciones] [           main] o.s.boot.tomcat.TomcatWebServer          : Tomcat initialized with port 8088 (http)
+2026-11-17T23:47:39.776-05:00  INFO 34712 --- [notificaciones] [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-11-17T23:47:39.777-05:00  INFO 34712 --- [notificaciones] [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/11.0.27]
+2026-11-17T23:47:39.866-05:00  INFO 34712 --- [notificaciones] [           main] b.w.c.s.WebApplicationContextInitializer : Root WebApplicationContext: initialization completed in 2772 ms
+2026-11-17T23:47:40.253-05:00  INFO 34712 --- [notificaciones] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-11-17T23:47:40.588-05:00  INFO 34712 --- [notificaciones] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection conn0: url=jdbc:h2:mem:d25c0194-76e8-4400-9289-df7c528ce7b8 user=SA
+2026-11-17T23:47:40.591-05:00  INFO 34712 --- [notificaciones] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-11-17T23:47:40.637-05:00  INFO 34712 --- [notificaciones] [           main] org.hibernate.orm.jpa                    : HHH008540: Processing PersistenceUnitInfo [name: default]
+2026-11-17T23:47:40.725-05:00  INFO 34712 --- [notificaciones] [           main] org.hibernate.orm.core                   : HHH000001: Hibernate ORM core version 7.2.25.Final
+2026-11-17T23:47:41.579-05:00  INFO 34712 --- [notificaciones] [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-11-17T23:47:41.720-05:00  INFO 34712 --- [notificaciones] [           main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+	Database JDBC URL [jdbc:h2:mem:d25c0194-76e8-4400-9289-df7c528ce7b8]
+	Database driver: H2 JDBC Driver
+	Database dialect: H2Dialect
+	Database version: 2.4.240
+	Default catalog/schema: D25C0194-76E8-4400-9289-DF7C528CE7B8/PUBLIC
+	Autocommit mode: undefined/unknown
+	Isolation level: READ_COMMITTED [default READ_COMMITTED]
+	JDBC fetch size: 100
+	Pool: DataSourceConnectionProvider
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-11-17T23:47:43.256-05:00  INFO 34712 --- [notificaciones] [           main] org.hibernate.orm.core                   : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-11-17T23:47:43.315-05:00  INFO 34712 --- [notificaciones] [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-11-17T23:47:43.765-05:00  INFO 34712 --- [notificaciones] [           main] o.s.d.j.r.query.QueryEnhancerFactories   : Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-11-17T23:47:44.125-05:00  WARN 34712 --- [notificaciones] [           main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-11-17T23:47:44.655-05:00  INFO 34712 --- [notificaciones] [           main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 2 endpoints beneath base path '/actuator'
+2026-11-17T23:47:44.735-05:00  INFO 34712 --- [notificaciones] [           main] o.s.boot.tomcat.TomcatWebServer          : Tomcat started on port 8088 (http) with context path '/'
+2026-11-17T23:47:44.746-05:00  INFO 34712 --- [notificaciones] [           main] c.e.u.m.n.NotificacionesApplication      : Started NotificacionesApplication in 8.501 seconds (process running for 9.148)
+2026-11-17T23:53:25.513-05:00  INFO 34712 --- [notificaciones] [nio-8088-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-11-17T23:53:25.515-05:00  INFO 34712 --- [notificaciones] [nio-8088-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-11-17T23:53:25.529-05:00  INFO 34712 --- [notificaciones] [nio-8088-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 13 ms
+[ERROR] Failed to execute goal org.springframework.boot:spring-boot-maven-plugin:4.0.9:run (default-cli) on project notificaciones: Process terminated with exit code: 1 -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoExecutionException
