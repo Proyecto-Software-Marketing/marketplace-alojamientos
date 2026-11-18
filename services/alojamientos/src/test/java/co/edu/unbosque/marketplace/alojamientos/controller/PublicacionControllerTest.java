@@ -27,6 +27,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -843,4 +844,69 @@ void rechazaMotivoCortoConEspacios() throws Exception {
             org.mockito.ArgumentMatchers.any(Long.class),
             org.mockito.ArgumentMatchers.any(String.class));
 }
+
+    // ---------- HU-13: Listar publicaciones ----------
+
+    @Test
+    @DisplayName("HU-13: administrador consulta publicaciones pendientes")
+    void administradorListaPublicacionesPendientes() throws Exception {
+        crear(cuerpoValido()).andExpect(status().isCreated());
+
+        Long id = publicacionRepository.findAll().get(0).getId();
+
+        mockMvc.perform(post("/listings/{id}/submit", id)
+                .header("Authorization", TOKEN))
+                .andExpect(status().isOk());
+
+        when(serviciosExternos.verificarAdministrador(TOKEN))
+                .thenReturn(10L);
+
+        mockMvc.perform(get("/admin/listings")
+                .header("Authorization", TOKEN)
+                .param("estado", "PENDIENTE_REVISION"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(1))
+                .andExpect(jsonPath("$.items[0].id").value(id))
+                .andExpect(jsonPath("$.items[0].estado").value("PENDIENTE_REVISION"));
+    }
+
+    @Test
+    @DisplayName("HU-13: filtro no incluye publicaciones en borrador")
+    void listadoPendientesExcluyeBorradores() throws Exception {
+        crear(cuerpoValido()).andExpect(status().isCreated());
+
+        when(serviciosExternos.verificarAdministrador(TOKEN))
+                .thenReturn(10L);
+
+        mockMvc.perform(get("/admin/listings")
+                .header("Authorization", TOKEN)
+                .param("estado", "PENDIENTE_REVISION"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(0));
+    }
+
+    @Test
+    @DisplayName("HU-13: usuario sin permisos no puede consultar listado")
+    void listadoAdministrativoSinPermisos() throws Exception {
+        when(serviciosExternos.verificarAdministrador(TOKEN))
+                .thenThrow(new PermisoException("Acceso denegado"));
+
+        mockMvc.perform(get("/admin/listings")
+                .header("Authorization", TOKEN)
+                .param("estado", "PENDIENTE_REVISION"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("HU-13: listado vacio devuelve items vacios")
+    void listadoAdministrativoVacio() throws Exception {
+        when(serviciosExternos.verificarAdministrador(TOKEN))
+                .thenReturn(10L);
+
+        mockMvc.perform(get("/admin/listings")
+                .header("Authorization", TOKEN)
+                .param("estado", "PENDIENTE_REVISION"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(0));
+    }
 }

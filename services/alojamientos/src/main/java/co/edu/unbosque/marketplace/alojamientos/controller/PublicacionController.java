@@ -3,6 +3,10 @@ package co.edu.unbosque.marketplace.alojamientos.controller;
 import co.edu.unbosque.marketplace.alojamientos.client.ServiciosExternos;
 import co.edu.unbosque.marketplace.alojamientos.dto.PublicacionRequestDTO;
 import co.edu.unbosque.marketplace.alojamientos.dto.PublicacionResponseDTO;
+import co.edu.unbosque.marketplace.alojamientos.dto.PublicacionListaResponseDTO;
+import co.edu.unbosque.marketplace.alojamientos.model.EstadoPublicacion;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import co.edu.unbosque.marketplace.alojamientos.model.Publicacion;
 import co.edu.unbosque.marketplace.alojamientos.service.PublicacionService;
 import jakarta.validation.Valid;
@@ -19,7 +23,7 @@ import co.edu.unbosque.marketplace.alojamientos.dto.RechazarPublicacionRequestDT
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.RequestBody;
 
-// HU-07: el anfitrión crea una publicación en borrador
+// HU-07: el anfitriÃ³n crea una publicaciÃ³n en borrador
 @RestController
 public class PublicacionController {
 
@@ -55,6 +59,22 @@ public ResponseEntity<PublicacionResponseDTO> enviarARevision(
     return ResponseEntity.ok(PublicacionResponseDTO.desde(publicacion));
 }
 
+    // HU-13: listar publicaciones por estado.
+    @GetMapping("/admin/listings")
+    public ResponseEntity<PublicacionListaResponseDTO> listarAdministracion(
+            @RequestHeader("Authorization") String autorizacion,
+            @RequestParam(required = false) EstadoPublicacion estado) {
+
+        serviciosExternos.verificarAdministrador(autorizacion);
+
+        var publicaciones = publicacionService.listarPorEstado(estado)
+                .stream()
+                .map(PublicacionResponseDTO::desde)
+                .toList();
+
+        return ResponseEntity.ok(
+                new PublicacionListaResponseDTO(publicaciones));
+    }
     // HU-13 (CA-037): el administrador aprueba una publicacion.
     @PostMapping("/admin/listings/{id}/approve")
     public ResponseEntity<PublicacionResponseDTO> aprobar(

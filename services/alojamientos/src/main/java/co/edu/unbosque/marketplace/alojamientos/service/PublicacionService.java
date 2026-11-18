@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import co.edu.unbosque.marketplace.alojamientos.exception.PublicacionIncompletaException;
 
-// HU-07: crear una publicación en borrador
+// HU-07: crear una publicaciÃ³n en borrador
 @Service
 public class PublicacionService {
 
@@ -32,8 +32,8 @@ public class PublicacionService {
         this.reloj = reloj;
     }
 
-    // CA-020: la publicación queda en BORRADOR asociada al anfitrión (su id sale del token, decisión 5).
-    // Decisión 9: no se valida título repetido
+    // CA-020: la publicaciÃ³n queda en BORRADOR asociada al anfitriÃ³n (su id sale del token, decisiÃ³n 5).
+    // DecisiÃ³n 9: no se valida tÃ­tulo repetido
     @Transactional
     public Publicacion crear(Long anfitrionId, PublicacionRequestDTO solicitud) {
         validarCapacidadYPrecio(solicitud);
@@ -114,7 +114,15 @@ if (!faltantes.isEmpty()) {
     return publicacionRepository.save(publicacion);
 }
 
-    // CA-021: capacidad menor o igual a cero o precio no positivo → se rechaza
+    // HU-13: consultar publicaciones por estado.
+    @Transactional(readOnly = true)
+    public List<Publicacion> listarPorEstado(EstadoPublicacion estado) {
+        if (estado == null) {
+            return publicacionRepository.findAll();
+        }
+        return publicacionRepository.findByEstadoOrderByIdAsc(estado);
+    }
+    // CA-021: capacidad menor o igual a cero o precio no positivo â†’ se rechaza
     private void validarCapacidadYPrecio(PublicacionRequestDTO solicitud) {
         BigDecimal capacidad = solicitud.capacidad();
         if (capacidad == null || capacidad.signum() <= 0) {
