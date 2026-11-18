@@ -1,6 +1,8 @@
 package co.edu.unbosque.marketplace.reservas.service;
 
 import co.edu.unbosque.marketplace.reservas.client.CotizacionDTO;
+import co.edu.unbosque.marketplace.reservas.client.PagoClient;
+import co.edu.unbosque.marketplace.reservas.client.PagoRespuestaDTO;
 import co.edu.unbosque.marketplace.reservas.client.ServiciosExternos;
 import co.edu.unbosque.marketplace.reservas.client.UsuarioIdentidadDTO;
 import co.edu.unbosque.marketplace.reservas.dto.BookingListDTO;
@@ -63,9 +65,30 @@ class BookingServiceTest {
     @MockitoBean
     private ServiciosExternos serviciosExternos;
 
+    @MockitoBean
+    private PagoClient pagoClient;
+
     @BeforeEach
     void limpiar() {
         bookingRepository.deleteAll();
+
+        when(pagoClient.cobrar(any(), anyString(), any(), anyString()))
+                .thenAnswer(invocacion -> new PagoRespuestaDTO(
+                        java.util.UUID.randomUUID(),
+                        "pi_test_aprobado",
+                        invocacion.getArgument(2),
+                        "APROBADO"));
+
+        // MKT-41: cotizacion oficial simulada para las reservas.
+        when(serviciosExternos.consultarCotizacion(COTIZACION_ID))
+                .thenReturn(new CotizacionDTO(
+                        COTIZACION_ID,
+                        PUBLICACION_ID,
+                        LLEGADA,
+                        SALIDA,
+                        2,
+                        TOTAL
+                ));
     }
 
     private BookingRequestDTO solicitudCompleta() {
@@ -379,5 +402,111 @@ class BookingServiceTest {
 
         assertThrows(FechasInvalidasException.class,
                 () -> bookingService.crearReserva(TOKEN, "idemp-fechas", solicitud));
+    }
+
+    @Test
+    @DisplayName("MKT-41: un pago aprobado permite confirmar la reserva")
+    void pagoAprobadoConfirmaReserva() {
+        when(serviciosExternos.verificarRolHuesped(TOKEN)).thenReturn(HUESPED_ID);
+        when(serviciosExternos.verificarDisponibilidad(PUBLICACION_ID, LLEGADA, SALIDA))
+                .thenReturn(true);
+
+        BookingResponseDTO resultado = bookingService.crearReserva(
+                TOKEN, "idemp-pago-aprobado", solicitudCompleta());
+
+        assertEquals(BookingStatus.CONFIRMADA, resultado.estado());
+        assertEquals(1, bookingRepository.count());
+
+        verify(pagoClient).cobrar(
+                eq(HUESPED_ID),
+                eq("idemp-pago-aprobado"),
+                eq(TOTAL),
+                eq("pm_card_visa"));
+    }
+
+    @Test
+    @DisplayName("MKT-41: un pago rechazado no crea reserva")
+    void pagoRechazadoNoCreaReserva() {
+        when(serviciosExternos.verificarRolHuesped(TOKEN)).thenReturn(HUESPED_ID);
+        when(serviciosExternos.verificarDisponibilidad(PUBLICACION_ID, LLEGADA, SALIDA))
+                .thenReturn(true);
+
+        when(pagoClient.cobrar(
+                eq(HUESPED_ID),
+                eq("idemp-pago-rechazado"),
+                eq(TOTAL),
+                eq("pm_card_visa")))
+                .thenThrow(new co.edu.unbosque.marketplace.reservas.client.PagoRechazadoReservaException(
+                        "La tarjeta fue rechazada."));
+
+        assertThrows(
+                co.edu.unbosque.marketplace.reservas.client.PagoRechazadoReservaException.class,
+                () -> bookingService.crearReserva(
+                        TOKEN, "idemp-pago-rechazado", solicitudCompleta()));
+
+        assertEquals(0, bookingRepository.count());
+
+        verify(serviciosExternos, never())
+                .bloquearPeriodo(any(), any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("MKT-41: sin confirmacion del pago no se crea reserva")
+    void pagoSinConfirmacionNoCreaReserva() {
+        when(serviciosExternos.verificarRolHuesped(TOKEN)).thenReturn(HUESPED_ID);
+        when(serviciosExternos.verificarDisponibilidad(PUBLICACION_ID, LLEGADA, SALIDA))
+                .thenReturn(true);
+
+        when(pagoClient.cobrar(
+                eq(HUESPED_ID),
+                eq("idemp-pago-desconocido"),
+                eq(TOTAL),
+                eq("pm_card_visa")))
+                .thenReturn(new co.edu.unbosque.marketplace.reservas.client.PagoRespuestaDTO(
+                        java.util.UUID.randomUUID(),
+                        "pi_test_desconocido",
+                        TOTAL,
+                        "RESULTADO_DESCONOCIDO"));
+
+        assertThrows(
+                co.edu.unbosque.marketplace.reservas.client.PagoNoDisponibleReservaException.class,
+                () -> bookingService.crearReserva(
+                        TOKEN, "idemp-pago-desconocido", solicitudCompleta()));
+
+        assertEquals(0, bookingRepository.count());
+
+        verify(serviciosExternos, never())
+                .bloquearPeriodo(any(), any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("MKT-41: la reserva confirmada conserva las referencias del pago")
+    void guardaReferenciasDelPagoAprobado() {
+        when(serviciosExternos.verificarRolHuesped(TOKEN)).thenReturn(HUESPED_ID);
+        when(serviciosExternos.verificarDisponibilidad(PUBLICACION_ID, LLEGADA, SALIDA))
+                .thenReturn(true);
+
+        java.util.UUID paymentId = java.util.UUID.randomUUID();
+        String stripeId = "pi_test_referencia_guardada";
+
+        when(pagoClient.cobrar(
+                eq(HUESPED_ID),
+                eq("idemp-referencia-pago"),
+                eq(TOTAL),
+                eq("pm_card_visa")))
+                .thenReturn(new co.edu.unbosque.marketplace.reservas.client.PagoRespuestaDTO(
+                        paymentId,
+                        stripeId,
+                        TOTAL,
+                        "APROBADO"));
+
+        BookingResponseDTO resultado = bookingService.crearReserva(
+                TOKEN, "idemp-referencia-pago", solicitudCompleta());
+
+        Booking guardada = bookingRepository.findById(resultado.id()).orElseThrow();
+
+        assertEquals(BookingStatus.CONFIRMADA, guardada.getEstado());
+        assertEquals(paymentId.toString(), guardada.getPaymentId());
+        assertEquals(stripeId, guardada.getStripePaymentIntentId());
     }
 }
