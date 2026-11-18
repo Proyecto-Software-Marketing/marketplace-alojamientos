@@ -54,4 +54,15 @@ export class IdentidadService {
   restablecerContrasena(token: string, nuevaContrasena: string) {
     return this.http.post<void>(`${this.url}/autenticacion/restablecer-contrasena`, { token, nuevaContrasena });
   }
+   listarUsuarios() {
+    return this.http.get<Usuario[]>(`${this.url}/admin/usuarios`);
+  }
+
+  restringirUsuario(id: number) {
+    return this.http.post<Usuario>(`${this.url}/admin/usuarios/${id}/restringir`, {});
+  }
+
+  reactivarUsuario(id: number) {
+    return this.http.post<Usuario>(`${this.url}/admin/usuarios/${id}/reactivar`, {});
+  }
 }

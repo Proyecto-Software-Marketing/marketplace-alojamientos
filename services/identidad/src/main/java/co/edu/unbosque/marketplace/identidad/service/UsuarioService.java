@@ -16,6 +16,7 @@ import co.edu.unbosque.marketplace.identidad.exception.AutenticacionException;
 import co.edu.unbosque.marketplace.identidad.exception.CuentaException;
 import co.edu.unbosque.marketplace.identidad.model.EstadoUsuario;
 import co.edu.unbosque.marketplace.identidad.model.Sesion;
+import org.springframework.data.domain.Sort;
 import java.util.List;
 
 
@@ -106,11 +107,79 @@ public class UsuarioService {
             serviciosExternos.pausarPublicaciones(idUsuario);
         }
     }
+    // HU-35: restriccion administrativa de usuarios
+    public UsuarioResponse restringirUsuario(Long idUsuario, Long administradorId) {
+
+Usuario usuario = usuarioRepository.findById(idUsuario)
+                .orElseThrow(() -> new CuentaException("El usuario no existe"));
+
+if (usuario.getRol() == Rol.ADMINISTRADOR) {
+            throw new CuentaException("No se puede restringir una cuenta administradora");
+        }
+
+if (usuario.getEstado() == EstadoUsuario.RESTRINGIDO) {
+            throw new CuentaException("El usuario ya se encuentra restringido");
+        }
+
+usuario.setEstado(EstadoUsuario.RESTRINGIDO);
+        Usuario guardado = usuarioRepository.save(usuario);
+
+List<Sesion> sesiones = sesionRepository.findByUsuarioIdAndActivaTrue(idUsuario);
+        for (Sesion sesion : sesiones) {
+            sesion.setActiva(false);
+        }
+        sesionRepository.saveAll(sesiones);
+
+if (usuario.getRol() == Rol.ANFITRION) {
+            serviciosExternos.pausarPublicaciones(idUsuario);
+        }
+
+serviciosExternos.registrarAuditoria(
+                administradorId,
+                idUsuario,
+                "USUARIO_RESTRINGIDO",
+                "El administrador restringio la cuenta del usuario");
+
+        serviciosExternos.notificarRestriccion(idUsuario);
+
+return new UsuarioResponse(guardado);
+    }
+
+// HU-35: reactivacion administrativa de usuarios restringidos
+    public UsuarioResponse reactivarUsuario(Long idUsuario, Long administradorId) {
+
+Usuario usuario = usuarioRepository.findById(idUsuario)
+                .orElseThrow(() -> new CuentaException("El usuario no existe"));
+
+if (usuario.getEstado() != EstadoUsuario.RESTRINGIDO) {
+            throw new CuentaException("El usuario no se encuentra restringido");
+        }
+
+usuario.setEstado(EstadoUsuario.ACTIVO);
+        Usuario guardado = usuarioRepository.save(usuario);
+
+serviciosExternos.registrarAuditoria(
+                administradorId,
+                idUsuario,
+                "USUARIO_REACTIVADO",
+                "El administrador reactivo la cuenta del usuario");
+
+        serviciosExternos.notificarReactivacion(idUsuario);
+
+return new UsuarioResponse(guardado);
+    }
      //cuantos usuarios hay en total y por rol
     public EstadisticasUsuariosResponse estadisticas() {
         return new EstadisticasUsuariosResponse(
                 usuarioRepository.count(),
                 usuarioRepository.countByRol(Rol.HUESPED),
                 usuarioRepository.countByRol(Rol.ANFITRION));
+    }
+    
+    // HU-35: todos los usuarios para que el administrador elija a quién restringir
+    public List<UsuarioResponse> listarUsuarios() {
+        return usuarioRepository.findAll(Sort.by("id")).stream()
+                .map(UsuarioResponse::new)
+                .toList();
     }
 }

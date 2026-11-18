@@ -4,6 +4,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
@@ -22,6 +25,11 @@ public class ServiciosExternos {
 
     @Value("${servicios.notificaciones.url}")
     private String urlNotificaciones;
+    
+    @Value("${servicios.auditoria.url}")
+    private String urlAuditoria;
+
+    private static final Logger log = LoggerFactory.getLogger(ServiciosExternos.class);
 
     // CA-017 le pregunta a Reservas si el usuario tiene reservas futuras confirmadas
     public boolean tieneReservasFuturas(Long idUsuario) {
@@ -66,5 +74,61 @@ public class ServiciosExternos {
                         "mensaje", mensaje))
                 .retrieve()
                 .toBodilessEntity();
+    }
+    
+    // HU-35 avisa al usuario que el administrador restringió su cuenta.
+    // Si Notificaciones falla, la restricción igual queda hecha
+    public void notificarRestriccion(Long idUsuario) {
+        notificarUsuario(idUsuario, "USUARIO_RESTRINGIDO", "Tu cuenta ha sido restringida por un administrador");
+    }
+
+    // HU-35 avisa al usuario que el administrador reactivó su cuenta
+    public void notificarReactivacion(Long idUsuario) {
+        notificarUsuario(idUsuario, "USUARIO_REACTIVADO", "Tu cuenta ha sido reactivada");
+    }
+
+    private void notificarUsuario(Long idUsuario, String tipoEvento, String mensaje) {
+        if (urlNotificaciones.isBlank()) {
+            return;
+        }
+        try {
+            cliente.post()
+                    .uri(urlNotificaciones + "/internal/notifications")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(Map.of(
+                            "usuarioId", idUsuario,
+                            "tipoEvento", tipoEvento,
+                            "entidadTipo", "USUARIO",
+                            "entidadId", idUsuario,
+                            "mensaje", mensaje))
+                    .retrieve()
+                    .toBodilessEntity();
+        } catch (RestClientException e) {
+            log.warn("No se pudo notificar al usuario {}: {}", idUsuario, e.getMessage());
+        }
+    }
+
+    // HU-35 deja en Auditoría quién restringió o reactivó la cuenta.
+    // Si Auditoría falla, la acción igual queda hecha
+    public void registrarAuditoria(Long administradorId, Long idUsuario, String accion, String detalle) {
+        if (urlAuditoria.isBlank()) {
+            return;
+        }
+        try {
+            cliente.post()
+                    .uri(urlAuditoria + "/internal/audit-events")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(Map.of(
+                            "usuarioId", administradorId,
+                            "entidad", "USUARIO",
+                            "entidadId", idUsuario,
+                            "accion", accion,
+                            "resultado", "EXITO",
+                            "detalle", detalle))
+                    .retrieve()
+                    .toBodilessEntity();
+        } catch (RestClientException e) {
+            log.warn("No se pudo auditar la accion sobre el usuario {}: {}", idUsuario, e.getMessage());
+        }
     }
 }

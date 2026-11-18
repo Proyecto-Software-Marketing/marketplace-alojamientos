@@ -1,0 +1,51 @@
+.panel {
+  padding: 0;
+  overflow-x: auto;
+}
+
+.tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.tabla th,
+.tabla td {
+  text-align: left;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--borde);
+}
+
+.tabla th {
+  background: var(--fondo-suave);
+  color: var(--azul);
+  font-size: 13px;
+}
+
+.acciones {
+  text-align: right;
+}
+
+.estado {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  background: #dcfce7;
+  color: var(--verde);
+}
+
+.estado.RESTRINGIDO {
+  background: #fee2e2;
+  color: var(--rojo);
+}
+
+.estado.INACTIVO {
+  background: var(--fondo-suave);
+  color: var(--texto-suave);
+}
+
+.peligro {
+  color: var(--rojo);
+}
