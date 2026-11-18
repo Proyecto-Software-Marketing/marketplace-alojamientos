@@ -8,18 +8,15 @@
 
  :: Spring Boot ::                (v4.0.9)
 
-2026-11-17T23:47:50.603-05:00  INFO 24028 --- [reportes] [           main] c.e.u.m.reportes.ReportesApplication     : Starting ReportesApplication using Java 21.0.13 with PID 24028 (C:\Users\aleja\Proyectos\marketplace-alojamientos\services\reportes\target\classes started by aleja in C:\Users\aleja\Proyectos\marketplace-alojamientos\services\reportes)
-2026-11-17T23:47:50.605-05:00  INFO 24028 --- [reportes] [           main] c.e.u.m.reportes.ReportesApplication     : No active profile set, falling back to 1 default profile: "default"
-2026-11-17T23:47:51.638-05:00  INFO 24028 --- [reportes] [           main] o.s.boot.tomcat.TomcatWebServer          : Tomcat initialized with port 8091 (http)
-2026-11-17T23:47:51.657-05:00  INFO 24028 --- [reportes] [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
-2026-11-17T23:47:51.657-05:00  INFO 24028 --- [reportes] [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/11.0.27]
-2026-11-17T23:47:51.729-05:00  INFO 24028 --- [reportes] [           main] b.w.c.s.WebApplicationContextInitializer : Root WebApplicationContext: initialization completed in 1059 ms
-2026-11-17T23:47:52.361-05:00  INFO 24028 --- [reportes] [           main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 2 endpoints beneath base path '/actuator'
-2026-11-17T23:47:52.398-05:00  INFO 24028 --- [reportes] [           main] o.s.boot.tomcat.TomcatWebServer          : Tomcat started on port 8091 (http) with context path '/'
-2026-11-17T23:47:52.403-05:00  INFO 24028 --- [reportes] [           main] c.e.u.m.reportes.ReportesApplication     : Started ReportesApplication in 2.203 seconds (process running for 2.579)
-2026-11-18T00:03:05.073-05:00  INFO 24028 --- [reportes] [nio-8091-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
-2026-11-18T00:03:05.079-05:00  INFO 24028 --- [reportes] [nio-8091-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
-2026-11-18T00:03:05.103-05:00  INFO 24028 --- [reportes] [nio-8091-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 23 ms
+2026-11-18T00:47:51.210-05:00  INFO 22756 --- [reportes] [           main] c.e.u.m.reportes.ReportesApplication     : Starting ReportesApplication using Java 21.0.13 with PID 22756 (C:\Users\aleja\Proyectos\marketplace-alojamientos\services\reportes\target\classes started by aleja in C:\Users\aleja\Proyectos\marketplace-alojamientos\services\reportes)
+2026-11-18T00:47:51.214-05:00  INFO 22756 --- [reportes] [           main] c.e.u.m.reportes.ReportesApplication     : No active profile set, falling back to 1 default profile: "default"
+2026-11-18T00:47:52.189-05:00  INFO 22756 --- [reportes] [           main] o.s.boot.tomcat.TomcatWebServer          : Tomcat initialized with port 8091 (http)
+2026-11-18T00:47:52.204-05:00  INFO 22756 --- [reportes] [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-11-18T00:47:52.204-05:00  INFO 22756 --- [reportes] [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/11.0.27]
+2026-11-18T00:47:52.259-05:00  INFO 22756 --- [reportes] [           main] b.w.c.s.WebApplicationContextInitializer : Root WebApplicationContext: initialization completed in 980 ms
+2026-11-18T00:47:52.964-05:00  INFO 22756 --- [reportes] [           main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 2 endpoints beneath base path '/actuator'
+2026-11-18T00:47:53.003-05:00  INFO 22756 --- [reportes] [           main] o.s.boot.tomcat.TomcatWebServer          : Tomcat started on port 8091 (http) with context path '/'
+2026-11-18T00:47:53.009-05:00  INFO 22756 --- [reportes] [           main] c.e.u.m.reportes.ReportesApplication     : Started ReportesApplication in 2.206 seconds (process running for 2.654)
 [ERROR] Failed to execute goal org.springframework.boot:spring-boot-maven-plugin:4.0.9:run (default-cli) on project reportes: Process terminated with exit code: 1 -> [Help 1]
 [ERROR] 
 [ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
