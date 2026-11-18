@@ -261,6 +261,15 @@ public class Publicacion {
         return precioNoche;
     }
 
+    // HU-12 (CA-035): enviar una publicacion en borrador a revision.
+public void enviarARevision() {
+    if (estado != EstadoPublicacion.BORRADOR) {
+        throw new IllegalStateException(
+                "Solo se pueden enviar a revision publicaciones en BORRADOR");
+    }
+
+    estado = EstadoPublicacion.PENDIENTE_REVISION;
+}
     public EstadoPublicacion getEstado() {
         return estado;
     }

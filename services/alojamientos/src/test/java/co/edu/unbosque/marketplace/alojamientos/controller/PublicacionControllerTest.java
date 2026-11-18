@@ -30,6 +30,11 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+
+import co.edu.unbosque.marketplace.alojamientos.model.TipoAlojamiento;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 // Pruebas de la API REST de la HU-07, como las haría el frontend.
 // Identidad se simula con ServiciosExternos
@@ -301,4 +306,94 @@ class PublicacionControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.mensajes[0]").value("Los datos enviados no tienen el formato correcto"));
     }
+
+// ---------- HU-12: Enviar publicacion a revision ----------
+
+@Test
+@DisplayName("CA-035: el anfitrion envia un borrador completo a revision (200)")
+void enviaPublicacionARevision() throws Exception {
+    crear(cuerpoValido()).andExpect(status().isCreated());
+
+    Publicacion borrador = publicacionRepository.findAll().get(0);
+
+    mockMvc.perform(post("/listings/{id}/submit", borrador.getId())
+                    .header("Authorization", TOKEN))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.estado").value("PENDIENTE_REVISION"));
+
+    assertEquals(EstadoPublicacion.PENDIENTE_REVISION,
+            publicacionRepository.findById(borrador.getId())
+                    .orElseThrow().getEstado());
+}
+
+@Test
+@DisplayName("HU-12: no permite enviar dos veces la misma publicacion (409)")
+void rechazaSegundoEnvio() throws Exception {
+    crear(cuerpoValido()).andExpect(status().isCreated());
+
+    Long id = publicacionRepository.findAll().get(0).getId();
+
+    mockMvc.perform(post("/listings/{id}/submit", id)
+                    .header("Authorization", TOKEN))
+            .andExpect(status().isOk());
+
+    mockMvc.perform(post("/listings/{id}/submit", id)
+                    .header("Authorization", TOKEN))
+            .andExpect(status().isConflict());
+}
+
+@Test
+@DisplayName("HU-12: otro anfitrion no puede enviar la publicacion (403)")
+void rechazaOtroAnfitrion() throws Exception {
+    crear(cuerpoValido()).andExpect(status().isCreated());
+
+    Long id = publicacionRepository.findAll().get(0).getId();
+
+    when(serviciosExternos.verificarAnfitrion(TOKEN)).thenReturn(99L);
+
+    mockMvc.perform(post("/listings/{id}/submit", id)
+                    .header("Authorization", TOKEN))
+            .andExpect(status().isForbidden());
+
+    assertEquals(EstadoPublicacion.BORRADOR,
+            publicacionRepository.findById(id).orElseThrow().getEstado());
+}
+
+@Test
+@DisplayName("HU-12: una publicacion inexistente responde 404")
+void rechazaPublicacionInexistente() throws Exception {
+    mockMvc.perform(post("/listings/{id}/submit", 999999L)
+                    .header("Authorization", TOKEN))
+            .andExpect(status().isNotFound());
+}
+
+@Test
+@DisplayName("CA-036: una publicacion incompleta responde 422 y sigue en BORRADOR")
+void rechazaEnvioDePublicacionIncompleta() throws Exception {
+    Publicacion incompleta = new Publicacion(
+            ANFITRION, LocalDateTime.of(2026, 11, 16, 10, 30));
+
+    incompleta.definirDatosBasicos(
+            "", "", "Guatavita", "",
+            TipoAlojamiento.CABANA, 4,
+            BigDecimal.valueOf(250000));
+
+    incompleta = publicacionRepository.save(incompleta);
+    Long id = incompleta.getId();
+
+    mockMvc.perform(post("/listings/{id}/submit", id)
+                    .header("Authorization", TOKEN))
+            .andExpect(status().isUnprocessableEntity())
+            .andExpect(jsonPath("$.mensajes[0]")
+                    .value(org.hamcrest.Matchers.containsString("titulo")))
+            .andExpect(jsonPath("$.mensajes[0]")
+                    .value(org.hamcrest.Matchers.containsString("descripcion")))
+            .andExpect(jsonPath("$.mensajes[0]")
+                    .value(org.hamcrest.Matchers.containsString("ubicacion")));
+
+    assertEquals(EstadoPublicacion.BORRADOR,
+            publicacionRepository.findById(id)
+                    .orElseThrow().getEstado());
+}
+
 }

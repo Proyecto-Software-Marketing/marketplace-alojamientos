@@ -89,6 +89,13 @@ public class ControlErrores {
         return respuesta(HttpStatus.SERVICE_UNAVAILABLE, e.getMessage());
     }
 
+// HU-12 (CA-036): publicacion incompleta para revision.
+@ExceptionHandler(PublicacionIncompletaException.class)
+public ResponseEntity<Map<String, List<String>>> manejarPublicacionIncompleta(
+        PublicacionIncompletaException e) {
+    return respuesta(HttpStatus.UNPROCESSABLE_ENTITY, e.getMessage());
+}
+
     private ResponseEntity<Map<String, List<String>>> respuesta(HttpStatus estado, String mensaje) {
         return ResponseEntity.status(estado).body(Map.of("mensajes", List.of(mensaje)));
     }
