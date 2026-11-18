@@ -1,8 +1,13 @@
 package co.edu.unbosque.marketplace.alojamientos.controller;
 
+import co.edu.unbosque.marketplace.alojamientos.dto.UsuarioIdentidadDTO;
 import co.edu.unbosque.marketplace.alojamientos.client.ServiciosExternos;
 import co.edu.unbosque.marketplace.alojamientos.dto.PublicacionRequestDTO;
 import co.edu.unbosque.marketplace.alojamientos.dto.PublicacionResponseDTO;
+import co.edu.unbosque.marketplace.alojamientos.dto.PublicacionListaResponseDTO;
+import co.edu.unbosque.marketplace.alojamientos.model.EstadoPublicacion;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import co.edu.unbosque.marketplace.alojamientos.model.Publicacion;
 import co.edu.unbosque.marketplace.alojamientos.service.PublicacionService;
 import jakarta.validation.Valid;
@@ -19,7 +24,7 @@ import co.edu.unbosque.marketplace.alojamientos.dto.RechazarPublicacionRequestDT
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.RequestBody;
 
-// HU-07: el anfitrión crea una publicación en borrador
+
 @RestController
 public class PublicacionController {
 
@@ -55,6 +60,35 @@ public ResponseEntity<PublicacionResponseDTO> enviarARevision(
     return ResponseEntity.ok(PublicacionResponseDTO.desde(publicacion));
 }
 
+    // HU-08: consultar una publicacion (propietario o administrador).
+    @GetMapping("/listings/{id}")
+    public ResponseEntity<PublicacionResponseDTO> consultarPorId(
+            @RequestHeader("Authorization") String autorizacion,
+            @PathVariable Long id) {
+
+        Publicacion publicacion = publicacionService.consultarPorId(id);
+
+        serviciosExternos.verificarAdministradorOAnfitrion(
+                autorizacion, publicacion.getAnfitrionId());
+
+        return ResponseEntity.ok(PublicacionResponseDTO.desde(publicacion));
+    }
+    // HU-13: listar publicaciones por estado.
+    @GetMapping("/admin/listings")
+    public ResponseEntity<PublicacionListaResponseDTO> listarAdministracion(
+            @RequestHeader("Authorization") String autorizacion,
+            @RequestParam(required = false) EstadoPublicacion estado) {
+
+        serviciosExternos.verificarAdministrador(autorizacion);
+
+        var publicaciones = publicacionService.listarPorEstado(estado)
+                .stream()
+                .map(PublicacionResponseDTO::desde)
+                .toList();
+
+        return ResponseEntity.ok(
+                new PublicacionListaResponseDTO(publicaciones));
+    }
     // HU-13 (CA-037): el administrador aprueba una publicacion.
     @PostMapping("/admin/listings/{id}/approve")
     public ResponseEntity<PublicacionResponseDTO> aprobar(
@@ -70,7 +104,7 @@ serviciosExternos.registrarAuditoria(new EventoAuditoriaDTO(
         "PUBLICACION",
         publicacion.getId(),
         "APROBAR_PUBLICACION",
-        "EXITOSO",
+        "EXITO",
         "El administrador aprobo la publicacion"
 ));
 
@@ -100,8 +134,8 @@ public ResponseEntity<PublicacionResponseDTO> rechazar(
             "PUBLICACION",
             publicacion.getId(),
             "RECHAZAR_PUBLICACION",
-            "EXITOSO",
-            "Motivo: " + publicacion.getMotivoRechazo()
+            "EXITO",
+                "Motivo: " + ServiciosExternos.recortar(publicacion.getMotivoRechazo(), 1900)
     ));
     // HU-13 (CA-039): notificar al anfitrion el motivo del rechazo.
 serviciosExternos.notificarPublicacionRechazada(
@@ -139,4 +173,45 @@ public ResponseEntity<PublicacionResponseDTO> reactivar(
     return ResponseEntity.ok(PublicacionResponseDTO.desde(publicacion));
 }
 
+
+    // HU-15: consultar las publicaciones del anfitrion autenticado.
+    @GetMapping("/listings/mine")
+    public ResponseEntity<PublicacionListaResponseDTO> listarMisPublicaciones(
+            @RequestHeader("Authorization") String autorizacion) {
+
+        Long anfitrionId = serviciosExternos.verificarAnfitrion(autorizacion);
+
+        var publicaciones = publicacionService.listarMisPublicaciones(anfitrionId)
+                .stream()
+                .map(PublicacionResponseDTO::desde)
+                .toList();
+
+        return ResponseEntity.ok(
+                new PublicacionListaResponseDTO(publicaciones));
+    }
+
+    // HU-08: editar una publicacion existente.
+    @PutMapping("/listings/{id}")
+    public ResponseEntity<PublicacionResponseDTO> editar(
+            @RequestHeader("Authorization") String autorizacion,
+            @PathVariable Long id,
+            @Valid @RequestBody PublicacionRequestDTO solicitud) {
+
+        UsuarioIdentidadDTO usuario =
+                serviciosExternos.verificarEditor(autorizacion);
+
+        boolean esAdministrador =
+                "ADMINISTRADOR".equals(usuario.rol());
+
+        Publicacion publicacion = publicacionService.editar(
+                id, usuario.id(), esAdministrador, solicitud);
+
+        if (esAdministrador) {
+            serviciosExternos.registrarAuditoriaEdicion(
+                    usuario.id(), publicacion.getId());
+        }
+
+        return ResponseEntity.ok(
+                PublicacionResponseDTO.desde(publicacion));
+    }
 }

@@ -70,7 +70,11 @@
   <div class="resultados">
     @for (publicacion of resultados(); track publicacion.id) {
       <article class="tarjeta-alojamiento">
-        <div class="imagen">Sin imagen</div>
+          @if (publicacion.imagenPrincipal) {
+          <img class="foto" [src]="publicacion.imagenPrincipal" [alt]="publicacion.titulo">
+        } @else {
+          <div class="imagen">Sin imagen</div>
+        }
         <div class="datos">
           <h3>{{ publicacion.titulo }}</h3>
           <p>{{ publicacion.ciudad }} · {{ publicacion.tipo }}</p>
@@ -89,4 +93,33 @@
   </div>
 
   <p class="pequeno">Los precios se muestran por noche. Consulta el desglose completo antes de reservar.</p>
+}
+
+<!-- Antes de buscar se muestran algunas publicaciones activas -->
+@if (!ultimaBusqueda() && destacadas().length > 0) {
+  <div class="encabezado-resultados">
+    <div>
+      <h2>Alojamientos disponibles</h2>
+      <p class="pequeno">Elige fechas arriba para ver el precio de tu estancia.</p>
+    </div>
+  </div>
+
+  <div class="resultados">
+    @for (publicacion of destacadas(); track publicacion.id) {
+      <article class="tarjeta-alojamiento">
+        @if (publicacion.imagenPrincipal) {
+          <img class="foto" [src]="publicacion.imagenPrincipal" [alt]="publicacion.titulo">
+        } @else {
+          <div class="imagen">Sin imagen</div>
+        }
+        <div class="datos">
+          <h3>{{ publicacion.titulo }}</h3>
+          <p>{{ publicacion.ciudad }} · {{ publicacion.tipo }}</p>
+          <p class="pequeno">Capacidad: {{ publicacion.capacidad }} huéspedes</p>
+          <p class="precio">$ {{ publicacion.precioNoche | number: '1.0-0' }} / noche</p>
+          <a class="boton-secundario ver-detalle" [routerLink]="['/alojamiento', publicacion.id]">Ver detalle</a>
+        </div>
+      </article>
+    }
+  </div>
 }

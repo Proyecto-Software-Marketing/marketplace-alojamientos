@@ -136,6 +136,19 @@ private String motivoRechazo;
     @OrderColumn(name = "posicion")
     private List<ServicioAdicional> serviciosAdicionales = new ArrayList<>();
 
+    // HU-11: política de cancelación asociada a la publicación.
+    // Puede ser null mientras la publicación esté en borrador.
+    @jakarta.persistence.ManyToOne
+    @JoinColumn(name = "politica_cancelacion_id")
+    private PoliticaCancelacion politicaCancelacion;
+
+    public PoliticaCancelacion getPoliticaCancelacion() {
+        return politicaCancelacion;
+    }
+
+    public void definirPoliticaCancelacion(PoliticaCancelacion politica) {
+        this.politicaCancelacion = politica;
+    }
     public Publicacion() {
     }
 
@@ -282,6 +295,7 @@ public void enviarARevision() {
     }
 
     estado = EstadoPublicacion.PENDIENTE_REVISION;
+    motivoRechazo = null;
 }
     public EstadoPublicacion getEstado() {
         return estado;
@@ -318,7 +332,7 @@ public void rechazar(String motivo) {
         "El motivo del rechazo debe tener entre 3 y 2000 caracteres");
     }
 
-    estado = EstadoPublicacion.RECHAZADA;
+    estado = EstadoPublicacion.BORRADOR;
     motivoRechazo = motivo.trim();
 }
 }

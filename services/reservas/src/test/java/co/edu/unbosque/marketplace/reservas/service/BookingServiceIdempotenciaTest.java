@@ -1,5 +1,8 @@
 package co.edu.unbosque.marketplace.reservas.service;
 
+import co.edu.unbosque.marketplace.reservas.client.CotizacionDTO;
+import co.edu.unbosque.marketplace.reservas.client.PagoClient;
+import co.edu.unbosque.marketplace.reservas.client.PagoRespuestaDTO;
 import co.edu.unbosque.marketplace.reservas.client.ServiciosExternos;
 import co.edu.unbosque.marketplace.reservas.dto.BookingRequestDTO;
 import co.edu.unbosque.marketplace.reservas.dto.BookingResponseDTO;
@@ -44,18 +47,38 @@ class BookingServiceIdempotenciaTest {
     private BookingRepository bookingRepository;
     private ServiciosExternos serviciosExternos;
     private BookingService bookingService;
+    private PagoClient pagoClient;
 
     @BeforeEach
     void preparar() {
         bookingRepository = mock(BookingRepository.class);
         serviciosExternos = mock(ServiciosExternos.class);
+        pagoClient = mock(PagoClient.class);
+
+        when(pagoClient.cobrar(any(), anyString(), any(), anyString()))
+                .thenAnswer(invocacion -> new PagoRespuestaDTO(
+                        java.util.UUID.randomUUID(),
+                        "pi_test_aprobado",
+                        invocacion.getArgument(2),
+                        "APROBADO"));
 
         PlatformTransactionManager gestor = mock(PlatformTransactionManager.class);
         when(gestor.getTransaction(any(TransactionDefinition.class))).thenReturn(new SimpleTransactionStatus());
 
-        bookingService = new BookingService(bookingRepository, serviciosExternos, gestor);
+        bookingService = new BookingService(bookingRepository, serviciosExternos, gestor, pagoClient);
 
         when(serviciosExternos.verificarRolHuesped(TOKEN)).thenReturn(HUESPED_ID);
+
+        // MKT-41: cotizacion oficial simulada.
+        when(serviciosExternos.consultarCotizacion("cot-abc-123"))
+                .thenReturn(new CotizacionDTO(
+                        "cot-abc-123",
+                        PUBLICACION_ID,
+                        LLEGADA,
+                        SALIDA,
+                        2,
+                        TOTAL
+                ));
         when(serviciosExternos.verificarDisponibilidad(PUBLICACION_ID, LLEGADA, SALIDA)).thenReturn(true);
     }
 

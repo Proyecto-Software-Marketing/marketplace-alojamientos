@@ -6,6 +6,5 @@ public enum EstadoPublicacion {
     PENDIENTE_REVISION,
     ACTIVA,
     PAUSADA,
-    BLOQUEADA,
-    RECHAZADA
+    BLOQUEADA
 }

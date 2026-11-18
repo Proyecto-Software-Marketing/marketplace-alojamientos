@@ -4,6 +4,8 @@ import co.edu.unbosque.marketplace.alojamientos.dto.PublicacionRequestDTO;
 import co.edu.unbosque.marketplace.alojamientos.exception.SolicitudInvalidaException;
 import co.edu.unbosque.marketplace.alojamientos.model.Publicacion;
 import co.edu.unbosque.marketplace.alojamientos.repository.PublicacionRepository;
+import co.edu.unbosque.marketplace.alojamientos.repository.PoliticaCancelacionRepository;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,20 +22,21 @@ import java.util.ArrayList;
 import java.util.List;
 import co.edu.unbosque.marketplace.alojamientos.exception.PublicacionIncompletaException;
 
-// HU-07: crear una publicación en borrador
 @Service
 public class PublicacionService {
 
     private final PublicacionRepository publicacionRepository;
+    private final PoliticaCancelacionRepository politicaRepository;
     private final Clock reloj;
 
-    public PublicacionService(PublicacionRepository publicacionRepository, Clock reloj) {
+    public PublicacionService(PublicacionRepository publicacionRepository,
+            PoliticaCancelacionRepository politicaRepository, Clock reloj) {
         this.publicacionRepository = publicacionRepository;
+        this.politicaRepository = politicaRepository;
         this.reloj = reloj;
     }
 
-    // CA-020: la publicación queda en BORRADOR asociada al anfitrión (su id sale del token, decisión 5).
-    // Decisión 9: no se valida título repetido
+
     @Transactional
     public Publicacion crear(Long anfitrionId, PublicacionRequestDTO solicitud) {
         validarCapacidadYPrecio(solicitud);
@@ -48,6 +51,8 @@ public class PublicacionService {
                 solicitud.capacidad().intValueExact(),
                 // 1.5E+5 y 150000 son el mismo precio: se guarda siempre sin exponente
                 solicitud.precioPorNoche().setScale(0, RoundingMode.UNNECESSARY));
+                politicaRepository.findAll(Sort.by("id")).stream().findFirst()
+                .ifPresent(publicacion::definirPoliticaCancelacion);
         return publicacionRepository.save(publicacion);
     }
     // HU-12: enviar una publicacion completa a revision.
@@ -102,6 +107,17 @@ public Publicacion enviarARevision(Long publicacionId, Long anfitrionId) {
             || publicacion.getPrecioNoche().signum() <= 0) {
         faltantes.add("precio por noche");
     }
+    if (publicacion.getServicios().isEmpty()) {
+        faltantes.add("servicios");
+    }
+
+    if (publicacion.getReglas().isEmpty()) {
+        faltantes.add("reglas");
+    }
+
+    if (publicacion.getImagenes().isEmpty()) {
+        faltantes.add("imagenes");
+    }
 
 if (!faltantes.isEmpty()) {
     throw new PublicacionIncompletaException(
@@ -114,7 +130,22 @@ if (!faltantes.isEmpty()) {
     return publicacionRepository.save(publicacion);
 }
 
-    // CA-021: capacidad menor o igual a cero o precio no positivo → se rechaza
+    // HU-08: consultar una publicacion por su identificador.
+    @Transactional(readOnly = true)
+    public Publicacion consultarPorId(Long id) {
+        return publicacionRepository.findById(id)
+                .orElseThrow(() -> new NoEncontradoException(
+                        "La publicacion no existe"));
+    }
+    // HU-13: consultar publicaciones por estado.
+    @Transactional(readOnly = true)
+    public List<Publicacion> listarPorEstado(EstadoPublicacion estado) {
+        if (estado == null) {
+            return publicacionRepository.findAll();
+        }
+        return publicacionRepository.findByEstadoOrderByIdAsc(estado);
+    }
+    
     private void validarCapacidadYPrecio(PublicacionRequestDTO solicitud) {
         BigDecimal capacidad = solicitud.capacidad();
         if (capacidad == null || capacidad.signum() <= 0) {
@@ -201,4 +232,50 @@ public Publicacion reactivar(Long publicacionId, Long anfitrionId) {
 
     return publicacionRepository.save(publicacion);
 }
+
+    // HU-15: listar publicaciones del anfitrion.
+    @Transactional(readOnly = true)
+    public List<Publicacion> listarMisPublicaciones(Long anfitrionId) {
+        return publicacionRepository.findByAnfitrionIdOrderByIdAsc(anfitrionId);
+    }
+
+    // HU-08: editar una publicacion existente.
+    @Transactional
+    public Publicacion editar(
+            Long publicacionId,
+            Long usuarioId,
+            boolean esAdministrador,
+            PublicacionRequestDTO solicitud) {
+
+        Publicacion publicacion = publicacionRepository.findById(publicacionId)
+                .orElseThrow(() -> new NoEncontradoException(
+                        "La publicacion no existe"));
+
+        // El anfitrion solo puede editar sus propias publicaciones.
+        if (!esAdministrador
+                && !publicacion.getAnfitrionId().equals(usuarioId)) {
+            throw new PermisoException(
+                    "No puede editar una publicacion que no le pertenece");
+        }
+
+        // Verificar si el estado permite editar.
+        if (!publicacion.permiteEditarContenido()) {
+            throw new ConflictoException(
+                    "La publicacion no permite editar su contenido en este estado");
+        }
+
+        validarCapacidadYPrecio(solicitud);
+
+        publicacion.definirDatosBasicos(
+                solicitud.titulo().trim(),
+                solicitud.descripcion().trim(),
+                solicitud.ciudad().trim(),
+                solicitud.ubicacionTextual().trim(),
+                solicitud.tipo(),
+                solicitud.capacidad().intValueExact(),
+                solicitud.precioPorNoche().setScale(
+                        0, RoundingMode.UNNECESSARY));
+
+        return publicacionRepository.save(publicacion);
+    }
 }

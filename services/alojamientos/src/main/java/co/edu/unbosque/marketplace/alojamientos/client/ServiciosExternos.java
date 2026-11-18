@@ -16,7 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import co.edu.unbosque.marketplace.alojamientos.dto.NotificacionRequestDTO;
 
-// Lo que Alojamientos necesita de otros servicios
+
 @Component
 public class ServiciosExternos {
 
@@ -36,7 +36,13 @@ public ServiciosExternos(
     this(RestClient.builder(), urlIdentidad, urlAuditoria, urlNotificaciones);
 }
 
-// Conservamos este constructor para las pruebas existentes
+
+ServiciosExternos(
+        RestClient.Builder constructor,
+        String urlIdentidad,
+        String urlAuditoria) {
+    this(constructor, urlIdentidad, urlAuditoria, "http://localhost:8088");
+}
 ServiciosExternos(RestClient.Builder constructor, String urlIdentidad) {
     this(constructor, urlIdentidad, "http://localhost:8090", "http://localhost:8088");
 }
@@ -52,18 +58,35 @@ ServiciosExternos(
     this.urlNotificaciones = urlNotificaciones;
 }
 
-    // HU-07 (CA-022, decisión 4): solo un anfitrión puede crear publicaciones.
-    // Devuelve el id del anfitrión, que sale del token
+    
     public Long verificarAnfitrion(String autorizacion) {
         return verificarAnfitrion(autorizacion, "Solo un anfitrión puede crear publicaciones");
     }
 
-    // Igual que el anterior, con el mensaje de la operación (HU-09: modificar la publicación)
+   
     public Long verificarAnfitrion(String autorizacion, String mensajeSinPermiso) {
         return verificarRol(autorizacion, "ANFITRION", mensajeSinPermiso);
     }
 
-    // HU-13: solo un administrador puede aprobar o rechazar publicaciones.
+
+  
+    public Long verificarAdministradorOAnfitrion(String autorizacion, Long propietarioId) {
+        try {
+            return verificarAdministrador(autorizacion);
+        } catch (PermisoException e) {
+            Long anfitrionId = verificarAnfitrion(
+                    autorizacion,
+                    "No tiene permisos para consultar esta publicacion");
+
+            if (!anfitrionId.equals(propietarioId)) {
+                throw new PermisoException(
+                        "No puede consultar una publicacion de otro anfitrion");
+            }
+
+            return anfitrionId;
+        }
+    }
+   
     public Long verificarAdministrador(String autorizacion) {
         return verificarRol(
                 autorizacion,
@@ -71,7 +94,7 @@ ServiciosExternos(
                 "Solo un administrador puede aprobar o rechazar publicaciones");
     }
 
-    // Le pregunta a Identidad si el token es del rol y devuelve el id del usuario
+   
     private Long verificarRol(String autorizacion, String rol, String mensajeSinPermiso) {
         try {
             UsuarioIdentidadDTO usuario = cliente.get()
@@ -93,7 +116,7 @@ ServiciosExternos(
             throw new ServicioNoDisponibleException("No fue posible validar la sesión. Intente más tarde");
         }
     }
-    // HU-13 (CA-039): registra las decisiones del administrador.
+  
 public boolean registrarAuditoria(EventoAuditoriaDTO evento) {
     try {
         cliente.post()
@@ -111,7 +134,7 @@ public boolean registrarAuditoria(EventoAuditoriaDTO evento) {
         return false;
     }
 }
-// HU-13 (CA-039): notifica al anfitrion cuando aprueban su publicacion.
+
 public boolean notificarPublicacionAprobada(Long anfitrionId, Long publicacionId) {
     try {
         NotificacionRequestDTO notificacion = new NotificacionRequestDTO(
@@ -137,7 +160,7 @@ public boolean notificarPublicacionAprobada(Long anfitrionId, Long publicacionId
         return false;
     }
 }
-// HU-13 (CA-039): notifica al anfitrion cuando rechazan su publicacion.
+
 public boolean notificarPublicacionRechazada(
         Long anfitrionId, Long publicacionId, String motivo) {
     try {
@@ -146,7 +169,7 @@ public boolean notificarPublicacionRechazada(
                 "PUBLICACION_RECHAZADA",
                 "PUBLICACION",
                 publicacionId,
-                "Tu publicacion fue rechazada. Motivo: " + motivo
+                "Tu publicacion fue rechazada. Motivo: " + recortar(motivo, 400)
         );
 
         cliente.post()
@@ -164,4 +187,50 @@ public boolean notificarPublicacionRechazada(
         return false;
     }
 }
+
+    
+    public UsuarioIdentidadDTO verificarEditor(String autorizacion) {
+        try {
+            UsuarioIdentidadDTO usuario = cliente.get()
+                    .uri(urlIdentidad + "/autenticacion/autorizar?roles=ANFITRION,ADMINISTRADOR")
+                    .header("Authorization", autorizacion)
+                    .retrieve()
+                    .body(UsuarioIdentidadDTO.class);
+
+            if (usuario == null || usuario.id() == null || usuario.rol() == null) {
+                throw new AutenticacionException(DEBE_INICIAR_SESION);
+            }
+
+            return usuario;
+
+        } catch (HttpClientErrorException.Unauthorized e) {
+            throw new AutenticacionException(DEBE_INICIAR_SESION);
+
+        } catch (HttpClientErrorException.Forbidden e) {
+            throw new PermisoException("No tiene permiso para editar publicaciones");
+
+        } catch (RestClientException e) {
+            throw new ServicioNoDisponibleException(
+                    "No fue posible validar la sesion. Intente mas tarde");
+        }
+    }
+
+    public boolean registrarAuditoriaEdicion(Long administradorId, Long publicacionId) {
+
+        EventoAuditoriaDTO evento = new EventoAuditoriaDTO(
+                administradorId,
+                "PUBLICACION",
+                publicacionId,
+                "EDITAR_PUBLICACION",
+                "EXITO",
+                "El administrador actualizo los datos de la publicacion");
+
+        return registrarAuditoria(evento);
+    }
+        public static String recortar(String texto, int maximo) {
+        if (texto == null || texto.length() <= maximo) {
+            return texto;
+        }
+        return texto.substring(0, maximo) + "...";
+    }
 }

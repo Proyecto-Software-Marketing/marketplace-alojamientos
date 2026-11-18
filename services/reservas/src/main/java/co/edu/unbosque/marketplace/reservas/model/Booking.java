@@ -61,6 +61,13 @@ public class Booking {
     @Column(name = "metodo_pago", nullable = false, length = 100)
     private String metodoPago;
 
+    // MKT-41: referencias del pago para conciliacion.
+    @Column(name = "payment_id", length = 36)
+    private String paymentId;
+
+    @Column(name = "stripe_payment_intent_id", length = 255)
+    private String stripePaymentIntentId;
+
     @Column(name = "idempotency_key", nullable = false, unique = true, length = 100)
     private String idempotencyKey;
 
@@ -148,6 +155,19 @@ public class Booking {
 
     public String getMetodoPago() {
         return metodoPago;
+    }
+
+    public String getPaymentId() {
+        return paymentId;
+    }
+
+    public String getStripePaymentIntentId() {
+        return stripePaymentIntentId;
+    }
+
+    public void registrarPago(String paymentId, String stripePaymentIntentId) {
+        this.paymentId = paymentId;
+        this.stripePaymentIntentId = stripePaymentIntentId;
     }
 
     public String getIdempotencyKey() {

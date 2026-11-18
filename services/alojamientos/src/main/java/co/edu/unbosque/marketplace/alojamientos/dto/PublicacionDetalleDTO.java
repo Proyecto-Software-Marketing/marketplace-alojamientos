@@ -36,6 +36,6 @@ public record PublicacionDetalleDTO(
                 publicacion.getDescripcion(),
                 publicacion.getReglas(),
                 publicacion.getImagenes(),
-                null);
+                publicacion.getPoliticaCancelacion() == null ? null : publicacion.getPoliticaCancelacion().getNombre());
     }
 }

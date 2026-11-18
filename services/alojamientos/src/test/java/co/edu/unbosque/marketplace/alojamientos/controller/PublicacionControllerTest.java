@@ -27,6 +27,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -85,6 +86,13 @@ class PublicacionControllerTest {
 
     private String cuerpoValido() {
         return cuerpo("\"CABANA\"", "4", "250000");
+    }
+     private Publicacion completar() {
+        Publicacion publicacion = publicacionRepository.findAll().get(0);
+        publicacion.definirServicios(java.util.List.of("Wifi"));
+        publicacion.definirReglas(java.util.List.of("No fumar"));
+        publicacion.definirImagenes(java.util.List.of("https://ejemplo.com/foto.jpg"));
+        return publicacionRepository.save(publicacion);
     }
 
     private ResultActions crear(String cuerpo) throws Exception {
@@ -316,7 +324,7 @@ class PublicacionControllerTest {
 void enviaPublicacionARevision() throws Exception {
     crear(cuerpoValido()).andExpect(status().isCreated());
 
-    Publicacion borrador = publicacionRepository.findAll().get(0);
+    Publicacion borrador = completar();
 
     mockMvc.perform(post("/listings/{id}/submit", borrador.getId())
                     .header("Authorization", TOKEN))
@@ -333,7 +341,7 @@ void enviaPublicacionARevision() throws Exception {
 void rechazaSegundoEnvio() throws Exception {
     crear(cuerpoValido()).andExpect(status().isCreated());
 
-    Long id = publicacionRepository.findAll().get(0).getId();
+    Long id = completar().getId();
 
     mockMvc.perform(post("/listings/{id}/submit", id)
                     .header("Authorization", TOKEN))
@@ -349,7 +357,7 @@ void rechazaSegundoEnvio() throws Exception {
 void rechazaOtroAnfitrion() throws Exception {
     crear(cuerpoValido()).andExpect(status().isCreated());
 
-    Long id = publicacionRepository.findAll().get(0).getId();
+    Long id = completar().getId();
 
     when(serviciosExternos.verificarAnfitrion(TOKEN)).thenReturn(99L);
 
@@ -406,7 +414,7 @@ void rechazaEnvioDePublicacionIncompleta() throws Exception {
         // Crear una publicacion en borrador.
         crear(cuerpoValido()).andExpect(status().isCreated());
 
-        Long id = publicacionRepository.findAll().get(0).getId();
+        Long id = completar().getId();
 
         // El anfitrion envia la publicacion a revision.
         mockMvc.perform(post("/listings/{id}/submit", id)
@@ -436,7 +444,7 @@ verify(serviciosExternos).registrarAuditoria(
                         && evento.entidad().equals("PUBLICACION")
                         && evento.entidadId().equals(id)
                         && evento.accion().equals("APROBAR_PUBLICACION")
-                        && evento.resultado().equals("EXITOSO")
+                        && evento.resultado().equals("EXITO")
         )
 );
 
@@ -457,7 +465,7 @@ verify(serviciosExternos).notificarPublicacionAprobada(
         // Crear una publicacion.
         crear(cuerpoValido()).andExpect(status().isCreated());
 
-        Long id = publicacionRepository.findAll().get(0).getId();
+        Long id = completar().getId();
 
         // Enviar la publicacion a revision.
         mockMvc.perform(post("/listings/{id}/submit", id)
@@ -505,7 +513,7 @@ verify(serviciosExternos).notificarPublicacionAprobada(
         // Crear una publicacion que permanece en BORRADOR.
         crear(cuerpoValido()).andExpect(status().isCreated());
 
-        Long id = publicacionRepository.findAll().get(0).getId();
+        Long id = completar().getId();
 
         // Simular un administrador autorizado.
         when(serviciosExternos.verificarAdministrador(TOKEN))
@@ -528,7 +536,7 @@ verify(serviciosExternos).notificarPublicacionAprobada(
         // Crear una publicacion.
         crear(cuerpoValido()).andExpect(status().isCreated());
 
-        Long id = publicacionRepository.findAll().get(0).getId();
+        Long id = completar().getId();
 
         // Enviar a revision.
         mockMvc.perform(post("/listings/{id}/submit", id)
@@ -563,7 +571,7 @@ void administradorRechazaPublicacion() throws Exception {
     // Crear la publicacion.
     crear(cuerpoValido()).andExpect(status().isCreated());
 
-    Long id = publicacionRepository.findAll().get(0).getId();
+    Long id = completar().getId();
 
     // Enviarla a revision.
     mockMvc.perform(post("/listings/{id}/submit", id)
@@ -582,14 +590,14 @@ void administradorRechazaPublicacion() throws Exception {
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("{\"motivo\":\"" + motivo + "\"}"))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.estado").value("RECHAZADA"))
+            .andExpect(jsonPath("$.estado").value("BORRADOR"))
             .andExpect(jsonPath("$.motivoRechazo").value(motivo));
 
     // Verificar que el rechazo quedo guardado.
     Publicacion guardada = publicacionRepository.findById(id)
             .orElseThrow();
 
-    assertEquals(EstadoPublicacion.RECHAZADA, guardada.getEstado());
+    assertEquals(EstadoPublicacion.BORRADOR, guardada.getEstado());
     assertEquals(motivo, guardada.getMotivoRechazo());
 
     // Verificar la auditoria.
@@ -598,7 +606,7 @@ void administradorRechazaPublicacion() throws Exception {
                     evento.usuarioId().equals(10L)
                             && evento.entidadId().equals(id)
                             && evento.accion().equals("RECHAZAR_PUBLICACION")
-                            && evento.resultado().equals("EXITOSO")
+                            && evento.resultado().equals("EXITO")
                             && evento.detalle().contains(motivo)
             )
     );
@@ -614,7 +622,7 @@ verify(serviciosExternos).notificarPublicacionRechazada(
 void rechazaPublicacionSinPermisos() throws Exception {
     crear(cuerpoValido()).andExpect(status().isCreated());
 
-    Long id = publicacionRepository.findAll().get(0).getId();
+    Long id = completar().getId();
 
     mockMvc.perform(post("/listings/{id}/submit", id)
                     .header("Authorization", TOKEN))
@@ -663,7 +671,7 @@ void rechazaPublicacionEnBorrador() throws Exception {
     // Crear una publicacion que permanece en BORRADOR.
     crear(cuerpoValido()).andExpect(status().isCreated());
 
-    Long id = publicacionRepository.findAll().get(0).getId();
+    Long id = completar().getId();
 
     // Simular un administrador autorizado.
     when(serviciosExternos.verificarAdministrador(TOKEN))
@@ -694,7 +702,7 @@ void rechazaPublicacionSinMotivo() throws Exception {
     // Crear una publicacion.
     crear(cuerpoValido()).andExpect(status().isCreated());
 
-    Long id = publicacionRepository.findAll().get(0).getId();
+    Long id = completar().getId();
 
     // Enviar la publicacion a revision.
     mockMvc.perform(post("/listings/{id}/submit", id)
@@ -731,7 +739,7 @@ void rechazaPublicacionSinMotivo() throws Exception {
 void rechazaSegundoRechazo() throws Exception {
     crear(cuerpoValido()).andExpect(status().isCreated());
 
-    Long id = publicacionRepository.findAll().get(0).getId();
+    Long id = completar().getId();
 
     // Enviar a revision.
     mockMvc.perform(post("/listings/{id}/submit", id)
@@ -747,7 +755,7 @@ void rechazaSegundoRechazo() throws Exception {
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("{\"motivo\":\"No cumple los requisitos\"}"))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.estado").value("RECHAZADA"));
+            .andExpect(jsonPath("$.estado").value("BORRADOR"));
 
     // Segundo rechazo: debe responder 409.
     mockMvc.perform(post("/admin/listings/{id}/reject", id)
@@ -760,7 +768,7 @@ void rechazaSegundoRechazo() throws Exception {
     Publicacion guardada = publicacionRepository.findById(id)
             .orElseThrow();
 
-    assertEquals(EstadoPublicacion.RECHAZADA, guardada.getEstado());
+    assertEquals(EstadoPublicacion.BORRADOR, guardada.getEstado());
     assertEquals("No cumple los requisitos", guardada.getMotivoRechazo());
 }
 @Test
@@ -768,7 +776,7 @@ void rechazaSegundoRechazo() throws Exception {
 void rechazaMotivoDemasiadoCorto() throws Exception {
     crear(cuerpoValido()).andExpect(status().isCreated());
 
-    Long id = publicacionRepository.findAll().get(0).getId();
+    Long id = completar().getId();
 
     // Enviar a revision.
     mockMvc.perform(post("/listings/{id}/submit", id)
@@ -806,7 +814,7 @@ void rechazaMotivoCortoConEspacios() throws Exception {
     // Crear una publicacion.
     crear(cuerpoValido()).andExpect(status().isCreated());
 
-    Long id = publicacionRepository.findAll().get(0).getId();
+    Long id = completar().getId();
 
     // Enviar la publicacion a revision.
     mockMvc.perform(post("/listings/{id}/submit", id)
@@ -849,7 +857,7 @@ void rechazaMotivoCortoConEspacios() throws Exception {
 void pausaPublicacionActivaDesdeController() throws Exception {
     crear(cuerpoValido()).andExpect(status().isCreated());
 
-    Long id = publicacionRepository.findAll().get(0).getId();
+    Long id = completar().getId();
 
     mockMvc.perform(post("/listings/{id}/submit", id)
                     .header("Authorization", TOKEN))
@@ -876,7 +884,7 @@ void pausaPublicacionActivaDesdeController() throws Exception {
 void reactivaPublicacionPausadaDesdeController() throws Exception {
     crear(cuerpoValido()).andExpect(status().isCreated());
 
-    Long id = publicacionRepository.findAll().get(0).getId();
+    Long id = completar().getId();
 
     mockMvc.perform(post("/listings/{id}/submit", id)
                     .header("Authorization", TOKEN))
@@ -918,4 +926,134 @@ void noReactivaPublicacionInexistenteDesdeController() throws Exception {
             .andExpect(status().isNotFound());
 }
 
+    // ---------- HU-13: Listar publicaciones ----------
+
+    @Test
+    @DisplayName("HU-13: administrador consulta publicaciones pendientes")
+    void administradorListaPublicacionesPendientes() throws Exception {
+        crear(cuerpoValido()).andExpect(status().isCreated());
+
+        Long id = completar().getId();
+
+        mockMvc.perform(post("/listings/{id}/submit", id)
+                .header("Authorization", TOKEN))
+                .andExpect(status().isOk());
+
+        when(serviciosExternos.verificarAdministrador(TOKEN))
+                .thenReturn(10L);
+
+        mockMvc.perform(get("/admin/listings")
+                .header("Authorization", TOKEN)
+                .param("estado", "PENDIENTE_REVISION"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(1))
+                .andExpect(jsonPath("$.items[0].id").value(id))
+                .andExpect(jsonPath("$.items[0].estado").value("PENDIENTE_REVISION"));
+    }
+
+    @Test
+    @DisplayName("HU-13: filtro no incluye publicaciones en borrador")
+    void listadoPendientesExcluyeBorradores() throws Exception {
+        crear(cuerpoValido()).andExpect(status().isCreated());
+
+        when(serviciosExternos.verificarAdministrador(TOKEN))
+                .thenReturn(10L);
+
+        mockMvc.perform(get("/admin/listings")
+                .header("Authorization", TOKEN)
+                .param("estado", "PENDIENTE_REVISION"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(0));
+    }
+
+    @Test
+    @DisplayName("HU-13: usuario sin permisos no puede consultar listado")
+    void listadoAdministrativoSinPermisos() throws Exception {
+        when(serviciosExternos.verificarAdministrador(TOKEN))
+                .thenThrow(new PermisoException("Acceso denegado"));
+
+        mockMvc.perform(get("/admin/listings")
+                .header("Authorization", TOKEN)
+                .param("estado", "PENDIENTE_REVISION"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("HU-13: listado vacio devuelve items vacios")
+    void listadoAdministrativoVacio() throws Exception {
+        when(serviciosExternos.verificarAdministrador(TOKEN))
+                .thenReturn(10L);
+
+        mockMvc.perform(get("/admin/listings")
+                .header("Authorization", TOKEN)
+                .param("estado", "PENDIENTE_REVISION"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(0));
+    }
+
+    // ---------- HU-08: Consultar publicacion por ID ----------
+
+    @Test
+    @DisplayName("HU-08: propietario consulta su publicacion (200)")
+    void propietarioConsultaSuPublicacion() throws Exception {
+        crear(cuerpoValido()).andExpect(status().isCreated());
+        Long id = completar().getId();
+
+        when(serviciosExternos.verificarAdministradorOAnfitrion(TOKEN, ANFITRION))
+                .thenReturn(ANFITRION);
+
+        mockMvc.perform(get("/listings/{id}", id)
+                .header("Authorization", TOKEN))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(id))
+                .andExpect(jsonPath("$.anfitrionId").value(ANFITRION))
+                .andExpect(jsonPath("$.estado").value("BORRADOR"));
+    }
+
+    @Test
+    @DisplayName("HU-08: administrador consulta una publicacion (200)")
+    void administradorConsultaPublicacion() throws Exception {
+        crear(cuerpoValido()).andExpect(status().isCreated());
+        Long id = completar().getId();
+
+        when(serviciosExternos.verificarAdministradorOAnfitrion(TOKEN, ANFITRION))
+                .thenReturn(10L);
+
+        mockMvc.perform(get("/listings/{id}", id)
+                .header("Authorization", TOKEN))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(id));
+    }
+
+    @Test
+    @DisplayName("HU-08: otro anfitrion no puede consultar la publicacion (403)")
+    void otroAnfitrionNoPuedeConsultar() throws Exception {
+        crear(cuerpoValido()).andExpect(status().isCreated());
+        Long id = completar().getId();
+
+        when(serviciosExternos.verificarAdministradorOAnfitrion(TOKEN, ANFITRION))
+                .thenThrow(new PermisoException("No puede consultar una publicacion de otro anfitrion"));
+
+        mockMvc.perform(get("/listings/{id}", id)
+                .header("Authorization", TOKEN))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("HU-08: publicacion inexistente devuelve 404")
+    void consultaPublicacionInexistente() throws Exception {
+        mockMvc.perform(get("/listings/{id}", 999999L)
+                .header("Authorization", TOKEN))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("HU-08: consultar sin token devuelve 401")
+    void consultaPublicacionSinToken() throws Exception {
+        crear(cuerpoValido()).andExpect(status().isCreated());
+        Long id = completar().getId();
+
+        mockMvc.perform(get("/listings/{id}", id))
+                .andExpect(status().isUnauthorized());
+    }
 }

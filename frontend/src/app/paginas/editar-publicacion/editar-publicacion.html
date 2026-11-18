@@ -1,0 +1,124 @@
+<h1>Editar publicación</h1>
+<p class="subtitulo"><a (click)="volver()" class="volver">← Volver</a></p>
+
+@if (cargando()) {
+  <p class="nota">Cargando publicación...</p>
+} @else {
+  <section class="tarjeta cuadro">
+    <h2>Datos básicos</h2>
+    <form (ngSubmit)="guardar()">
+      <label class="campo">Título
+        <input name="titulo" [(ngModel)]="datos.titulo" maxlength="120" required>
+      </label>
+      <label class="campo">Descripción
+        <textarea name="descripcion" [(ngModel)]="datos.descripcion" rows="4" required></textarea>
+      </label>
+      <div class="dos">
+        <label class="campo">Ciudad
+          <input name="ciudad" [(ngModel)]="datos.ciudad" required>
+        </label>
+        <label class="campo">Tipo de alojamiento
+          <select name="tipoAlojamiento" [(ngModel)]="datos.tipoAlojamiento">
+            @for (tipo of tipos; track tipo.valor) {
+              <option [value]="tipo.valor">{{ tipo.texto }}</option>
+            }
+          </select>
+        </label>
+      </div>
+      <label class="campo">Ubicación
+        <input name="ubicacionTextual" [(ngModel)]="datos.ubicacionTextual" required>
+      </label>
+      <div class="dos">
+        <label class="campo">Capacidad (huéspedes)
+          <input type="number" name="capacidad" [(ngModel)]="datos.capacidad" min="1" max="50">
+        </label>
+        <label class="campo">Precio por noche ($)
+          <input type="number" name="precioPorNoche" [(ngModel)]="datos.precioPorNoche" min="1">
+        </label>
+      </div>
+
+      @if (guardado()) {
+        <p class="exito">Los cambios quedaron guardados.</p>
+      }
+      @for (error of errores(); track error) {
+        <p class="error">{{ error }}</p>
+      }
+
+      <div class="botones">
+        <button type="submit" class="boton" [disabled]="guardando()">
+          {{ guardando() ? 'Guardando...' : 'Guardar cambios' }}
+        </button>
+        <button type="button" class="boton-secundario" (click)="volver()">Volver</button>
+      </div>
+   </form>
+  </section>
+
+  <!-- HU-09 completar servicios, reglas e imágenes -->
+  <section class="tarjeta cuadro detalles">
+    <h2>Servicios, reglas e imágenes</h2>
+    <p class="suave">Para enviar a revisión se necesita al menos un servicio, una regla y una imagen.</p>
+
+    <h3>Servicios</h3>
+    <div class="servicios">
+      @for (servicio of catalogo; track servicio) {
+        <label>
+          <input type="checkbox" [checked]="servicios().includes(servicio)"
+                 (change)="cambiarServicio(servicio, $any($event.target).checked)"> {{ servicio }}
+        </label>
+      }
+    </div>
+
+    <h3>Reglas ({{ reglas().length }})</h3>
+    <div class="agregar">
+      <input name="nuevaRegla" [(ngModel)]="nuevaRegla" placeholder="Ej: No fumar">
+      <button type="button" class="boton-secundario" (click)="agregarRegla()">Agregar</button>
+    </div>
+    <ul class="lista">
+      @for (regla of reglas(); track regla) {
+        <li>{{ regla }} <button type="button" class="quitar" (click)="quitarRegla(regla)">✕</button></li>
+      }
+    </ul>
+
+    <h3>Imágenes ({{ imagenes().length }}, la primera es la principal)</h3>
+    <div class="agregar">
+      <input name="nuevaImagen" [(ngModel)]="nuevaImagen" placeholder="https://... o /imagenes/foto.jpg">
+      <button type="button" class="boton-secundario" (click)="agregarImagen()">Agregar</button>
+    </div>
+    <ul class="lista">
+      @for (imagen of imagenes(); track imagen) {
+        <li>{{ imagen }} <button type="button" class="quitar" (click)="quitarImagen(imagen)">✕</button></li>
+      }
+    </ul>
+
+    @if (detallesGuardados()) {
+      <p class="exito">Servicios, reglas e imágenes guardados.</p>
+    }
+    @for (error of erroresDetalles(); track error) {
+      <p class="error">{{ error }}</p>
+    }
+
+    <button type="button" class="boton guardar-detalles" [disabled]="guardandoDetalles()" (click)="guardarDetalles()">
+      {{ guardandoDetalles() ? 'Guardando...' : 'Guardar servicios, reglas e imágenes' }}
+     </button>
+  </section>
+
+  <!-- HU-11 política de cancelación -->
+  <section class="tarjeta cuadro detalles">
+    <h2>Política de cancelación</h2>
+    <p class="suave">Se aplica cuando un huésped cancela una reserva.</p>
+    <label class="campo">Política
+      <select name="politica" [(ngModel)]="politicaId">
+        @for (politica of politicas(); track politica.id) {
+          <option [ngValue]="politica.id">{{ politica.nombre }}</option>
+        }
+      </select>
+    </label>
+    @if (politicaGuardada()) {
+      <p class="exito">La política quedó guardada.</p>
+    }
+    @for (error of erroresPolitica(); track error) {
+      <p class="error">{{ error }}</p>
+    }
+    <button type="button" class="boton guardar-detalles" (click)="guardarPolitica()">Guardar política</button>
+  </section>
+}

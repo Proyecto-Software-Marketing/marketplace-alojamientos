@@ -1,0 +1,84 @@
+<h1>Consultar auditoría</h1>
+<p>Consulta los eventos registrados en el sistema y aplica filtros para encontrar la información.</p>
+
+<section class="tarjeta contenedor">
+  <h2>Filtros de búsqueda</h2>
+
+  <form (ngSubmit)="buscar()" class="filtros">
+    <label class="campo">
+      Usuario
+      <input name="usuario" [(ngModel)]="usuario" placeholder="ID del usuario" />
+    </label>
+
+    <label class="campo">
+      Entidad
+      <input name="entidad" [(ngModel)]="entidad" placeholder="Ej. PUBLICACION" />
+    </label>
+
+    <label class="campo">
+      Acción
+      <input name="accion" [(ngModel)]="accion" placeholder="Ej. APROBAR_PUBLICACION" />
+    </label>
+
+    <label class="campo">
+      Desde
+      <input type="date" name="desde" [(ngModel)]="desde" />
+    </label>
+
+    <label class="campo">
+      Hasta
+      <input type="date" name="hasta" [(ngModel)]="hasta" />
+    </label>
+
+    <div class="acciones">
+      <button class="boton" type="submit" [disabled]="cargando()">
+        {{ cargando() ? 'Consultando...' : 'Buscar' }}
+      </button>
+
+      <button class="boton-secundario" type="button" (click)="limpiar()" [disabled]="cargando()">
+        Limpiar filtros
+      </button>
+    </div>
+  </form>
+</section>
+
+<section class="tarjeta contenedor">
+  <h2>Eventos de auditoría</h2>
+
+  @for (error of errores(); track $index) {
+    <p class="error" role="alert">{{ error }}</p>
+  }
+
+  @if (cargando()) {
+    <p>Consultando eventos...</p>
+  } @else {
+    <div class="tabla-contenedor">
+      <table>
+        <thead>
+          <tr>
+            <th>Usuario</th>
+            <th>Entidad</th>
+            <th>Acción</th>
+            <th>Fecha</th>
+            <th>Resultado</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (evento of eventos(); track evento.id) {
+            <tr>
+              <td>{{ evento.usuarioId ?? 'Sin usuario' }}</td>
+              <td>{{ evento.entidad }}</td>
+              <td>{{ evento.accion }}</td>
+              <td>{{ evento.fecha | date:'dd/MM/yyyy HH:mm' }}</td>
+              <td>{{ evento.resultado }}</td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="5">No hay eventos para mostrar.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>

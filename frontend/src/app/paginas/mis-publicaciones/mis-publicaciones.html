@@ -1,0 +1,49 @@
+<div class="encabezado">
+  <div>
+    <h1>Mis publicaciones</h1>
+    <p class="subtitulo">Tus alojamientos con su estado actual.</p>
+  </div>
+  <a class="boton nueva" routerLink="/publicaciones/nueva">+ Nueva publicación</a>
+</div>
+
+@if (mensaje()) {
+  <p class="tarjeta exito">{{ mensaje() }}</p>
+}
+@for (error of errores(); track error) {
+  <p class="tarjeta error">{{ error }}</p>
+}
+
+@if (cargando()) {
+  <p class="nota">Cargando publicaciones...</p>
+} @else if (publicaciones().length === 0) {
+  <p class="tarjeta nota">Todavía no tienes publicaciones. Crea la primera en <a routerLink="/publicaciones/nueva">Nueva publicación</a>.</p>
+}
+
+<div class="lista">
+  @for (p of publicaciones(); track p.id) {
+    <div class="tarjeta fila">
+      <div>
+        <h2>{{ p.titulo }}</h2>
+        <p class="suave">{{ p.ciudad }} · {{ p.tipoAlojamiento }} · {{ p.capacidad }} huéspedes · $ {{ p.precioPorNoche | number: '1.0-0' }} / noche</p>
+        <span class="estado" [class]="p.estado">{{ textoEstado(p.estado) }}</span>
+
+        <!-- CA-038 el anfitrión ve por qué se la rechazaron -->
+        @if (p.motivoRechazo) {
+          <p class="rechazo"><strong>Motivo del rechazo:</strong> {{ p.motivoRechazo }}</p>
+        }
+      </div>
+
+      <div class="acciones">
+        @if (puedeEditar(p.estado)) {
+          <a class="boton-secundario" [routerLink]="['/publicaciones', p.id, 'editar']">Editar</a>
+        }
+        <a class="boton-secundario" [routerLink]="['/disponibilidad', p.id]">Disponibilidad</a>
+        @if (p.estado === 'BORRADOR') {
+          <button type="button" class="boton" [disabled]="enviando() === p.id" (click)="enviar(p)">
+            {{ enviando() === p.id ? 'Enviando...' : 'Enviar a revisión' }}
+          </button>
+        }
+      </div>
+    </div>
+  }
+</div>

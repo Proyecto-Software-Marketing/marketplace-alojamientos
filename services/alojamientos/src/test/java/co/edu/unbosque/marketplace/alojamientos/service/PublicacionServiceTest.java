@@ -57,6 +57,12 @@ class PublicacionServiceTest {
         when(reloj.getZone()).thenReturn(BOGOTA);
         when(reloj.instant()).thenReturn(AHORA.atZone(BOGOTA).toInstant());
     }
+    private void completar(Publicacion publicacion) {
+        publicacion.definirServicios(java.util.List.of("Wifi"));
+        publicacion.definirReglas(java.util.List.of("No fumar"));
+        publicacion.definirImagenes(java.util.List.of("https://ejemplo.com/foto.jpg"));
+        publicacionRepository.save(publicacion);
+    }
 
     // Solicitud válida a la que cada prueba le cambia la capacidad y el precio
     private PublicacionRequestDTO solicitud(String capacidad, String precio) {
@@ -204,6 +210,7 @@ class PublicacionServiceTest {
 void enviaPublicacionCompletaARevision() {
     Publicacion borrador = publicacionService.crear(
             ANFITRION, solicitud("4", "250000"));
+            completar(borrador);
 
     Publicacion enviada = publicacionService.enviarARevision(
             borrador.getId(), ANFITRION);
@@ -259,6 +266,7 @@ void rechazaPublicacionDeOtroAnfitrion() {
 void rechazaSegundoEnvioARevision() {
     Publicacion borrador = publicacionService.crear(
             ANFITRION, solicitud("4", "250000"));
+            completar(borrador);
 
     publicacionService.enviarARevision(borrador.getId(), ANFITRION);
 
@@ -485,4 +493,19 @@ void noPermitePausarPublicacionEnBorrador() {
             publicacionRepository.findById(id).orElseThrow().getEstado());
 }
 
+@Test
+@DisplayName("HU-12: sin servicios, reglas ni imagenes no se puede enviar a revision")
+void exigeServiciosReglasEImagenes() {
+    Publicacion borrador = publicacionService.crear(
+            ANFITRION, solicitud("4", "250000"));
+    Long id = borrador.getId();
+
+    PublicacionIncompletaException error = assertThrows(
+            PublicacionIncompletaException.class,
+            () -> publicacionService.enviarARevision(id, ANFITRION));
+
+    assertTrue(error.getMessage().contains("servicios"));
+    assertTrue(error.getMessage().contains("reglas"));
+    assertTrue(error.getMessage().contains("imagenes"));
+}
 }
