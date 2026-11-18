@@ -1,5 +1,33 @@
+/* Banda oscura de ancho completo detras del titulo y el buscador (estilo B) */
+:host {
+  display: block;
+  position: relative;
+}
+
+:host::before {
+  content: '';
+  position: absolute;
+  top: -48px;
+  left: 50%;
+  width: 100vw;
+  height: 250px;
+  transform: translateX(-50%);
+  background: var(--oscuro);
+  z-index: -1;
+}
+
+h1 {
+  color: var(--blanco);
+  font-size: 40px;
+}
+
+.subtitulo {
+  color: #b7e4dc;
+}
+
 .buscador {
   padding: 24px;
+  border: none;
   margin-bottom: 32px;
 }
 
@@ -25,6 +53,7 @@
   cursor: pointer;
   color: var(--azul);
   font-size: 14px;
+  font-weight: 700;
   margin-bottom: 16px;
 }
 
@@ -71,17 +100,20 @@
 
 .tarjeta-alojamiento {
   background: var(--blanco);
-  border: 1px solid var(--borde);
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: var(--sombra);
 }
 
 .imagen {
   height: 180px;
-  background: #e5e7eb;
+  background: #cbeae4;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--texto-suave);
+  color: var(--azul);
   font-size: 13px;
+  font-weight: 600;
 }
 
 .datos {
@@ -91,7 +123,7 @@
 .datos h3 {
   margin: 0 0 12px;
   font-size: 18px;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .datos p {
@@ -99,9 +131,9 @@
 }
 
 .precio {
-  color: var(--azul);
+  color: var(--texto);
   font-size: 18px;
-  font-weight: 600;
+  font-weight: 800;
 }
 
 .ver-detalle {
