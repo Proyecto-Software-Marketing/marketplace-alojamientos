@@ -11,6 +11,7 @@ const TITULOS: Record<string, string> = {
   RESERVA_CANCELADA: 'Reserva cancelada',
   PUBLICACION_BLOQUEADA: 'Publicación bloqueada',
   USUARIO_RESTRINGIDO: 'Cuenta restringida',
+  USUARIO_REACTIVADO: 'Cuenta reactivada',
   RECUPERACION_CONTRASENA: 'Recuperación de contraseña'
 };
 

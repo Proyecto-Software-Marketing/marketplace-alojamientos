@@ -165,7 +165,7 @@ class ServiciosExternosHu35Test {
         assertTrue(cuerpo.contains("\"entidad\":\"USUARIO\""));
         assertTrue(cuerpo.contains("\"entidadId\":25"));
         assertTrue(cuerpo.contains("USUARIO_RESTRINGIDO"));
-        assertTrue(cuerpo.contains("EXITOSO"));
+        assertTrue(cuerpo.contains("EXITO"));
         assertTrue(cuerpo.contains("Cuenta restringida"));
     }
 
@@ -192,5 +192,16 @@ class ServiciosExternosHu35Test {
                         10L, 25L, "USUARIO_RESTRINGIDO", "Prueba"));
 
         assertTrue(metodos.isEmpty());
+    }
+    
+    @Test
+    void siLosServiciosFallanNoLanzaError() {
+        // puerto donde no hay nadie escuchando
+        ReflectionTestUtils.setField(servicios, "urlNotificaciones", "http://localhost:1");
+        ReflectionTestUtils.setField(servicios, "urlAuditoria", "http://localhost:1");
+
+        assertDoesNotThrow(() -> servicios.notificarRestriccion(25L));
+        assertDoesNotThrow(() -> servicios.notificarReactivacion(25L));
+        assertDoesNotThrow(() -> servicios.registrarAuditoria(10L, 25L, "USUARIO_RESTRINGIDO", "Prueba"));
     }
 }

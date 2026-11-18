@@ -137,4 +137,9 @@ class RestriccionUsuarioTest {
                 () -> sesionService.reactivarCuenta(
                         new LoginRequest("carlos@correo.com", "clave12345")));
     }
+       @Test
+    @DisplayName("HU-35: el administrador ve la lista de usuarios")
+    void listaLosUsuarios() {
+        assertFalse(usuarioService.listarUsuarios().isEmpty());
+    }
 }

@@ -16,6 +16,7 @@ import co.edu.unbosque.marketplace.identidad.exception.AutenticacionException;
 import co.edu.unbosque.marketplace.identidad.exception.CuentaException;
 import co.edu.unbosque.marketplace.identidad.model.EstadoUsuario;
 import co.edu.unbosque.marketplace.identidad.model.Sesion;
+import org.springframework.data.domain.Sort;
 import java.util.List;
 
 
@@ -173,5 +174,12 @@ return new UsuarioResponse(guardado);
                 usuarioRepository.count(),
                 usuarioRepository.countByRol(Rol.HUESPED),
                 usuarioRepository.countByRol(Rol.ANFITRION));
+    }
+    
+    // HU-35: todos los usuarios para que el administrador elija a quién restringir
+    public List<UsuarioResponse> listarUsuarios() {
+        return usuarioRepository.findAll(Sort.by("id")).stream()
+                .map(UsuarioResponse::new)
+                .toList();
     }
 }

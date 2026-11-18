@@ -87,4 +87,14 @@ class UsuarioAdminControllerTest {
 
         verify(usuarioService).reactivarUsuario(25L, 10L);
     }
+    
+    @Test
+    void listarUsuariosComoAdministrador() {
+        when(usuarioService.listarUsuarios()).thenReturn(java.util.List.of());
+
+        ResponseEntity<java.util.List<UsuarioResponse>> resultado = controller.listar("Bearer token-admin");
+
+        assertEquals(200, resultado.getStatusCode().value());
+        verify(sesionService).autorizar("token-admin", java.util.List.of(Rol.ADMINISTRADOR), null);
+    }
 }

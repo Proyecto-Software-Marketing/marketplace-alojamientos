@@ -18,6 +18,7 @@ import { Favoritos } from './paginas/favoritos/favoritos';
 import { MisPublicaciones } from './paginas/mis-publicaciones/mis-publicaciones';
 import { EditarPublicacion } from './paginas/editar-publicacion/editar-publicacion';
 import { Aprobaciones } from './paginas/aprobaciones/aprobaciones';
+import { Usuarios } from './paginas/usuarios/usuarios';
 
 // Rutas de las ventanas
 export const routes: Routes = [
@@ -41,5 +42,6 @@ export const routes: Routes = [
   { path: 'consultar-auditoria', component: ConsultarAuditoria, canActivate: [adminGuard] },
   { path: 'exportar-reportes', component: ExportarReportes, canActivate: [adminGuard] },
   { path: 'favoritos', component: Favoritos, canActivate: [sesionGuard] },
+  { path: 'usuarios', component: Usuarios, canActivate: [adminGuard] },
   { path: '**', redirectTo: '' }
 ];
