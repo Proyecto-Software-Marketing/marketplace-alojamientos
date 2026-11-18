@@ -309,7 +309,7 @@ public void rechazar(String motivo) {
         "El motivo del rechazo debe tener entre 3 y 2000 caracteres");
     }
 
-    estado = EstadoPublicacion.RECHAZADA;
+    estado = EstadoPublicacion.BORRADOR;
     motivoRechazo = motivo.trim();
 }
 }

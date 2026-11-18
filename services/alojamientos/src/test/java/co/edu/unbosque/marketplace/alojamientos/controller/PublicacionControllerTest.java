@@ -582,14 +582,14 @@ void administradorRechazaPublicacion() throws Exception {
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("{\"motivo\":\"" + motivo + "\"}"))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.estado").value("RECHAZADA"))
+            .andExpect(jsonPath("$.estado").value("BORRADOR"))
             .andExpect(jsonPath("$.motivoRechazo").value(motivo));
 
     // Verificar que el rechazo quedo guardado.
     Publicacion guardada = publicacionRepository.findById(id)
             .orElseThrow();
 
-    assertEquals(EstadoPublicacion.RECHAZADA, guardada.getEstado());
+    assertEquals(EstadoPublicacion.BORRADOR, guardada.getEstado());
     assertEquals(motivo, guardada.getMotivoRechazo());
 
     // Verificar la auditoria.
@@ -747,7 +747,7 @@ void rechazaSegundoRechazo() throws Exception {
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("{\"motivo\":\"No cumple los requisitos\"}"))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.estado").value("RECHAZADA"));
+            .andExpect(jsonPath("$.estado").value("BORRADOR"));
 
     // Segundo rechazo: debe responder 409.
     mockMvc.perform(post("/admin/listings/{id}/reject", id)
@@ -760,7 +760,7 @@ void rechazaSegundoRechazo() throws Exception {
     Publicacion guardada = publicacionRepository.findById(id)
             .orElseThrow();
 
-    assertEquals(EstadoPublicacion.RECHAZADA, guardada.getEstado());
+    assertEquals(EstadoPublicacion.BORRADOR, guardada.getEstado());
     assertEquals("No cumple los requisitos", guardada.getMotivoRechazo());
 }
 @Test
