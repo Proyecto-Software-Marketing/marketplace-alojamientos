@@ -20,7 +20,7 @@ import co.edu.unbosque.marketplace.alojamientos.dto.NotificacionRequestDTO;
 @Component
 public class ServiciosExternos {
 
-    private static final String DEBE_INICIAR_SESION = "Debe iniciar sesión";
+    private static final String DEBE_INICIAR_SESION = "Debe iniciar sesi├│n";
     private static final Logger log = LoggerFactory.getLogger(ServiciosExternos.class);
 
     private final RestClient cliente;
@@ -37,6 +37,12 @@ public ServiciosExternos(
 }
 
 // Conservamos este constructor para las pruebas existentes
+ServiciosExternos(
+        RestClient.Builder constructor,
+        String urlIdentidad,
+        String urlAuditoria) {
+    this(constructor, urlIdentidad, urlAuditoria, "http://localhost:8088");
+}
 ServiciosExternos(RestClient.Builder constructor, String urlIdentidad) {
     this(constructor, urlIdentidad, "http://localhost:8090", "http://localhost:8088");
 }
@@ -52,13 +58,13 @@ ServiciosExternos(
     this.urlNotificaciones = urlNotificaciones;
 }
 
-    // HU-07 (CA-022, decisión 4): solo un anfitrión puede crear publicaciones.
-    // Devuelve el id del anfitrión, que sale del token
+    // HU-07 (CA-022, decisi├│n 4): solo un anfitri├│n puede crear publicaciones.
+    // Devuelve el id del anfitri├│n, que sale del token
     public Long verificarAnfitrion(String autorizacion) {
         return verificarAnfitrion(autorizacion, "Solo un anfitrión puede crear publicaciones");
     }
 
-    // Igual que el anterior, con el mensaje de la operación (HU-09: modificar la publicación)
+    // Igual que el anterior, con el mensaje de la operaci├│n (HU-09: modificar la publicaci├│n)
     public Long verificarAnfitrion(String autorizacion, String mensajeSinPermiso) {
         return verificarRol(autorizacion, "ANFITRION", mensajeSinPermiso);
     }
@@ -108,7 +114,7 @@ ServiciosExternos(
         } catch (HttpClientErrorException.Forbidden e) {
             throw new PermisoException(mensajeSinPermiso);
         } catch (RestClientException e) {
-            throw new ServicioNoDisponibleException("No fue posible validar la sesión. Intente más tarde");
+            throw new ServicioNoDisponibleException("No fue posible validar la sesi├│n. Intente m├ís tarde");
         }
     }
     // HU-13 (CA-039): registra las decisiones del administrador.
@@ -182,4 +188,45 @@ public boolean notificarPublicacionRechazada(
         return false;
     }
 }
+
+    // HU-08: autoriza a un anfitrion o administrador para editar.
+    public UsuarioIdentidadDTO verificarEditor(String autorizacion) {
+        try {
+            UsuarioIdentidadDTO usuario = cliente.get()
+                    .uri(urlIdentidad + "/autenticacion/autorizar?roles=ANFITRION,ADMINISTRADOR")
+                    .header("Authorization", autorizacion)
+                    .retrieve()
+                    .body(UsuarioIdentidadDTO.class);
+
+            if (usuario == null || usuario.id() == null || usuario.rol() == null) {
+                throw new AutenticacionException(DEBE_INICIAR_SESION);
+            }
+
+            return usuario;
+
+        } catch (HttpClientErrorException.Unauthorized e) {
+            throw new AutenticacionException(DEBE_INICIAR_SESION);
+
+        } catch (HttpClientErrorException.Forbidden e) {
+            throw new PermisoException("No tiene permiso para editar publicaciones");
+
+        } catch (RestClientException e) {
+            throw new ServicioNoDisponibleException(
+                    "No fue posible validar la sesion. Intente mas tarde");
+        }
+    }
+
+    // HU-08: registra las ediciones realizadas por administradores.
+    public boolean registrarAuditoriaEdicion(Long administradorId, Long publicacionId) {
+
+        EventoAuditoriaDTO evento = new EventoAuditoriaDTO(
+                administradorId,
+                "PUBLICACION",
+                publicacionId,
+                "EDITAR_PUBLICACION",
+                "EXITO",
+                "El administrador actualizo los datos de la publicacion");
+
+        return registrarAuditoria(evento);
+    }
 }

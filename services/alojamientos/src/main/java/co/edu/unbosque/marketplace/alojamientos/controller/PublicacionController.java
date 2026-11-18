@@ -1,5 +1,6 @@
 package co.edu.unbosque.marketplace.alojamientos.controller;
 
+import co.edu.unbosque.marketplace.alojamientos.dto.UsuarioIdentidadDTO;
 import co.edu.unbosque.marketplace.alojamientos.client.ServiciosExternos;
 import co.edu.unbosque.marketplace.alojamientos.dto.PublicacionRequestDTO;
 import co.edu.unbosque.marketplace.alojamientos.dto.PublicacionResponseDTO;
@@ -23,7 +24,7 @@ import co.edu.unbosque.marketplace.alojamientos.dto.RechazarPublicacionRequestDT
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.RequestBody;
 
-// HU-07: el anfitri├â┬│n crea una publicaci├â┬│n en borrador
+// HU-07: el anfitriÔö£├óÔö¼Ôöén crea una publicaciÔö£├óÔö¼Ôöén en borrador
 @RestController
 public class PublicacionController {
 
@@ -159,5 +160,30 @@ serviciosExternos.notificarPublicacionRechazada(
 
         return ResponseEntity.ok(
                 new PublicacionListaResponseDTO(publicaciones));
+    }
+
+    // HU-08: editar una publicacion existente.
+    @PutMapping("/listings/{id}")
+    public ResponseEntity<PublicacionResponseDTO> editar(
+            @RequestHeader("Authorization") String autorizacion,
+            @PathVariable Long id,
+            @Valid @RequestBody PublicacionRequestDTO solicitud) {
+
+        UsuarioIdentidadDTO usuario =
+                serviciosExternos.verificarEditor(autorizacion);
+
+        boolean esAdministrador =
+                "ADMINISTRADOR".equals(usuario.rol());
+
+        Publicacion publicacion = publicacionService.editar(
+                id, usuario.id(), esAdministrador, solicitud);
+
+        if (esAdministrador) {
+            serviciosExternos.registrarAuditoriaEdicion(
+                    usuario.id(), publicacion.getId());
+        }
+
+        return ResponseEntity.ok(
+                PublicacionResponseDTO.desde(publicacion));
     }
 }
