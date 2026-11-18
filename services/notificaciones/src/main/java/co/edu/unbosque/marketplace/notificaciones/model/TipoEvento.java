@@ -10,6 +10,7 @@ public enum TipoEvento {
     PUBLICACION_APROBADA(TipoEntidad.PUBLICACION, "Tu publicación fue aprobada y ya es visible para los huéspedes"),
     RESERVA_CONFIRMADA(TipoEntidad.RESERVA, "Se confirmó una reserva"),
     RESERVA_CANCELADA(TipoEntidad.RESERVA, "Se canceló una reserva"),
+    PUBLICACION_RECHAZADA(TipoEntidad.PUBLICACION, "Tu publicacion fue rechazada por un administrador"),
     PUBLICACION_BLOQUEADA(TipoEntidad.PUBLICACION, "Tu publicación fue bloqueada por un administrador"),
     USUARIO_RESTRINGIDO(TipoEntidad.USUARIO, "Tu cuenta fue restringida por un administrador"),
     // HU-04: Identidad envía el token en el mensaje; entidadId es el id de la solicitud de recuperación

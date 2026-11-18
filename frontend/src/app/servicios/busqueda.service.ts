@@ -11,6 +11,7 @@ export interface PublicacionResumen {
   precioNoche: number;
   estado: string;
   servicios: string[];
+  imagenPrincipal?: string | null;
 }
 
 
@@ -89,5 +90,8 @@ export class BusquedaService {
       parametros = parametros.set('huespedes', huespedes);
     }
     return this.http.get<DetalleRespuesta>(`${this.url}/publicaciones/${id}`, { params: parametros });
+  }
+  destacadas() {
+    return this.http.get<PublicacionResumen[]>(`${this.url}/publicaciones/destacadas`);
   }
 }

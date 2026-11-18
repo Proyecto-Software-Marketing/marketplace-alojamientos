@@ -1,14 +1,20 @@
- 
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
 :root {
-  --azul: #2563eb;
-  --azul-oscuro: #1d4ed8;
-  --fondo: #f5f5f5;
+  --azul: #0f766e;          
+  --azul-oscuro: #115e59;   
+  --oscuro: #134e4a;       
+  --acento: #f26b5b;       
+  --fondo: #f4f8f7;
+  --fondo-suave: #e3f2ef;
   --blanco: #ffffff;
-  --borde: #dcdcdc;
-  --texto: #111827;
-  --texto-suave: #6b7280;
+  --borde: #cfe0dc;
+  --texto: #12302c;
+  --texto-suave: #4a6662;
   --rojo: #b91c1c;
   --verde: #15803d;
+  --sombra: 0 6px 20px rgba(18, 48, 44, 0.08);
 }
 
 * {
@@ -17,9 +23,10 @@
 
 body {
   margin: 0;
-  font-family: 'Inter', Arial, sans-serif;
+  font-family: 'Plus Jakarta Sans', 'Inter', Arial, sans-serif;
   background: var(--fondo);
   color: var(--texto);
+  overflow-x: hidden; 
 }
 
 a {
@@ -27,8 +34,9 @@ a {
 }
 
 h1 {
-  font-size: 28px;
-  font-weight: 600;
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
   margin: 0 0 8px;
 }
 
@@ -37,24 +45,28 @@ h1 {
   margin: 0 0 32px;
 }
 
-/* Caja blanca con borde */
+
 .tarjeta {
   background: var(--blanco);
   border: 1px solid var(--borde);
+  border-radius: 18px;
+  box-shadow: var(--sombra);
   padding: 32px;
 }
 
 .tarjeta h2 {
   font-size: 20px;
-  font-weight: 600;
+  font-weight: 700;
   margin: 0 0 24px;
 }
 
-/* Campos de formulario */
+
 .campo {
   display: block;
   margin-bottom: 20px;
-  font-size: 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--texto-suave);
 }
 
 .campo input,
@@ -63,22 +75,36 @@ h1 {
   display: block;
   width: 100%;
   margin-top: 8px;
-  padding: 10px 12px;
+  padding: 12px 14px;
   border: 1px solid var(--borde);
+  border-radius: 12px;
   background: var(--blanco);
+  color: var(--texto);
   font: inherit;
+  font-size: 15px;
+  font-weight: 400;
 }
 
-/* Botones */
+.campo input:focus,
+.campo select:focus,
+.campo textarea:focus {
+  outline: none;
+  border-color: var(--azul);
+  box-shadow: 0 0 0 3px var(--fondo-suave);
+}
+
+
 .boton {
   display: block;
   width: 100%;
-  padding: 12px;
+  padding: 13px;
   border: none;
+  border-radius: 12px;
   background: var(--azul);
   color: var(--blanco);
   font: inherit;
-  font-size: 14px;
+  font-size: 15px;
+  font-weight: 700;
   cursor: pointer;
 }
 
@@ -88,15 +114,21 @@ h1 {
 
 .boton-secundario {
   padding: 10px 16px;
-  border: 1px solid var(--azul);
-  background: var(--blanco);
+  border: none;
+  border-radius: 10px;
+  background: var(--fondo-suave);
   color: var(--azul);
   font: inherit;
   font-size: 14px;
+  font-weight: 700;
   cursor: pointer;
 }
 
-/* Mensajes */
+.boton-secundario:hover {
+  background: #cdeae4;
+}
+
+
 .error {
   color: var(--rojo);
   font-size: 14px;
@@ -107,9 +139,10 @@ h1 {
   font-size: 14px;
 }
 
-/* Caja gris con informacion */
+
 .nota {
-  background: #f0f0f0;
+  background: var(--fondo-suave);
+  border-radius: 14px;
   padding: 20px;
   margin-top: 24px;
 }
@@ -117,7 +150,7 @@ h1 {
 .nota h3 {
   margin: 0 0 8px;
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .nota p {

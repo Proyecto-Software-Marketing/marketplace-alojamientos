@@ -1,0 +1,26 @@
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v4.0.9)
+
+2026-11-18T00:47:51.210-05:00  INFO 22756 --- [reportes] [           main] c.e.u.m.reportes.ReportesApplication     : Starting ReportesApplication using Java 21.0.13 with PID 22756 (C:\Users\aleja\Proyectos\marketplace-alojamientos\services\reportes\target\classes started by aleja in C:\Users\aleja\Proyectos\marketplace-alojamientos\services\reportes)
+2026-11-18T00:47:51.214-05:00  INFO 22756 --- [reportes] [           main] c.e.u.m.reportes.ReportesApplication     : No active profile set, falling back to 1 default profile: "default"
+2026-11-18T00:47:52.189-05:00  INFO 22756 --- [reportes] [           main] o.s.boot.tomcat.TomcatWebServer          : Tomcat initialized with port 8091 (http)
+2026-11-18T00:47:52.204-05:00  INFO 22756 --- [reportes] [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-11-18T00:47:52.204-05:00  INFO 22756 --- [reportes] [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/11.0.27]
+2026-11-18T00:47:52.259-05:00  INFO 22756 --- [reportes] [           main] b.w.c.s.WebApplicationContextInitializer : Root WebApplicationContext: initialization completed in 980 ms
+2026-11-18T00:47:52.964-05:00  INFO 22756 --- [reportes] [           main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 2 endpoints beneath base path '/actuator'
+2026-11-18T00:47:53.003-05:00  INFO 22756 --- [reportes] [           main] o.s.boot.tomcat.TomcatWebServer          : Tomcat started on port 8091 (http) with context path '/'
+2026-11-18T00:47:53.009-05:00  INFO 22756 --- [reportes] [           main] c.e.u.m.reportes.ReportesApplication     : Started ReportesApplication in 2.206 seconds (process running for 2.654)
+[ERROR] Failed to execute goal org.springframework.boot:spring-boot-maven-plugin:4.0.9:run (default-cli) on project reportes: Process terminated with exit code: 1 -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoExecutionException

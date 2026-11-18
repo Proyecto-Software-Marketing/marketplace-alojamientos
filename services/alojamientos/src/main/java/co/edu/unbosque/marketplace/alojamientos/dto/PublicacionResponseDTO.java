@@ -5,10 +5,7 @@ import co.edu.unbosque.marketplace.alojamientos.model.Publicacion;
 import java.math.BigDecimal;
 import java.util.List;
 
-// Respuesta pública con una publicación (Listing en el contrato).
-// Decisión 2: usa los nombres del contrato, que son los que espera el frontend.
-// Servicios, reglas e imágenes se definen en la HU-09 y las tarifas en la HU-10 (vacías o en 0 al crear
-// la publicación); motivoRechazo va en null hasta la HU-13
+
 public record PublicacionResponseDTO(
         Long id,
         Long anfitrionId,
@@ -49,7 +46,7 @@ public record PublicacionResponseDTO(
                 publicacion.getReglas(),
                 publicacion.getImagenes(),
                 publicacion.getEstado().name(),
-                null,
+                publicacion.getMotivoRechazo(),
                 publicacion.getPoliticaCancelacion() == null
                         ? null
                         : publicacion.getPoliticaCancelacion().getId());

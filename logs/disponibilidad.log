@@ -1,0 +1,53 @@
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v4.0.9)
+
+2026-11-18T00:47:06.802-05:00  INFO 21516 --- [disponibilidad] [           main] c.e.u.m.d.DisponibilidadApplication      : Starting DisponibilidadApplication using Java 21.0.13 with PID 21516 (C:\Users\aleja\Proyectos\marketplace-alojamientos\services\disponibilidad\target\classes started by aleja in C:\Users\aleja\Proyectos\marketplace-alojamientos\services\disponibilidad)
+2026-11-18T00:47:06.806-05:00  INFO 21516 --- [disponibilidad] [           main] c.e.u.m.d.DisponibilidadApplication      : No active profile set, falling back to 1 default profile: "default"
+2026-11-18T00:47:07.786-05:00  INFO 21516 --- [disponibilidad] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-11-18T00:47:07.878-05:00  INFO 21516 --- [disponibilidad] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 77 ms. Found 2 JPA repository interfaces.
+2026-11-18T00:47:08.623-05:00  INFO 21516 --- [disponibilidad] [           main] o.s.boot.tomcat.TomcatWebServer          : Tomcat initialized with port 8083 (http)
+2026-11-18T00:47:08.645-05:00  INFO 21516 --- [disponibilidad] [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-11-18T00:47:08.645-05:00  INFO 21516 --- [disponibilidad] [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/11.0.27]
+2026-11-18T00:47:08.769-05:00  INFO 21516 --- [disponibilidad] [           main] b.w.c.s.WebApplicationContextInitializer : Root WebApplicationContext: initialization completed in 1887 ms
+2026-11-18T00:47:09.299-05:00  INFO 21516 --- [disponibilidad] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-11-18T00:47:09.608-05:00  INFO 21516 --- [disponibilidad] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection conn0: url=jdbc:h2:mem:c9f30e27-09ff-4bc7-875d-9b091dfd2ed6 user=SA
+2026-11-18T00:47:09.611-05:00  INFO 21516 --- [disponibilidad] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-11-18T00:47:09.661-05:00  INFO 21516 --- [disponibilidad] [           main] org.hibernate.orm.jpa                    : HHH008540: Processing PersistenceUnitInfo [name: default]
+2026-11-18T00:47:09.752-05:00  INFO 21516 --- [disponibilidad] [           main] org.hibernate.orm.core                   : HHH000001: Hibernate ORM core version 7.2.25.Final
+2026-11-18T00:47:10.328-05:00  INFO 21516 --- [disponibilidad] [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-11-18T00:47:10.419-05:00  INFO 21516 --- [disponibilidad] [           main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+	Database JDBC URL [jdbc:h2:mem:c9f30e27-09ff-4bc7-875d-9b091dfd2ed6]
+	Database driver: H2 JDBC Driver
+	Database dialect: H2Dialect
+	Database version: 2.4.240
+	Default catalog/schema: C9F30E27-09FF-4BC7-875D-9B091DFD2ED6/PUBLIC
+	Autocommit mode: undefined/unknown
+	Isolation level: READ_COMMITTED [default READ_COMMITTED]
+	JDBC fetch size: 100
+	Pool: DataSourceConnectionProvider
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-11-18T00:47:11.622-05:00  INFO 21516 --- [disponibilidad] [           main] org.hibernate.orm.core                   : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-11-18T00:47:11.705-05:00  INFO 21516 --- [disponibilidad] [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-11-18T00:47:12.036-05:00  INFO 21516 --- [disponibilidad] [           main] o.s.d.j.r.query.QueryEnhancerFactories   : Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-11-18T00:47:13.441-05:00  WARN 21516 --- [disponibilidad] [           main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-11-18T00:47:14.180-05:00  INFO 21516 --- [disponibilidad] [           main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 2 endpoints beneath base path '/actuator'
+2026-11-18T00:47:14.274-05:00  INFO 21516 --- [disponibilidad] [           main] o.s.boot.tomcat.TomcatWebServer          : Tomcat started on port 8083 (http) with context path '/'
+2026-11-18T00:47:14.283-05:00  INFO 21516 --- [disponibilidad] [           main] c.e.u.m.d.DisponibilidadApplication      : Started DisponibilidadApplication in 8.016 seconds (process running for 8.455)
+2026-11-18T00:49:53.854-05:00  INFO 21516 --- [disponibilidad] [nio-8083-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-11-18T00:49:53.855-05:00  INFO 21516 --- [disponibilidad] [nio-8083-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-11-18T00:49:53.857-05:00  INFO 21516 --- [disponibilidad] [nio-8083-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 2 ms
+[ERROR] Failed to execute goal org.springframework.boot:spring-boot-maven-plugin:4.0.9:run (default-cli) on project disponibilidad: Process terminated with exit code: 1 -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoExecutionException

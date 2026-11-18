@@ -17,3 +17,4 @@ frontend/.angular/
 # Sistema operativo
 .DS_Store
 Thumbs.db
+logs/
