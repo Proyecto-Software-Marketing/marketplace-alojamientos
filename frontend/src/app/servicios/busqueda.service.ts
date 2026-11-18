@@ -38,6 +38,7 @@ export interface PublicacionDetalle extends PublicacionResumen {
   reglas: string[];
   imagenes: string[];
   politicaCancelacion: string;
+  serviciosAdicionales?: { nombre: string; costo: number }[];
 }
 
 

@@ -25,6 +25,7 @@ export interface DatosCotizacion {
   fechaLlegada: string;
   fechaSalida: string;
   cantidadHuespedes: number;
+   serviciosAdicionales: string[];
 }
 
 
