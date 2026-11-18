@@ -50,14 +50,14 @@
 }
 
 
-.indicador.azul { border-left-color: #2563eb; }
-.indicador.azul .icono { background: #dbeafe; }
-.indicador.verde { border-left-color: #16a34a; }
+.indicador.azul { border-left-color: #0f766e; }
+.indicador.azul .icono { background: #e3f2ef; }
+.indicador.verde { border-left-color: #15803d; }
 .indicador.verde .icono { background: #dcfce7; }
-.indicador.morado { border-left-color: #7c3aed; }
-.indicador.morado .icono { background: #ede9fe; }
-.indicador.naranja { border-left-color: #ea580c; }
-.indicador.naranja .icono { background: #ffedd5; }
+.indicador.morado { border-left-color: #f26b5b; }
+.indicador.morado .icono { background: #fde4e0; }
+.indicador.naranja { border-left-color: #b45309; }
+.indicador.naranja .icono { background: #fef3c7; }
 
 .dos {
   display: grid;
@@ -94,11 +94,12 @@
   border-radius: 7px;
 }
 
-.barra.verde { background: #16a34a; }
-.barra.azul { background: #2563eb; }
-.barra.rojo { background: #dc2626; }
-.barra.naranja { background: #ea580c; }
-.barra.morado { background: #7c3aed; }
+.barra.verde { background: #15803d; }
+.barra.azul { background: #0f766e; }
+.barra.rojo { background: #b91c1c; }
+.barra.naranja { background: #b45309; }
+.barra.morado { background: #f26b5b; }
+
 
 .cantidad {
   text-align: right;
@@ -131,10 +132,10 @@
   padding: 10px 28px;
   margin-bottom: 20px;
 }
-.indicador.azul .icono { color: #2563eb; }
-.indicador.verde .icono { color: #16a34a; }
-.indicador.morado .icono { color: #7c3aed; }
-.indicador.naranja .icono { color: #ea580c; }
+.indicador.azul .icono { color: #0f766e; }
+.indicador.verde .icono { color: #15803d; }
+.indicador.morado .icono { color: #f26b5b; }
+.indicador.naranja .icono { color: #b45309; }
 
 .actualizar {
   display: flex;

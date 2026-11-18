@@ -2,33 +2,39 @@
   <a routerLink="/" class="logo">Marketplace Alojamientos</a>
 
   <!--Cada rol ve solo sus opciones -->
-  <nav>
+   <nav>
     @switch (sesion.usuario()?.rol) {
       @case ('HUESPED') {
-        <a routerLink="/">Buscar alojamiento</a>
-        <a routerLink="/mis-reservas">Mis reservas</a>
-        <a routerLink="/favoritos">Mis favoritos</a>
+        <a routerLink="/" routerLinkActive="activo" [routerLinkActiveOptions]="{ exact: true }">Buscar alojamiento</a>
+        <a routerLink="/mis-reservas" routerLinkActive="activo">Mis reservas</a>
+        <a routerLink="/favoritos" routerLinkActive="activo">Mis favoritos</a>
       }
       @case ('ANFITRION') {
-        <a routerLink="/mis-publicaciones">Mis publicaciones</a>
-        <a routerLink="/publicaciones/nueva">Nueva publicación</a>
-        <a routerLink="/disponibilidad">Disponibilidad</a>
-        <a routerLink="/mis-reservas">Reservas</a>
+        <a routerLink="/mis-publicaciones" routerLinkActive="activo">Mis publicaciones</a>
+        <a routerLink="/publicaciones/nueva" routerLinkActive="activo">Nueva publicación</a>
+        <a routerLink="/disponibilidad" routerLinkActive="activo">Disponibilidad</a>
+        <a routerLink="/mis-reservas" routerLinkActive="activo">Reservas</a>
       }
       @case ('ADMINISTRADOR') {
-        <a routerLink="/aprobaciones">Aprobaciones</a>
-        <a routerLink="/dashboard">Dashboard</a>
-        <a routerLink="/exportar-reportes">Exportar reportes</a>
+        <a routerLink="/aprobaciones" routerLinkActive="activo">Aprobaciones</a>
+        <a routerLink="/dashboard" routerLinkActive="activo">Dashboard</a>
+        <a routerLink="/exportar-reportes" routerLinkActive="activo">Exportar reportes</a>
       }
       @default {
-        <a routerLink="/login">Iniciar sesión</a>
-        <a routerLink="/login" [queryParams]="{ modo: 'registro' }">Registrarse</a>
+        <a routerLink="/login" routerLinkActive="activo"
+           [routerLinkActiveOptions]="{ paths: 'exact', queryParams: 'exact', fragment: 'ignored', matrixParams: 'ignored' }">
+          Iniciar sesión
+        </a>
+        <a routerLink="/login" [queryParams]="{ modo: 'registro' }" routerLinkActive="activo"
+           [routerLinkActiveOptions]="{ paths: 'exact', queryParams: 'exact', fragment: 'ignored', matrixParams: 'ignored' }">
+          Registrarse
+        </a>
       }
     }
 
     @if (sesion.usuario()) {
-      <a routerLink="/notificaciones">Notificaciones</a>
-      <a routerLink="/perfil">Mi cuenta</a>
+      <a routerLink="/notificaciones" routerLinkActive="activo">Notificaciones</a>
+      <a routerLink="/perfil" routerLinkActive="activo">Mi cuenta</a>
       <button class="enlace" (click)="cerrarSesion()">Cerrar sesión</button>
     }
   </nav>

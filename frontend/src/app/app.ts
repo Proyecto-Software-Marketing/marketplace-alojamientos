@@ -1,12 +1,12 @@
 import { Component, inject } from '@angular/core';
-import { Router, RouterLink, RouterOutlet } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { IdentidadService } from './servicios/identidad.service';
 import { SesionService } from './servicios/sesion.service';
 
 // menu de arriba y la ventana de cada ruta
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, RouterLink],
+    imports: [RouterOutlet, RouterLink, RouterLinkActive],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })
