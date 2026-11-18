@@ -3,7 +3,7 @@ import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { concatMap } from 'rxjs';
-import { AlojamientosService, DatosPublicacion } from '../../servicios/alojamientos.service';
+import { AlojamientosService, DatosPublicacion, PoliticaCancelacion } from '../../servicios/alojamientos.service';
 import { leerMensajes } from '../../servicios/errores';
 import { SesionService } from '../../servicios/sesion.service';
 
@@ -62,6 +62,11 @@ export class EditarPublicacion {
   guardandoDetalles = signal(false);
   detallesGuardados = signal(false);
 
+  politicas = signal<PoliticaCancelacion[]>([]);
+  politicaId: number | null = null;
+  politicaGuardada = signal(false);
+  erroresPolitica = signal<string[]>([]);
+
   constructor() {
     // se cargan los datos actuales para llenar el formulario
     this.alojamientos.consultar(this.id).subscribe({
@@ -78,12 +83,17 @@ export class EditarPublicacion {
         this.servicios.set(p.servicios);
         this.reglas.set(p.reglas);
         this.imagenes.set(p.imagenes);
+        this.politicaId = p.politicaCancelacionId;
         this.cargando.set(false);
       },
       error: (error: HttpErrorResponse) => {
         this.errores.set(leerMensajes(error));
         this.cargando.set(false);
       }
+    });
+    this.alojamientos.politicas().subscribe({
+      next: (respuesta) => this.politicas.set(respuesta.items),
+      error: (error: HttpErrorResponse) => this.erroresPolitica.set(leerMensajes(error))
     });
   }
 
@@ -154,6 +164,17 @@ export class EditarPublicacion {
         this.guardandoDetalles.set(false);
         this.erroresDetalles.set(leerMensajes(error));
       }
+    });
+  }
+    guardarPolitica(): void {
+    if (this.politicaId === null) {
+      return;
+    }
+    this.erroresPolitica.set([]);
+    this.politicaGuardada.set(false);
+    this.alojamientos.asociarPolitica(this.id, this.politicaId).subscribe({
+      next: () => this.politicaGuardada.set(true),
+      error: (error: HttpErrorResponse) => this.erroresPolitica.set(leerMensajes(error))
     });
   }
 

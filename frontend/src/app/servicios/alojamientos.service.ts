@@ -29,8 +29,15 @@ export interface Publicacion {
   imagenes: string[];
   estado: string;
   motivoRechazo: string | null;
+  politicaCancelacionId: number | null;
 }
-
+export interface PoliticaCancelacion {
+  id: number;
+  nombre: string;
+  descripcion: string;
+  porcentajeDevolucion: number;
+  permiteLiberacionPeriodo: boolean;
+}
 // HU-07 datos básicos para crear el borrador
 export interface DatosPublicacion {
   titulo: string;
@@ -115,5 +122,14 @@ export class AlojamientosService {
   // HU-13 rechazar con motivo: vuelve a BORRADOR
   rechazar(id: number, motivo: string) {
     return this.http.post<Publicacion>(`${this.urlAdmin}/${id}/reject`, { motivo });
+  }
+  
+  // HU-11 políticas disponibles y asociar una a la publicación
+  politicas() {
+    return this.http.get<{ items: PoliticaCancelacion[] }>('/api/alojamientos/cancellation-policies');
+  }
+
+  asociarPolitica(id: number, politicaId: number) {
+    return this.http.put<Publicacion>(`${this.url}/${id}/cancellation-policy`, { politicaId });
   }
 }

@@ -4,6 +4,8 @@ import co.edu.unbosque.marketplace.alojamientos.dto.PublicacionRequestDTO;
 import co.edu.unbosque.marketplace.alojamientos.exception.SolicitudInvalidaException;
 import co.edu.unbosque.marketplace.alojamientos.model.Publicacion;
 import co.edu.unbosque.marketplace.alojamientos.repository.PublicacionRepository;
+import co.edu.unbosque.marketplace.alojamientos.repository.PoliticaCancelacionRepository;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,10 +26,13 @@ import co.edu.unbosque.marketplace.alojamientos.exception.PublicacionIncompletaE
 public class PublicacionService {
 
     private final PublicacionRepository publicacionRepository;
+    private final PoliticaCancelacionRepository politicaRepository;
     private final Clock reloj;
 
-    public PublicacionService(PublicacionRepository publicacionRepository, Clock reloj) {
+    public PublicacionService(PublicacionRepository publicacionRepository,
+            PoliticaCancelacionRepository politicaRepository, Clock reloj) {
         this.publicacionRepository = publicacionRepository;
+        this.politicaRepository = politicaRepository;
         this.reloj = reloj;
     }
 
@@ -46,6 +51,8 @@ public class PublicacionService {
                 solicitud.capacidad().intValueExact(),
                 // 1.5E+5 y 150000 son el mismo precio: se guarda siempre sin exponente
                 solicitud.precioPorNoche().setScale(0, RoundingMode.UNNECESSARY));
+                politicaRepository.findAll(Sort.by("id")).stream().findFirst()
+                .ifPresent(publicacion::definirPoliticaCancelacion);
         return publicacionRepository.save(publicacion);
     }
     // HU-12: enviar una publicacion completa a revision.
