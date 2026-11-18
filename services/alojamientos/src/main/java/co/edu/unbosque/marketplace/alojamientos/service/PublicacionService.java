@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.List;
 import co.edu.unbosque.marketplace.alojamientos.exception.PublicacionIncompletaException;
 
-// HU-07: crear una publicación en borrador
 @Service
 public class PublicacionService {
 
@@ -32,8 +31,7 @@ public class PublicacionService {
         this.reloj = reloj;
     }
 
-    // CA-020: la publicación queda en BORRADOR asociada al anfitrión (su id sale del token, decisión 5).
-    // Decisión 9: no se valida título repetido
+
     @Transactional
     public Publicacion crear(Long anfitrionId, PublicacionRequestDTO solicitud) {
         validarCapacidadYPrecio(solicitud);
@@ -102,6 +100,17 @@ public Publicacion enviarARevision(Long publicacionId, Long anfitrionId) {
             || publicacion.getPrecioNoche().signum() <= 0) {
         faltantes.add("precio por noche");
     }
+    if (publicacion.getServicios().isEmpty()) {
+        faltantes.add("servicios");
+    }
+
+    if (publicacion.getReglas().isEmpty()) {
+        faltantes.add("reglas");
+    }
+
+    if (publicacion.getImagenes().isEmpty()) {
+        faltantes.add("imagenes");
+    }
 
 if (!faltantes.isEmpty()) {
     throw new PublicacionIncompletaException(
@@ -114,7 +123,22 @@ if (!faltantes.isEmpty()) {
     return publicacionRepository.save(publicacion);
 }
 
-    // CA-021: capacidad menor o igual a cero o precio no positivo → se rechaza
+    // HU-08: consultar una publicacion por su identificador.
+    @Transactional(readOnly = true)
+    public Publicacion consultarPorId(Long id) {
+        return publicacionRepository.findById(id)
+                .orElseThrow(() -> new NoEncontradoException(
+                        "La publicacion no existe"));
+    }
+    // HU-13: consultar publicaciones por estado.
+    @Transactional(readOnly = true)
+    public List<Publicacion> listarPorEstado(EstadoPublicacion estado) {
+        if (estado == null) {
+            return publicacionRepository.findAll();
+        }
+        return publicacionRepository.findByEstadoOrderByIdAsc(estado);
+    }
+    
     private void validarCapacidadYPrecio(PublicacionRequestDTO solicitud) {
         BigDecimal capacidad = solicitud.capacidad();
         if (capacidad == null || capacidad.signum() <= 0) {
@@ -124,5 +148,84 @@ if (!faltantes.isEmpty()) {
         if (precio == null || precio.signum() <= 0) {
             throw new SolicitudInvalidaException(PublicacionRequestDTO.MENSAJE_PRECIO);
         }
+    }
+
+    // HU-13 (CA-037): aprobar una publicacion pendiente de revision.
+    @Transactional
+    public Publicacion aprobar(Long publicacionId) {
+        Publicacion publicacion = publicacionRepository.findById(publicacionId)
+                .orElseThrow(() -> new NoEncontradoException(
+                        "La publicacion no existe"));
+
+        if (publicacion.getEstado() != EstadoPublicacion.PENDIENTE_REVISION) {
+            throw new ConflictoException(
+                    "Solo se pueden aprobar publicaciones en PENDIENTE_REVISION");
+        }
+
+        publicacion.aprobar();
+
+        return publicacionRepository.save(publicacion);
+    }
+// HU-13 (CA-038): rechazar una publicacion con motivo obligatorio.
+@Transactional
+public Publicacion rechazar(Long publicacionId, String motivo) {
+    Publicacion publicacion = publicacionRepository.findById(publicacionId)
+            .orElseThrow(() -> new NoEncontradoException(
+                    "La publicacion no existe"));
+
+    if (publicacion.getEstado() != EstadoPublicacion.PENDIENTE_REVISION) {
+        throw new ConflictoException(
+                "Solo se pueden rechazar publicaciones en PENDIENTE_REVISION");
+    }
+
+    publicacion.rechazar(motivo);
+
+    return publicacionRepository.save(publicacion);
+}
+
+    // HU-15: listar publicaciones del anfitrion.
+    @Transactional(readOnly = true)
+    public List<Publicacion> listarMisPublicaciones(Long anfitrionId) {
+        return publicacionRepository.findByAnfitrionIdOrderByIdAsc(anfitrionId);
+    }
+
+    // HU-08: editar una publicacion existente.
+    @Transactional
+    public Publicacion editar(
+            Long publicacionId,
+            Long usuarioId,
+            boolean esAdministrador,
+            PublicacionRequestDTO solicitud) {
+
+        Publicacion publicacion = publicacionRepository.findById(publicacionId)
+                .orElseThrow(() -> new NoEncontradoException(
+                        "La publicacion no existe"));
+
+        // El anfitrion solo puede editar sus propias publicaciones.
+        if (!esAdministrador
+                && !publicacion.getAnfitrionId().equals(usuarioId)) {
+            throw new PermisoException(
+                    "No puede editar una publicacion que no le pertenece");
+        }
+
+        // Verificar si el estado permite editar.
+        if (!publicacion.permiteEditarContenido()) {
+            throw new ConflictoException(
+                    "La publicacion no permite editar su contenido en este estado");
+        }
+
+        validarCapacidadYPrecio(solicitud);
+
+        publicacion.definirDatosBasicos(
+                solicitud.titulo().trim(),
+                solicitud.descripcion().trim(),
+                solicitud.ciudad().trim(),
+                solicitud.ubicacionTextual().trim(),
+                solicitud.tipo(),
+                solicitud.capacidad().intValueExact(),
+                solicitud.precioPorNoche().setScale(
+                        0, RoundingMode.UNNECESSARY));
+
+        return publicacionRepository.save(publicacion);
     }
 }

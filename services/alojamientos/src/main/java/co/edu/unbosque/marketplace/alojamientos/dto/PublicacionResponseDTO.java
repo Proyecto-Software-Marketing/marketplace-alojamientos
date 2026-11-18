@@ -48,6 +48,6 @@ public record PublicacionResponseDTO(
                 publicacion.getReglas(),
                 publicacion.getImagenes(),
                 publicacion.getEstado().name(),
-                null);
+                publicacion.getMotivoRechazo());
     }
 }
