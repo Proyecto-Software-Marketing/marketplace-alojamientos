@@ -28,4 +28,25 @@ export class AuditoriaService {
       params: { entidad: 'REPORTE', accion: 'EXPORTAR_REPORTE' }
     });
   }
+
+  consultar(filtros: {
+    usuario?: number;
+    entidad?: string;
+    accion?: string;
+    desde?: string;
+    hasta?: string;
+  }) {
+    const params: Record<string, string> = {};
+
+    if (filtros.usuario !== undefined) params['usuario'] = String(filtros.usuario);
+    if (filtros.entidad) params['entidad'] = filtros.entidad;
+    if (filtros.accion) params['accion'] = filtros.accion;
+    if (filtros.desde) params['desde'] = filtros.desde;
+    if (filtros.hasta) params['hasta'] = filtros.hasta;
+
+    return this.http.get<{ items: EventoAuditoria[] }>(
+      `${this.url}/admin/audit-events`,
+      { params }
+    );
+  }
 }

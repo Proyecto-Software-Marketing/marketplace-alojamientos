@@ -1,3 +1,4 @@
+import { ConsultarAuditoria } from './paginas/consultar-auditoria/consultar-auditoria';
 import { Routes } from '@angular/router';
 import { Inicio } from './paginas/inicio/inicio';
 import { Login } from './paginas/login/login';
@@ -31,6 +32,7 @@ export const routes: Routes = [
   { path: 'mis-reservas', component: MisReservas, canActivate: [sesionGuard] },
   { path: 'calificar/:idReserva', component: Calificar, canActivate: [sesionGuard] },
   { path: 'dashboard', component: Dashboard, canActivate: [adminGuard] },
+  { path: 'consultar-auditoria', component: ConsultarAuditoria, canActivate: [adminGuard] },
   { path: 'exportar-reportes', component: ExportarReportes, canActivate: [adminGuard] },
   { path: 'favoritos', component: Favoritos, canActivate: [sesionGuard] },
   { path: '**', redirectTo: '' }
