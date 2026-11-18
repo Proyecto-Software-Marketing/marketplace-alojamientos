@@ -26,6 +26,9 @@ export class Aprobaciones {
   // publicación a la que se le está escribiendo el motivo del rechazo
   rechazando = signal<number | null>(null);
   motivo = '';
+  activas = signal<Publicacion[]>([]);
+  bloqueando = signal<number | null>(null);
+  motivoBloqueo = '';
 
   constructor() {
     this.cargar();
@@ -42,6 +45,10 @@ export class Aprobaciones {
         this.errores.set(leerMensajes(error));
         this.cargando.set(false);
       }
+    });
+    this.alojamientos.activas().subscribe({
+      next: (respuesta) => this.activas.set(respuesta.items),
+      error: (error: HttpErrorResponse) => this.errores.set(leerMensajes(error))
     });
   }
 
@@ -72,6 +79,30 @@ export class Aprobaciones {
     this.procesando.set(true);
     this.alojamientos.rechazar(publicacion.id, motivo).subscribe({
       next: () => this.terminar(`"${publicacion.titulo}" quedó rechazada y volvió a borrador.`),
+      error: (error: HttpErrorResponse) => this.fallo(error)
+    });
+    
+  }
+  abrirBloqueo(id: number): void {
+    this.limpiarMensajes();
+    this.bloqueando.set(id);
+    this.motivoBloqueo = '';
+  }
+
+  // HU-34 bloquear: deja de salir en búsquedas y sus reservas futuras pasan a revisión manual
+  bloquear(publicacion: Publicacion): void {
+    const motivo = this.motivoBloqueo.trim();
+    if (motivo.length < 3 || motivo.length > 2000) {
+      this.errores.set(['El motivo debe tener entre 3 y 2000 caracteres.']);
+      return;
+    }
+    this.limpiarMensajes();
+    this.procesando.set(true);
+    this.alojamientos.bloquear(publicacion.id, motivo).subscribe({
+      next: () => {
+        this.bloqueando.set(null);
+        this.terminar(`"${publicacion.titulo}" quedó bloqueada.`);
+      },
       error: (error: HttpErrorResponse) => this.fallo(error)
     });
   }

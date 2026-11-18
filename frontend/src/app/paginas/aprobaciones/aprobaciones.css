@@ -40,3 +40,6 @@
 .boton-peligro:hover {
   background: #991b1b;
 }
+.seccion {
+  margin: 32px 0 12px;
+}

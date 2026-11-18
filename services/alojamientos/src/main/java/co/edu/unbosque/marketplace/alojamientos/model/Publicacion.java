@@ -89,6 +89,8 @@ public class Publicacion {
 // HU-13: motivo que indica el administrador al rechazar la publicacion.
 @Column(name = "motivo_rechazo", length = 2000)
 private String motivoRechazo;
+    @Column(name = "motivo_bloqueo", length = 2000)
+    private String motivoBloqueo;
     @Column(name = "creada_en", nullable = false)
     private LocalDateTime creadaEn;
 
@@ -335,4 +337,15 @@ public void rechazar(String motivo) {
     estado = EstadoPublicacion.BORRADOR;
     motivoRechazo = motivo.trim();
 }
+public void bloquear(String motivo) {
+        if (estado == EstadoPublicacion.BLOQUEADA) {
+            throw new IllegalStateException("La publicacion ya esta bloqueada");
+        }
+        this.motivoBloqueo = motivo;
+        this.estado = EstadoPublicacion.BLOQUEADA;
+    }
+
+    public String getMotivoBloqueo() {
+        return motivoBloqueo;
+    }
 }

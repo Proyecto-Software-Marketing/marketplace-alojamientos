@@ -30,6 +30,7 @@ export interface Publicacion {
   estado: string;
   motivoRechazo: string | null;
   politicaCancelacionId: number | null;
+  motivoBloqueo: string | null;
 }
 export interface PoliticaCancelacion {
   id: number;
@@ -138,5 +139,14 @@ export class AlojamientosService {
 
   reactivar(id: number) {
     return this.http.post<Publicacion>(`${this.url}/${id}/resume`, {});
+  }
+    activas() {
+    return this.http.get<{ items: Publicacion[] }>(`${this.urlAdmin}`, {
+      params: { estado: 'ACTIVA' }
+    });
+  }
+
+  bloquear(id: number, motivo: string) {
+    return this.http.post<Publicacion>(`${this.urlAdmin}/${id}/block`, { motivo });
   }
 }
